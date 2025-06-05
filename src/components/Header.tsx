@@ -62,7 +62,7 @@ export default function Header() {
         <Box transform={`translateX(-${leftSlideValue}px)`} transition="transform 0.5s ease-in-out">
           <Link href="/">
             <Heading as="h3" size="md" textAlign="center">
-              Genji
+              Veridocs
             </Heading>
           </Link>
         </Box>
@@ -111,20 +111,11 @@ export default function Header() {
               size="sm"
             />
             <MenuList>
-              <Link href="/new" color="white">
-                <MenuItem fontSize="md">{t.navigation.newPage}</MenuItem>
+              <Link href="/dashboard" color="white">
+                <MenuItem fontSize="md">Dashboard</MenuItem>
               </Link>
-              <Link href="/wallet" color="white">
-                <MenuItem fontSize="md">{t.navigation.walletGenerator}</MenuItem>
-              </Link>
-              <Link href="/referral" color="white">
-                <MenuItem fontSize="md">{t.navigation.referral}</MenuItem>
-              </Link>
-              <Link href="/subscribe" color="white">
-                <MenuItem fontSize="md">Subscribe</MenuItem>
-              </Link>
-              <Link href="/chat" color="white">
-                <MenuItem fontSize="md">Chat</MenuItem>
+              <Link href="/verify" color="white">
+                <MenuItem fontSize="md">Verify</MenuItem>
               </Link>
             </MenuList>
           </Menu>
