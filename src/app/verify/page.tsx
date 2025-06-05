@@ -19,11 +19,11 @@ import { useState, useRef } from 'react'
 import { useTranslation } from '@/hooks/useTranslation'
 import { FiUpload, FiFile, FiX } from 'react-icons/fi'
 
-export default function DashboardPage() {
+export default function VerifyPage() {
   const { address, isConnected } = useAppKitAccount()
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
-  const [issueResult, setIssueResult] = useState<string | null>(null)
-  const [isIssuing, setIsIssuing] = useState(false)
+  const [verificationResult, setVerificationResult] = useState<string | null>(null)
+  const [isVerifying, setIsVerifying] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const toast = useToast()
   const t = useTranslation()
@@ -44,23 +44,23 @@ export default function DashboardPage() {
       }
 
       setSelectedFile(file)
-      setIssueResult(null)
+      setVerificationResult(null)
     }
   }
 
   const handleFileRemove = () => {
     setSelectedFile(null)
-    setIssueResult(null)
+    setVerificationResult(null)
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
     }
   }
 
-  const handleIssue = async () => {
+  const handleVerify = async () => {
     if (!selectedFile) {
       toast({
         title: 'No file selected',
-        description: 'Please select a document to issue',
+        description: 'Please select a document to verify',
         status: 'warning',
         duration: 5000,
         isClosable: true,
@@ -68,38 +68,34 @@ export default function DashboardPage() {
       return
     }
 
-    setIsIssuing(true)
-    setIssueResult(null)
+    setIsVerifying(true)
+    setVerificationResult(null)
 
     try {
-      // Simulate file processing and blockchain transaction
-      await new Promise(resolve => setTimeout(resolve, 3000))
+      // Simulate file processing and hash generation
+      await new Promise(resolve => setTimeout(resolve, 2000))
 
-      // Mock transaction result
-      const mockTxHash = `0x${Math.random().toString(16).substr(2, 64)}`
-      const mockDocumentId = Math.random().toString(16).substr(2, 8)
-
-      setIssueResult(
-        `Document issued successfully!\nTransaction: ${mockTxHash}\nDocument ID: ${mockDocumentId}`
-      )
+      // Mock verification result
+      const mockHash = `0x${Math.random().toString(16).substr(2, 64)}`
+      setVerificationResult(`Document processed. Hash: ${mockHash}`)
 
       toast({
-        title: 'Document Issued',
-        description: 'Your document has been registered on the blockchain',
+        title: 'Verification Complete',
+        description: 'Document has been processed successfully',
         status: 'success',
         duration: 5000,
         isClosable: true,
       })
     } catch (error) {
       toast({
-        title: 'Issue Failed',
-        description: 'An error occurred while issuing the document',
+        title: 'Verification Failed',
+        description: 'An error occurred while processing the document',
         status: 'error',
         duration: 5000,
         isClosable: true,
       })
     } finally {
-      setIsIssuing(false)
+      setIsVerifying(false)
     }
   }
 
@@ -117,34 +113,19 @@ export default function DashboardPage() {
         <VStack spacing={6} align="stretch">
           <header>
             <Heading as="h1" size="xl" mb={2}>
-              Dashboard
+              Verify
             </Heading>
             <Text fontSize="lg" color="gray.400">
-              Issue a document
+              Check the authenticity of a document
             </Text>
           </header>
-
-          <section aria-label="Account Information">
-            {isConnected ? (
-              <Box bg="whiteAlpha.100" p={4} borderRadius="md">
-                <Text>Your Address: {address}</Text>
-                <Text color="green.400" mt={2}>
-                  ✓ Wallet Connected
-                </Text>
-              </Box>
-            ) : (
-              <Box bg="whiteAlpha.100" p={4} borderRadius="md">
-                <Text color="orange.400">Please login</Text>
-              </Box>
-            )}
-          </section>
 
           <section aria-label="Document Upload">
             <Box bg="whiteAlpha.100" p={6} borderRadius="md">
               <VStack spacing={6} align="stretch">
                 <FormControl>
                   <FormLabel fontSize="md" fontWeight="semibold" mb={3}>
-                    Upload Document to Issue
+                    Upload Document
                   </FormLabel>
 
                   {!selectedFile ? (
@@ -220,7 +201,7 @@ export default function DashboardPage() {
                 </FormControl>
 
                 <Button
-                  onClick={handleIssue}
+                  onClick={handleVerify}
                   bg="#45a2f8"
                   color="white"
                   _hover={{ bg: '#3182ce' }}
@@ -229,22 +210,16 @@ export default function DashboardPage() {
                     color: 'gray.400',
                     cursor: 'not-allowed',
                   }}
-                  isDisabled={!isConnected || !selectedFile}
-                  isLoading={isIssuing}
-                  loadingText="Issuing Document..."
+                  isDisabled={!selectedFile}
+                  isLoading={isVerifying}
+                  loadingText="Verifying..."
                   size="lg"
                   leftIcon={<Icon as={FiUpload} />}
                 >
-                  Issue Document
+                  Verify
                 </Button>
 
-                {!isConnected && (
-                  <Text fontSize="sm" color="orange.400" textAlign="center">
-                    Please login to issue documents
-                  </Text>
-                )}
-
-                {issueResult && (
+                {verificationResult && (
                   <Box
                     bg="green.900"
                     border="1px solid"
@@ -253,8 +228,8 @@ export default function DashboardPage() {
                     p={4}
                     mt={4}
                   >
-                    <Text fontSize="sm" color="green.300" fontFamily="mono" whiteSpace="pre-line">
-                      {issueResult}
+                    <Text fontSize="sm" color="green.300" fontFamily="mono">
+                      {verificationResult}
                     </Text>
                   </Box>
                 )}
