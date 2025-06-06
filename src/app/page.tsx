@@ -148,7 +148,7 @@ export default function Home() {
         />
 
         <VStack spacing={6} animation={`${slideIn} 0.8s ease-out`}>
-          <Badge
+          {/* <Badge
             bg="whiteAlpha.200"
             color="#45a2f8"
             px={4}
@@ -159,8 +159,8 @@ export default function Home() {
             border="1px solid"
             borderColor="#45a2f8"
           >
-            🔗 Powered by Blockchain
-          </Badge>
+            🔗 Powered by JUJU
+          </Badge> */}
 
           <Heading
             as="h1"
@@ -182,7 +182,14 @@ export default function Home() {
             Zero-knowledge, maximum trust.
           </Text>
 
-          <HStack spacing={4} pt={4}>
+          <Flex
+            direction={{ base: 'column', md: 'row' }}
+            // spacing={4}
+            gap={4}
+            pt={4}
+            justify="center"
+            align="center"
+          >
             <Link href="/dashboard">
               <Button
                 size="lg"
@@ -196,6 +203,7 @@ export default function Home() {
                 rightIcon={<Icon as={FiArrowRight} />}
                 transition="all 0.3s ease"
                 px={8}
+                w={{ base: '250px', md: 'auto' }}
               >
                 Issue Document
               </Button>
@@ -214,11 +222,12 @@ export default function Home() {
                 rightIcon={<Icon as={FiSearch} />}
                 transition="all 0.3s ease"
                 px={8}
+                w={{ base: '250px', md: 'auto' }}
               >
                 Verify Now
               </Button>
             </Link>
-          </HStack>
+          </Flex>
         </VStack>
       </Box>
 
