@@ -2,23 +2,7 @@
 
 import { createAppKit } from '@reown/appkit/react'
 import { EthersAdapter } from '@reown/appkit-adapter-ethers'
-import {
-  optimism,
-  zksync,
-  base,
-  arbitrum,
-  gnosis,
-  polygon,
-  polygonZkEvm,
-  mantle,
-  celo,
-  avalanche,
-  degen,
-  sepolia,
-  optimismSepolia,
-  arbitrumSepolia,
-  baseSepolia,
-} from '@reown/appkit/networks'
+import { sepolia } from '@reown/appkit/networks'
 import { type ReactNode, memo } from 'react'
 import { ChakraProvider, extendTheme } from '@chakra-ui/react'
 
@@ -32,28 +16,12 @@ const ethersAdapter = new EthersAdapter()
 createAppKit({
   adapters: [ethersAdapter],
   projectId,
-  networks: [
-    optimism,
-    zksync,
-    base,
-    arbitrum,
-    gnosis,
-    polygon,
-    polygonZkEvm,
-    mantle,
-    celo,
-    avalanche,
-    degen,
-    sepolia,
-    optimismSepolia,
-    arbitrumSepolia,
-    baseSepolia,
-  ],
+  networks: [sepolia],
   defaultNetwork: sepolia,
   metadata: {
-    name: 'Genji',
-    description: 'Next.js + Web3 Modal + Ethers.js + Chakra UI',
-    url: 'https://genji-app.netlify.app',
+    name: 'Veridocs',
+    description: 'Verify document authenticity',
+    url: 'https://veridocs.netlify.app',
     icons: ['./favicon.ico'],
   },
   enableEIP6963: true,
