@@ -458,15 +458,15 @@ export default function VerifyPage() {
         <VStack spacing={8} align="stretch">
           <header>
             <Heading as="h1" size="xl" mb={2}>
-              Document Verification
+              Verify
             </Heading>
             <Text fontSize="lg" color="gray.400">
-              Verify document authenticity using IPFS hash lookup on blockchain
+              Verify document authenticity right here right now.
             </Text>
           </header>
 
           {/* Registry Information */}
-          <section aria-label="Registry Information">
+          {/* <section aria-label="Registry Information">
             <Box bg="whiteAlpha.100" p={6} borderRadius="md">
               <VStack spacing={4} align="stretch">
                 <Flex justify="space-between" align="center">
@@ -550,7 +550,7 @@ export default function VerifyPage() {
                 )}
               </VStack>
             </Box>
-          </section>
+          </section> */}
 
           {/* Document Upload & CID Generation */}
           <section aria-label="Document Upload">
