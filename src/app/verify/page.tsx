@@ -70,9 +70,9 @@ export default function VerifyPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [isVerifying, setIsVerifying] = useState(false)
   const [isLoadingDetails, setIsLoadingDetails] = useState(false)
-  const [isCalculatingCID, setIsCalculatingCID] = useState(false)
   const [documentCID, setDocumentCID] = useState<string | null>(null)
   const [progress, setProgress] = useState(0)
+  const [progressStatus, setProgressStatus] = useState('')
   const [verificationResult, setVerificationResult] = useState<VerificationResult | null>(null)
   const [documentDetails, setDocumentDetails] = useState<DocumentDetails | null>(null)
   const [registryInfo, setRegistryInfo] = useState<{
@@ -103,63 +103,7 @@ export default function VerifyPage() {
       setVerificationResult(null)
       setDocumentDetails(null)
       setDocumentCID(null)
-
-      // Calculate CID immediately when file is selected
-      await calculateCID(file)
-    }
-  }
-
-  const calculateCID = async (file: File) => {
-    console.log('🔄 Starting CID calculation...')
-    console.log('📄 File:', file.name, '| Size:', file.size, 'bytes')
-
-    setIsCalculatingCID(true)
-    setProgress(0)
-
-    try {
-      // Simulate progress for better UX
-      const progressInterval = setInterval(() => {
-        setProgress(prev => {
-          if (prev >= 90) {
-            clearInterval(progressInterval)
-            return 90
-          }
-          return prev + 10
-        })
-      }, 100)
-
-      console.log('🔢 Computing IPFS hash using getDocumentCID...')
-      const cid = await getDocumentCID(file)
-
-      clearInterval(progressInterval)
-      setProgress(100)
-      setDocumentCID(cid)
-      setCidInput(cid) // Auto-fill the CID input
-
-      console.log('✅ CID calculation successful!')
-      console.log('🆔 Generated CID:', cid)
-      console.log('📝 Auto-filled verification input field')
-
-      toast({
-        title: 'CID Generated',
-        description: 'Document hash calculated successfully',
-        status: 'success',
-        duration: 3000,
-        isClosable: true,
-      })
-    } catch (error) {
-      console.error('❌ Error calculating CID:', error)
-      console.log('🔍 CID calculation failed for file:', file.name)
-      toast({
-        title: 'CID Calculation Failed',
-        description: 'Failed to calculate document hash',
-        status: 'error',
-        duration: 5000,
-        isClosable: true,
-      })
-    } finally {
-      setIsCalculatingCID(false)
-      setTimeout(() => setProgress(0), 1000)
+      setCidInput('')
     }
   }
 
@@ -170,6 +114,7 @@ export default function VerifyPage() {
     setDocumentCID(null)
     setCidInput('')
     setProgress(0)
+    setProgressStatus('')
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
     }
@@ -248,18 +193,6 @@ export default function VerifyPage() {
   }
 
   const handleVerifyDocument = async () => {
-    if (!cidInput.trim()) {
-      console.log('❌ No CID provided for verification')
-      toast({
-        title: 'No CID provided',
-        description: 'Please enter a document CID/hash to verify',
-        status: 'warning',
-        duration: 5000,
-        isClosable: true,
-      })
-      return
-    }
-
     if (!walletProvider) {
       console.log('❌ Wallet not connected for verification')
       toast({
@@ -272,15 +205,53 @@ export default function VerifyPage() {
       return
     }
 
-    console.log('🔍 Starting document verification...')
-    console.log('📄 CID to verify:', cidInput)
-    console.log('📍 Registry Address:', VERIDOCS_REGISTRY_ADDRESS)
+    // Check if we have either a file or a CID input
+    if (!selectedFile && !cidInput.trim()) {
+      toast({
+        title: 'No document provided',
+        description: 'Please upload a file or enter a document CID/hash',
+        status: 'warning',
+        duration: 5000,
+        isClosable: true,
+      })
+      return
+    }
+
+    console.log('🔍 Starting combined CID calculation and verification...')
 
     setIsVerifying(true)
     setVerificationResult(null)
     setDocumentDetails(null)
+    setProgress(0)
+    setProgressStatus('')
 
     try {
+      let finalCID = cidInput.trim()
+
+      // If we have a file, calculate its CID first
+      if (selectedFile) {
+        console.log('📄 File selected:', selectedFile.name, '| Size:', selectedFile.size, 'bytes')
+
+        setProgress(20)
+        setProgressStatus('Computing document hash (CID)...')
+
+        console.log('🔢 Computing IPFS hash using getDocumentCID...')
+        finalCID = await getDocumentCID(selectedFile)
+
+        setDocumentCID(finalCID)
+        setCidInput(finalCID) // Update input field for user reference
+
+        console.log('✅ CID calculation successful!')
+        console.log('🆔 Generated CID:', finalCID)
+      }
+
+      // Now verify the document on-chain
+      setProgress(60)
+      setProgressStatus('Verifying document on blockchain...')
+
+      console.log('📄 CID to verify:', finalCID)
+      console.log('📍 Registry Address:', VERIDOCS_REGISTRY_ADDRESS)
+
       const ethersProvider = new BrowserProvider(walletProvider as any)
       const network = await ethersProvider.getNetwork()
       console.log('🌐 Connected to network:', network.name, 'Chain ID:', network.chainId.toString())
@@ -295,7 +266,7 @@ export default function VerifyPage() {
       console.log('🔧 Function signature: verifyDocument(string)')
 
       // Call verifyDocument function
-      const [exists, timestamp, institutionName] = await registryContract.verifyDocument(cidInput)
+      const [exists, timestamp, institutionName] = await registryContract.verifyDocument(finalCID)
 
       const result: VerificationResult = {
         exists,
@@ -312,29 +283,29 @@ export default function VerifyPage() {
         exists ? new Date(Number(timestamp) * 1000).toLocaleString() : 'N/A'
       )
 
+      setProgress(100)
+      setProgressStatus(
+        exists ? 'Document verified successfully! ✅' : 'Document not found in registry ❌'
+      )
       setVerificationResult(result)
 
       if (exists) {
         console.log('🎉 Document verification SUCCESS!')
-        toast({
-          title: 'Document Verified! ✅',
-          description: `Document found in ${institutionName} registry`,
-          status: 'success',
-          duration: 5000,
-          isClosable: true,
-        })
+        // Reset progress after success
+        setTimeout(() => {
+          setProgress(0)
+          setProgressStatus('')
+        }, 3000)
       } else {
         console.log('⚠️ Document NOT FOUND in registry')
-        toast({
-          title: 'Document Not Found',
-          description: 'This document hash was not found in the registry',
-          status: 'warning',
-          duration: 5000,
-          isClosable: true,
-        })
+        // Reset progress after delay for not found
+        setTimeout(() => {
+          setProgress(0)
+          setProgressStatus('')
+        }, 3000)
       }
     } catch (error: any) {
-      console.error('❌ Error verifying document:', error)
+      console.error('❌ Error during verification process:', error)
       console.log('🔍 Error details:', {
         message: error.message,
         code: error.code,
@@ -342,7 +313,11 @@ export default function VerifyPage() {
         data: error.data,
       })
 
-      let errorMessage = 'An error occurred while verifying the document'
+      // Reset progress on error
+      setProgress(0)
+      setProgressStatus('')
+
+      let errorMessage = 'An error occurred during verification'
 
       if (error.message?.includes('execution reverted')) {
         errorMessage = 'Contract call failed - check if contract address is correct'
@@ -465,93 +440,6 @@ export default function VerifyPage() {
             </Text>
           </header>
 
-          {/* Registry Information */}
-          {/* <section aria-label="Registry Information">
-            <Box bg="whiteAlpha.100" p={6} borderRadius="md">
-              <VStack spacing={4} align="stretch">
-                <Flex justify="space-between" align="center">
-                  <Heading size="md">Registry Information</Heading>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={loadRegistryInfo}
-                    isDisabled={!isConnected}
-                  >
-                    Load Info
-                  </Button>
-                </Flex>
-
-                <Box>
-                  <Text fontSize="sm" fontWeight="semibold" mb={2}>
-                    Registry Contract Address:
-                  </Text>
-                  <Box
-                    bg="whiteAlpha.200"
-                    p={2}
-                    borderRadius="sm"
-                    cursor="pointer"
-                    onClick={() => copyToClipboard(VERIDOCS_REGISTRY_ADDRESS)}
-                    _hover={{ bg: 'whiteAlpha.300' }}
-                  >
-                    <Flex align="center" justify="space-between">
-                      <Text fontSize="xs" fontFamily="mono" wordBreak="break-all">
-                        {VERIDOCS_REGISTRY_ADDRESS}
-                      </Text>
-                      <Icon
-                        as={FiExternalLink}
-                        color="gray.400"
-                        boxSize={3}
-                        ml={2}
-                        cursor="pointer"
-                        onClick={e => {
-                          e.stopPropagation()
-                          window.open(
-                            `https://sepolia.etherscan.io/address/${VERIDOCS_REGISTRY_ADDRESS}`,
-                            '_blank'
-                          )
-                        }}
-                      />
-                    </Flex>
-                  </Box>
-                  <Text fontSize="xs" color="gray.500" mt={1}>
-                    Click the 🔗 to verify this contract exists on Etherscan
-                  </Text>
-                </Box>
-
-                {registryInfo && (
-                  <VStack spacing={3} align="stretch">
-                    <HStack justify="space-between">
-                      <Text fontSize="sm" fontWeight="medium">
-                        Institution:
-                      </Text>
-                      <Badge colorScheme="blue">{registryInfo.institutionName}</Badge>
-                    </HStack>
-                    <HStack justify="space-between">
-                      <Text fontSize="sm" fontWeight="medium">
-                        Total Documents:
-                      </Text>
-                      <Badge colorScheme="green">{registryInfo.documentCount.toString()}</Badge>
-                    </HStack>
-                    <HStack justify="space-between">
-                      <Text fontSize="sm" fontWeight="medium">
-                        Admin:
-                      </Text>
-                      <Text
-                        fontSize="xs"
-                        fontFamily="mono"
-                        cursor="pointer"
-                        onClick={() => copyToClipboard(registryInfo.admin)}
-                        _hover={{ color: 'blue.300' }}
-                      >
-                        {registryInfo.admin.slice(0, 10)}...{registryInfo.admin.slice(-8)}
-                      </Text>
-                    </HStack>
-                  </VStack>
-                )}
-              </VStack>
-            </Box>
-          </section> */}
-
           {/* Document Upload & CID Generation */}
           <section aria-label="Document Upload">
             <Box bg="whiteAlpha.100" p={6} borderRadius="md">
@@ -630,28 +518,8 @@ export default function VerifyPage() {
                       </Flex>
                     </Box>
 
-                    {/* CID Calculation Status */}
-                    {isCalculatingCID && (
-                      <Box
-                        bg="blue.900"
-                        border="1px solid"
-                        borderColor="blue.500"
-                        borderRadius="md"
-                        p={4}
-                        w="100%"
-                      >
-                        <HStack spacing={3} mb={2}>
-                          <Spinner size="sm" color="blue.300" />
-                          <Text fontSize="sm" color="blue.300">
-                            Calculating IPFS hash...
-                          </Text>
-                        </HStack>
-                        {progress > 0 && <Progress value={progress} size="sm" colorScheme="blue" />}
-                      </Box>
-                    )}
-
                     {/* CID Display */}
-                    {documentCID && !isCalculatingCID && (
+                    {documentCID && (
                       <Box
                         bg="blue.900"
                         border="1px solid"
@@ -684,7 +552,7 @@ export default function VerifyPage() {
                           </Text>
                         </Box>
                         <Text fontSize="xs" color="gray.400" mt={1}>
-                          Click to copy • This CID has been auto-filled below for verification
+                          Click to copy • This CID will be used for verification
                         </Text>
                       </Box>
                     )}
@@ -704,12 +572,12 @@ export default function VerifyPage() {
 
                 <FormControl>
                   <FormLabel fontSize="sm" fontWeight="semibold" mb={3}>
-                    Document CID/Hash
+                    Document CID/Hash (Optional if file uploaded above)
                   </FormLabel>
                   <Input
                     value={cidInput}
                     onChange={e => setCidInput(e.target.value)}
-                    placeholder="Enter IPFS CID, upload a document above, or paste hash here"
+                    placeholder="Enter IPFS CID or hash here (or upload file above)"
                     size="lg"
                     bg="whiteAlpha.200"
                     border="1px solid"
@@ -720,9 +588,36 @@ export default function VerifyPage() {
                     }}
                   />
                   <Text fontSize="xs" color="gray.500" mt={2}>
-                    Enter the IPFS hash manually or upload a document above to auto-generate
+                    {selectedFile
+                      ? 'CID will be calculated from uploaded file during verification'
+                      : 'Enter the IPFS hash manually or upload a document above'}
                   </Text>
                 </FormControl>
+
+                {/* Progress Status Bar */}
+                {progress > 0 && (
+                  <Box
+                    bg="whiteAlpha.200"
+                    borderRadius="md"
+                    p={4}
+                    border="1px solid"
+                    borderColor="whiteAlpha.300"
+                  >
+                    <VStack spacing={3}>
+                      <Text fontSize="sm" fontWeight="medium" color="blue.300">
+                        {progressStatus}
+                      </Text>
+                      <Progress
+                        value={progress}
+                        size="sm"
+                        colorScheme="blue"
+                        w="100%"
+                        bg="whiteAlpha.200"
+                        borderRadius="full"
+                      />
+                    </VStack>
+                  </Box>
+                )}
 
                 <HStack spacing={4}>
                   <Button
@@ -735,14 +630,14 @@ export default function VerifyPage() {
                       color: 'gray.400',
                       cursor: 'not-allowed',
                     }}
-                    isDisabled={!isConnected || !cidInput.trim() || isCalculatingCID}
+                    isDisabled={!isConnected || (!selectedFile && !cidInput.trim())}
                     isLoading={isVerifying}
                     loadingText="Verifying..."
                     size="lg"
                     leftIcon={<Icon as={FiSearch} />}
                     flex={1}
                   >
-                    Verify Document
+                    {selectedFile ? 'Calculate CID & Verify Document' : 'Verify Document'}
                   </Button>
 
                   <Button
@@ -750,7 +645,7 @@ export default function VerifyPage() {
                     variant="outline"
                     borderColor="gray.600"
                     _hover={{ bg: 'whiteAlpha.200' }}
-                    isDisabled={!isConnected || !cidInput.trim() || isCalculatingCID}
+                    isDisabled={!isConnected || (!selectedFile && !cidInput.trim())}
                     isLoading={isLoadingDetails}
                     loadingText="Loading..."
                     size="lg"
@@ -766,11 +661,9 @@ export default function VerifyPage() {
                   </Text>
                 )}
 
-                {(!cidInput.trim() || isCalculatingCID) && isConnected && (
+                {!selectedFile && !cidInput.trim() && isConnected && (
                   <Text fontSize="sm" color="gray.500" textAlign="center">
-                    {!cidInput.trim()
-                      ? 'Upload a document or enter a CID to verify'
-                      : 'Calculating document hash...'}
+                    Upload a document or enter a CID to verify
                   </Text>
                 )}
               </VStack>
@@ -818,6 +711,23 @@ export default function VerifyPage() {
                           {formatTimestamp(verificationResult.timestamp)}
                         </Text>
                       </HStack>
+                      {documentCID && (
+                        <HStack justify="space-between">
+                          <Text fontSize="sm" fontWeight="medium" color="green.300">
+                            Document CID:
+                          </Text>
+                          <Text
+                            fontSize="xs"
+                            fontFamily="mono"
+                            color="green.200"
+                            cursor="pointer"
+                            onClick={() => copyToClipboard(documentCID)}
+                            _hover={{ color: 'green.100' }}
+                          >
+                            {documentCID.slice(0, 20)}...{documentCID.slice(-10)}
+                          </Text>
+                        </HStack>
+                      )}
                     </VStack>
                   )}
 

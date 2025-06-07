@@ -56,6 +56,7 @@ export default function DashboardPage() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const toast = useToast()
   const t = useTranslation()
+  const [progressStatus, setProgressStatus] = useState('')
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -228,13 +229,11 @@ export default function DashboardPage() {
       const tx = await registryContract.issueDocumentOpenBar(documentCID)
 
       console.log('Transaction submitted:', tx.hash)
-      toast({
-        title: 'Transaction Submitted',
-        description: `Transaction hash: ${tx.hash}`,
-        status: 'info',
-        duration: 5000,
-        isClosable: true,
-      })
+
+      setProgress(40)
+      setProgressStatus(
+        `Transaction submitted (${tx.hash.slice(0, 10)}...) - Waiting for confirmation...`
+      )
 
       // Wait for transaction confirmation
       const receipt = await tx.wait()
@@ -248,16 +247,12 @@ export default function DashboardPage() {
         registryAddress: VERIDOCS_REGISTRY_ADDRESS,
         blockNumber: receipt.blockNumber,
       }
+      setProgress(60)
+
+      setProgressStatus(`Document registered successfully in block ${receipt.blockNumber}! 🎉`)
+      setProgress(100)
 
       setIssueResult(result)
-
-      toast({
-        title: 'Document Issued Successfully! 🎉',
-        description: `Document registered on blockchain in block ${receipt.blockNumber}`,
-        status: 'success',
-        duration: 7000,
-        isClosable: true,
-      })
     } catch (error: any) {
       console.error('Error issuing document:', error)
 
@@ -555,6 +550,32 @@ export default function DashboardPage() {
                       ? 'Please select a document to issue'
                       : 'Calculating document hash...'}
                   </Text>
+                )}
+
+                {/* Progress Status Bar */}
+                {progress > 0 && (
+                  <Box
+                    mt={6}
+                    p={4}
+                    bg="whiteAlpha.100"
+                    borderRadius="md"
+                    border="1px solid"
+                    borderColor="whiteAlpha.300"
+                  >
+                    <VStack spacing={3}>
+                      <Text fontSize="sm" fontWeight="medium" color="blue.300">
+                        {progressStatus}
+                      </Text>
+                      <Progress
+                        value={progress}
+                        size="sm"
+                        colorScheme="blue"
+                        w="100%"
+                        bg="whiteAlpha.200"
+                        borderRadius="full"
+                      />
+                    </VStack>
+                  </Box>
                 )}
 
                 {issueResult && (
