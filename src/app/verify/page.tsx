@@ -34,7 +34,7 @@ import {
   FiUser,
   FiUpload,
 } from 'react-icons/fi'
-import { BrowserProvider, Contract } from 'ethers'
+import { BrowserProvider, Contract, JsonRpcProvider } from 'ethers'
 import { getDocumentCID } from '../lib/documentHash'
 
 // Contract configuration - Your registry address
@@ -145,7 +145,8 @@ export default function VerifyPage() {
     console.log('📍 Registry Address:', VERIDOCS_REGISTRY_ADDRESS)
 
     try {
-      const ethersProvider = new BrowserProvider(walletProvider as any)
+      // const ethersProvider = new BrowserProvider(walletProvider as any)
+      const ethersProvider = new JsonRpcProvider('https://ethereum-sepolia-rpc.publicnode.com')
       const registryContract = new Contract(
         VERIDOCS_REGISTRY_ADDRESS,
         VERIDOCS_REGISTRY_ABI,
@@ -193,17 +194,17 @@ export default function VerifyPage() {
   }
 
   const handleVerifyDocument = async () => {
-    if (!walletProvider) {
-      console.log('❌ Wallet not connected for verification')
-      toast({
-        title: 'Wallet not connected',
-        description: 'Please connect your wallet to verify documents',
-        status: 'error',
-        duration: 5000,
-        isClosable: true,
-      })
-      return
-    }
+    // if (!walletProvider) {
+    //   console.log('❌ Wallet not connected for verification')
+    //   toast({
+    //     title: 'Wallet not connected',
+    //     description: 'Please connect your wallet to verify documents',
+    //     status: 'error',
+    //     duration: 5000,
+    //     isClosable: true,
+    //   })
+    //   return
+    // }
 
     // Check if we have either a file or a CID input
     if (!selectedFile && !cidInput.trim()) {
@@ -252,7 +253,9 @@ export default function VerifyPage() {
       console.log('📄 CID to verify:', finalCID)
       console.log('📍 Registry Address:', VERIDOCS_REGISTRY_ADDRESS)
 
-      const ethersProvider = new BrowserProvider(walletProvider as any)
+      // const ethersProvider = new BrowserProvider(walletProvider as any)
+      const ethersProvider = new JsonRpcProvider('https://ethereum-sepolia-rpc.publicnode.com')
+
       const network = await ethersProvider.getNetwork()
       console.log('🌐 Connected to network:', network.name, 'Chain ID:', network.chainId.toString())
 
@@ -630,7 +633,7 @@ export default function VerifyPage() {
                       color: 'gray.400',
                       cursor: 'not-allowed',
                     }}
-                    isDisabled={!isConnected || (!selectedFile && !cidInput.trim())}
+                    isDisabled={!selectedFile && !cidInput.trim()}
                     isLoading={isVerifying}
                     loadingText="Verifying..."
                     size="lg"
@@ -645,7 +648,7 @@ export default function VerifyPage() {
                     variant="outline"
                     borderColor="gray.600"
                     _hover={{ bg: 'whiteAlpha.200' }}
-                    isDisabled={!isConnected || (!selectedFile && !cidInput.trim())}
+                    isDisabled={!selectedFile && !cidInput.trim()}
                     isLoading={isLoadingDetails}
                     loadingText="Loading..."
                     size="lg"
@@ -655,13 +658,13 @@ export default function VerifyPage() {
                   </Button>
                 </HStack>
 
-                {!isConnected && (
+                {/* {!isConnected && (
                   <Text fontSize="sm" color="orange.400" textAlign="center">
                     Please connect your wallet to verify documents
                   </Text>
-                )}
+                )} */}
 
-                {!selectedFile && !cidInput.trim() && isConnected && (
+                {!selectedFile && !cidInput.trim() && (
                   <Text fontSize="sm" color="gray.500" textAlign="center">
                     Upload a document or enter a CID to verify
                   </Text>
