@@ -396,9 +396,9 @@ export default function DashboardPage() {
                       </Text>
                     )}
                   </Flex>
-                  <Text color="green.400" mt={2}>
+                  {/* <Text color="green.400" mt={2}>
                     ✓ Wallet Connected
-                  </Text>
+                  </Text> */}
                 </VStack>
               </Box>
             ) : (
