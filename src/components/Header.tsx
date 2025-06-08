@@ -111,10 +111,10 @@ export default function Header() {
               size="sm"
             />
             <MenuList>
-              <Link href="/dashboard" color="white">
+              <Link href="/dashboard-test" color="white">
                 <MenuItem fontSize="md">Dashboard</MenuItem>
               </Link>
-              <Link href="/verify" color="white">
+              <Link href="/verify-test" color="white">
                 <MenuItem fontSize="md">Verify</MenuItem>
               </Link>
             </MenuList>

@@ -190,7 +190,7 @@ export default function Home() {
             justify="center"
             align="center"
           >
-            <Link href="/dashboard">
+            <Link href="/dashboard-test">
               <Button
                 size="lg"
                 bg="#45a2f8"
@@ -209,7 +209,7 @@ export default function Home() {
               </Button>
             </Link>
 
-            <Link href="/verify">
+            <Link href="/verify-test">
               <Button
                 size="lg"
                 variant="outline"
