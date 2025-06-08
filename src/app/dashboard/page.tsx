@@ -18,11 +18,11 @@ import {
   Input,
 } from '@chakra-ui/react'
 import { useAppKitAccount, useAppKitProvider } from '@reown/appkit/react'
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useTranslation } from '@/hooks/useTranslation'
 import { FiUpload, FiFile, FiX, FiHash, FiExternalLink, FiCheck } from 'react-icons/fi'
 import { getDocumentCID } from '../lib/documentHash'
-import { BrowserProvider, Contract } from 'ethers'
+import { BrowserProvider, Contract, formatEther, parseEther, JsonRpcSigner } from 'ethers'
 
 // Contract configuration - Direct registry address
 const VERIDOCS_REGISTRY_ADDRESS = '0x02b77E551a1779f3f091a1523A08e61cd2620f82'
@@ -53,10 +53,37 @@ export default function DashboardPage() {
   const [isCalculatingCID, setIsCalculatingCID] = useState(false)
   const [documentCID, setDocumentCID] = useState<string | null>(null)
   const [progress, setProgress] = useState(0)
+  const [balance, setBalance] = useState<string>('0.0000')
+  const [isLoadingBalance, setIsLoadingBalance] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const toast = useToast()
   const t = useTranslation()
   const [progressStatus, setProgressStatus] = useState('')
+
+  // Fetch balance when wallet is connected
+  useEffect(() => {
+    const fetchBalance = async () => {
+      if (!isConnected || !walletProvider || !address) {
+        setBalance('0.0000')
+        return
+      }
+
+      setIsLoadingBalance(true)
+      try {
+        const ethersProvider = new BrowserProvider(walletProvider as any)
+        const balanceWei = await ethersProvider.getBalance(address)
+        const balanceEth = formatEther(balanceWei)
+        setBalance(parseFloat(balanceEth).toFixed(4))
+      } catch (error) {
+        console.error('Error fetching balance:', error)
+        setBalance('Error')
+      } finally {
+        setIsLoadingBalance(false)
+      }
+    }
+
+    fetchBalance()
+  }, [isConnected, walletProvider, address])
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -159,7 +186,7 @@ export default function DashboardPage() {
       return
     }
 
-    if (!isConnected || !walletProvider) {
+    if (!address || !walletProvider) {
       toast({
         title: 'Wallet not connected',
         description: 'Please connect your wallet to issue documents',
@@ -173,12 +200,16 @@ export default function DashboardPage() {
     setIsIssuing(true)
 
     try {
-      // Create ethers provider and signer
-      const ethersProvider = new BrowserProvider(walletProvider as any)
-      const signer = await ethersProvider.getSigner()
+      console.log('Starting transaction process...')
+      console.log('Address:', address)
+      console.log('WalletProvider available:', !!walletProvider)
 
-      // Get the network
-      const network = await ethersProvider.getNetwork()
+      // Create ethers provider - different approach for social login
+      const provider = new BrowserProvider(walletProvider as any)
+      console.log('Provider created successfully')
+
+      // Get network first to avoid potential issues
+      const network = await provider.getNetwork()
       console.log('Connected to network:', network.name, 'Chain ID:', network.chainId.toString())
 
       // Check if we're on Sepolia (optional - commented out for testing on other networks)
@@ -188,45 +219,49 @@ export default function DashboardPage() {
         // throw new Error('Please switch to Sepolia testnet')
       }
 
-      // Create registry contract instance
+      // For social login (Universal Wallets), use JsonRpcSigner directly as per Reown docs
+      console.log('Creating JsonRpcSigner directly (Reown social login pattern)...')
+      const signer = new JsonRpcSigner(provider, address)
+      console.log('JsonRpcSigner created successfully with address:', address)
+
+      // Create registry contract instance with read-only provider first
+      console.log('Creating contract instance...')
+
+      // Try creating a read-only contract first to avoid auth issues
+      const readOnlyContract = new Contract(
+        VERIDOCS_REGISTRY_ADDRESS,
+        VERIDOCS_REGISTRY_ABI,
+        provider // Use provider instead of signer for read-only calls
+      )
+
+      console.log('Read-only contract created, now creating signer contract...')
+
+      // Now create the contract with signer for the actual transaction
       const registryContract = new Contract(
         VERIDOCS_REGISTRY_ADDRESS,
         VERIDOCS_REGISTRY_ABI,
         signer
       )
+      console.log('Contract instance created successfully')
 
-      // Optional: Get institution name for display (commented out to avoid extra calls)
-      try {
-        const institutionName = await registryContract.institutionName()
-        console.log('Institution name:', institutionName)
-      } catch (error) {
-        console.log('Could not get institution name:', error)
-      }
+      // Skip optional calls completely to avoid any auth issues with social login
+      console.log('Skipping all optional contract calls to avoid auth issues...')
 
-      // Optional: Check if document already exists (commented out to avoid reverts)
-      try {
-        const [exists] = await registryContract.verifyDocument(documentCID)
-        if (exists) {
-          throw new Error('Document with this CID already exists on the blockchain')
-        }
-      } catch (error) {
-        console.log('Could not verify existing document (this is OK for first-time setup):', error)
-      }
-
-      // Call issueDocumentOpenBar function
+      // Call issueDocumentOpenBar function directly without any preliminary checks
       console.log('Issuing document with CID:', documentCID)
       console.log('Registry contract address:', VERIDOCS_REGISTRY_ADDRESS)
 
-      // Estimate gas first (optional but helpful for debugging)
-      try {
-        const gasEstimate = await registryContract.issueDocumentOpenBar.estimateGas(documentCID)
-        console.log('Gas estimate:', gasEstimate.toString())
-      } catch (gasError) {
-        console.log('Gas estimation failed:', gasError)
-        // Continue anyway - sometimes gas estimation fails but transaction works
-      }
+      // Try a more direct approach - send transaction directly without gas estimation
+      console.log('Attempting direct contract call...')
 
-      const tx = await registryContract.issueDocumentOpenBar(documentCID)
+      // Use a simple transaction object approach
+      const tx = await signer.sendTransaction({
+        to: VERIDOCS_REGISTRY_ADDRESS,
+        data: registryContract.interface.encodeFunctionData('issueDocumentOpenBar', [documentCID]),
+        // Let the wallet/provider handle gas estimation
+      })
+
+      console.log('Transaction submitted via sendTransaction:', tx.hash)
 
       console.log('Transaction submitted:', tx.hash)
 
@@ -236,7 +271,7 @@ export default function DashboardPage() {
       )
 
       // Wait for transaction confirmation
-      const receipt = await tx.wait()
+      const receipt: any = await tx.wait(1)
       console.log('Transaction confirmed in block:', receipt.blockNumber)
 
       // Create result object
@@ -253,6 +288,18 @@ export default function DashboardPage() {
       setProgress(100)
 
       setIssueResult(result)
+
+      // Refresh balance after transaction
+      if (address && walletProvider) {
+        try {
+          const provider = new BrowserProvider(walletProvider as any)
+          const balanceWei = await provider.getBalance(address)
+          const balanceEth = formatEther(balanceWei)
+          setBalance(parseFloat(balanceEth).toFixed(4))
+        } catch (error) {
+          console.error('Error refreshing balance:', error)
+        }
+      }
     } catch (error: any) {
       console.error('Error issuing document:', error)
 
@@ -267,6 +314,14 @@ export default function DashboardPage() {
           'Contract call failed - check if contract address is correct and function exists'
       } else if (error.message?.includes('already exists')) {
         errorMessage = 'Document with this hash already exists on blockchain'
+      } else if (error.message?.includes('could not coalesce error')) {
+        errorMessage =
+          'Wallet connection issue. Please try disconnecting and reconnecting your wallet.'
+      } else if (error.message?.includes('eth_requestAccounts')) {
+        errorMessage =
+          'Authentication issue with social login. Please try reconnecting your wallet.'
+      } else if (error.message?.includes('Unable to get signer')) {
+        errorMessage = error.message
       } else if (error.code === 'CALL_EXCEPTION') {
         errorMessage = 'Contract call failed - verify contract address and network'
       } else if (error.message) {
@@ -316,64 +371,42 @@ export default function DashboardPage() {
             </Text>
           </header>
 
-          {/* <section aria-label="Account Information">
+          <section aria-label="Account Information">
             {isConnected ? (
               <Box bg="whiteAlpha.100" p={4} borderRadius="md">
-                <Text>Your Address: {address}</Text>
-                <Text color="green.400" mt={2}>
-                  ✓ Wallet Connected
-                </Text>
+                <VStack spacing={2} align="stretch">
+                  <Text>
+                    <Text as="span" fontWeight="medium">
+                      Your Address:
+                    </Text>{' '}
+                    {address}
+                  </Text>
+                  <Flex align="center" gap={2}>
+                    <Text fontWeight="medium">ETH Balance:</Text>
+                    {isLoadingBalance ? (
+                      <HStack spacing={2}>
+                        <Spinner size="xs" />
+                        <Text fontSize="sm" color="gray.400">
+                          Loading...
+                        </Text>
+                      </HStack>
+                    ) : (
+                      <Text fontFamily="mono" color={balance === 'Error' ? 'red.400' : 'green.400'}>
+                        {balance} ETH
+                      </Text>
+                    )}
+                  </Flex>
+                  {/* <Text color="green.400" mt={2}>
+                    ✓ Wallet Connected
+                  </Text> */}
+                </VStack>
               </Box>
             ) : (
               <Box bg="whiteAlpha.100" p={4} borderRadius="md">
                 <Text color="orange.400">Please connect your wallet to issue documents</Text>
               </Box>
             )}
-          </section> */}
-
-          {/* <section aria-label="Configuration">
-            <Box bg="whiteAlpha.100" p={4} borderRadius="md">
-              <VStack spacing={3} align="stretch">
-                <Box>
-                  <Text fontSize="sm" fontWeight="semibold" mb={2}>
-                    Registry Contract Address:
-                  </Text>
-                  <Box
-                    bg="whiteAlpha.200"
-                    p={2}
-                    borderRadius="sm"
-                    cursor="pointer"
-                    onClick={() => copyToClipboard(VERIDOCS_REGISTRY_ADDRESS)}
-                    _hover={{ bg: 'whiteAlpha.300' }}
-                  >
-                    <Flex align="center" justify="space-between">
-                      <Text fontSize="xs" fontFamily="mono" wordBreak="break-all">
-                        {VERIDOCS_REGISTRY_ADDRESS}
-                      </Text>
-                      <Icon
-                        as={FiExternalLink}
-                        color="gray.400"
-                        boxSize={3}
-                        ml={2}
-                        cursor="pointer"
-                        onClick={e => {
-                          e.stopPropagation()
-                          window.open(
-                            `https://sepolia.etherscan.io/address/${VERIDOCS_REGISTRY_ADDRESS}`,
-                            '_blank'
-                          )
-                        }}
-                      />
-                    </Flex>
-                  </Box>
-                  <Text fontSize="xs" color="gray.500" mt={1}>
-                    This is the direct registry contract we will call the issueDocumentOpenBar
-                    function on
-                  </Text>
-                </Box>
-              </VStack>
-            </Box>
-          </section> */}
+          </section>
 
           <section aria-label="Document Upload">
             <Box bg="whiteAlpha.100" p={6} borderRadius="md">
@@ -476,45 +509,6 @@ export default function DashboardPage() {
                           )}
                         </Box>
                       )}
-
-                      {/* CID Display */}
-                      {/* {documentCID && !isCalculatingCID && (
-                        <Box
-                          bg="blue.900"
-                          border="1px solid"
-                          borderColor="blue.500"
-                          borderRadius="md"
-                          p={4}
-                          w="100%"
-                        >
-                          <HStack spacing={3} mb={2}>
-                            <Icon as={FiHash} color="blue.300" />
-                            <Text fontSize="sm" color="blue.300" fontWeight="medium">
-                              Document IPFS Hash (CID)
-                            </Text>
-                          </HStack>
-                          <Box
-                            bg="whiteAlpha.100"
-                            p={2}
-                            borderRadius="sm"
-                            cursor="pointer"
-                            onClick={() => copyToClipboard(documentCID)}
-                            _hover={{ bg: 'whiteAlpha.200' }}
-                          >
-                            <Text
-                              fontSize="xs"
-                              color="blue.300"
-                              fontFamily="mono"
-                              wordBreak="break-all"
-                            >
-                              {documentCID}
-                            </Text>
-                          </Box>
-                          <Text fontSize="xs" color="gray.400" mt={1}>
-                            Click to copy • This hash will be registered on the blockchain
-                          </Text>
-                        </Box>
-                      )} */}
                     </VStack>
                   )}
                 </FormControl>

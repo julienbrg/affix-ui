@@ -34,7 +34,7 @@ import {
   FiUser,
   FiUpload,
 } from 'react-icons/fi'
-import { BrowserProvider, Contract } from 'ethers'
+import { BrowserProvider, Contract, JsonRpcProvider } from 'ethers'
 import { getDocumentCID } from '../lib/documentHash'
 
 // Contract configuration - Your registry address
@@ -145,7 +145,8 @@ export default function VerifyPage() {
     console.log('📍 Registry Address:', VERIDOCS_REGISTRY_ADDRESS)
 
     try {
-      const ethersProvider = new BrowserProvider(walletProvider as any)
+      // const ethersProvider = new BrowserProvider(walletProvider as any)
+      const ethersProvider = new JsonRpcProvider('https://ethereum-sepolia-rpc.publicnode.com')
       const registryContract = new Contract(
         VERIDOCS_REGISTRY_ADDRESS,
         VERIDOCS_REGISTRY_ABI,
@@ -193,17 +194,17 @@ export default function VerifyPage() {
   }
 
   const handleVerifyDocument = async () => {
-    if (!walletProvider) {
-      console.log('❌ Wallet not connected for verification')
-      toast({
-        title: 'Wallet not connected',
-        description: 'Please connect your wallet to verify documents',
-        status: 'error',
-        duration: 5000,
-        isClosable: true,
-      })
-      return
-    }
+    // if (!walletProvider) {
+    //   console.log('❌ Wallet not connected for verification')
+    //   toast({
+    //     title: 'Wallet not connected',
+    //     description: 'Please connect your wallet to verify documents',
+    //     status: 'error',
+    //     duration: 5000,
+    //     isClosable: true,
+    //   })
+    //   return
+    // }
 
     // Check if we have either a file or a CID input
     if (!selectedFile && !cidInput.trim()) {
@@ -252,7 +253,9 @@ export default function VerifyPage() {
       console.log('📄 CID to verify:', finalCID)
       console.log('📍 Registry Address:', VERIDOCS_REGISTRY_ADDRESS)
 
-      const ethersProvider = new BrowserProvider(walletProvider as any)
+      // const ethersProvider = new BrowserProvider(walletProvider as any)
+      const ethersProvider = new JsonRpcProvider('https://ethereum-sepolia-rpc.publicnode.com')
+
       const network = await ethersProvider.getNetwork()
       console.log('🌐 Connected to network:', network.name, 'Chain ID:', network.chainId.toString())
 
@@ -531,7 +534,7 @@ export default function VerifyPage() {
                         <HStack spacing={3} mb={2}>
                           <Icon as={FiHash} color="blue.300" />
                           <Text fontSize="sm" color="blue.300" fontWeight="medium">
-                            Generated Document CID
+                            Document CID
                           </Text>
                         </HStack>
                         <Box
@@ -559,16 +562,51 @@ export default function VerifyPage() {
                   </VStack>
                 )}
               </VStack>
+              <HStack spacing={4} mt={10}>
+                <Button
+                  onClick={handleVerifyDocument}
+                  bg="#45a2f8"
+                  color="white"
+                  _hover={{ bg: '#3182ce' }}
+                  _disabled={{
+                    bg: 'gray.600',
+                    color: 'gray.400',
+                    cursor: 'not-allowed',
+                  }}
+                  isDisabled={!selectedFile && !cidInput.trim()}
+                  isLoading={isVerifying}
+                  loadingText="Verifying..."
+                  size="lg"
+                  leftIcon={<Icon as={FiSearch} />}
+                  flex={1}
+                >
+                  Verify
+                </Button>
+
+                {/* <Button
+                  onClick={loadDocumentDetails}
+                  variant="outline"
+                  borderColor="gray.600"
+                  _hover={{ bg: 'whiteAlpha.200' }}
+                  isDisabled={!selectedFile && !cidInput.trim()}
+                  isLoading={isLoadingDetails}
+                  loadingText="Loading..."
+                  size="lg"
+                  leftIcon={<Icon as={FiFile} />}
+                >
+                  Get Details
+                </Button> */}
+              </HStack>
             </Box>
           </section>
 
-          <Divider />
+          {/* <Divider /> */}
 
           {/* Document Verification */}
           <section aria-label="Document Verification">
-            <Box bg="whiteAlpha.100" p={6} borderRadius="md">
-              <VStack spacing={6} align="stretch">
-                <Heading size="md">Verify Document</Heading>
+            {/* <Box bg="whiteAlpha.100" p={6} borderRadius="md"> */}
+            <VStack spacing={6} align="stretch">
+              {/* <Heading size="md">Verify Document</Heading>
 
                 <FormControl>
                   <FormLabel fontSize="sm" fontWeight="semibold" mb={3}>
@@ -592,82 +630,46 @@ export default function VerifyPage() {
                       ? 'CID will be calculated from uploaded file during verification'
                       : 'Enter the IPFS hash manually or upload a document above'}
                   </Text>
-                </FormControl>
+                </FormControl> */}
 
-                {/* Progress Status Bar */}
-                {progress > 0 && (
-                  <Box
-                    bg="whiteAlpha.200"
-                    borderRadius="md"
-                    p={4}
-                    border="1px solid"
-                    borderColor="whiteAlpha.300"
-                  >
-                    <VStack spacing={3}>
-                      <Text fontSize="sm" fontWeight="medium" color="blue.300">
-                        {progressStatus}
-                      </Text>
-                      <Progress
-                        value={progress}
-                        size="sm"
-                        colorScheme="blue"
-                        w="100%"
-                        bg="whiteAlpha.200"
-                        borderRadius="full"
-                      />
-                    </VStack>
-                  </Box>
-                )}
+              {/* Progress Status Bar */}
+              {progress > 0 && (
+                <Box
+                  bg="whiteAlpha.200"
+                  borderRadius="md"
+                  p={4}
+                  border="1px solid"
+                  borderColor="whiteAlpha.300"
+                >
+                  <VStack spacing={3}>
+                    <Text fontSize="sm" fontWeight="medium" color="blue.300">
+                      {progressStatus}
+                    </Text>
+                    <Progress
+                      value={progress}
+                      size="sm"
+                      colorScheme="blue"
+                      w="100%"
+                      bg="whiteAlpha.200"
+                      borderRadius="full"
+                    />
+                  </VStack>
+                </Box>
+              )}
 
-                <HStack spacing={4}>
-                  <Button
-                    onClick={handleVerifyDocument}
-                    bg="#45a2f8"
-                    color="white"
-                    _hover={{ bg: '#3182ce' }}
-                    _disabled={{
-                      bg: 'gray.600',
-                      color: 'gray.400',
-                      cursor: 'not-allowed',
-                    }}
-                    isDisabled={!isConnected || (!selectedFile && !cidInput.trim())}
-                    isLoading={isVerifying}
-                    loadingText="Verifying..."
-                    size="lg"
-                    leftIcon={<Icon as={FiSearch} />}
-                    flex={1}
-                  >
-                    {selectedFile ? 'Calculate CID & Verify Document' : 'Verify Document'}
-                  </Button>
-
-                  <Button
-                    onClick={loadDocumentDetails}
-                    variant="outline"
-                    borderColor="gray.600"
-                    _hover={{ bg: 'whiteAlpha.200' }}
-                    isDisabled={!isConnected || (!selectedFile && !cidInput.trim())}
-                    isLoading={isLoadingDetails}
-                    loadingText="Loading..."
-                    size="lg"
-                    leftIcon={<Icon as={FiFile} />}
-                  >
-                    Get Details
-                  </Button>
-                </HStack>
-
-                {!isConnected && (
+              {/* {!isConnected && (
                   <Text fontSize="sm" color="orange.400" textAlign="center">
                     Please connect your wallet to verify documents
                   </Text>
-                )}
+                )} */}
 
-                {!selectedFile && !cidInput.trim() && isConnected && (
-                  <Text fontSize="sm" color="gray.500" textAlign="center">
-                    Upload a document or enter a CID to verify
-                  </Text>
-                )}
-              </VStack>
-            </Box>
+              {!selectedFile && !cidInput.trim() && (
+                <Text fontSize="sm" color="gray.500" textAlign="center">
+                  Upload a document or enter a CID to verify
+                </Text>
+              )}
+            </VStack>
+            {/* </Box> */}
           </section>
 
           {/* Verification Results */}
