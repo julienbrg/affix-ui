@@ -18,11 +18,11 @@ import {
   Input,
 } from '@chakra-ui/react'
 import { useAppKitAccount, useAppKitProvider } from '@reown/appkit/react'
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useTranslation } from '@/hooks/useTranslation'
 import { FiUpload, FiFile, FiX, FiHash, FiExternalLink, FiCheck } from 'react-icons/fi'
 import { getDocumentCID } from '../lib/documentHash'
-import { BrowserProvider, Contract } from 'ethers'
+import { BrowserProvider, Contract, formatEther } from 'ethers'
 
 // Contract configuration - Direct registry address
 const VERIDOCS_REGISTRY_ADDRESS = '0x02b77E551a1779f3f091a1523A08e61cd2620f82'
@@ -57,6 +57,33 @@ export default function DashboardPage() {
   const toast = useToast()
   const t = useTranslation()
   const [progressStatus, setProgressStatus] = useState('')
+  const [balance, setBalance] = useState<string>('0.0000')
+  const [isLoadingBalance, setIsLoadingBalance] = useState(false)
+
+  // Fetch balance when wallet is connected
+  useEffect(() => {
+    const fetchBalance = async () => {
+      if (!isConnected || !walletProvider || !address) {
+        setBalance('0.0000')
+        return
+      }
+
+      setIsLoadingBalance(true)
+      try {
+        const ethersProvider = new BrowserProvider(walletProvider as any)
+        const balanceWei = await ethersProvider.getBalance(address)
+        const balanceEth = formatEther(balanceWei)
+        setBalance(parseFloat(balanceEth).toFixed(4))
+      } catch (error) {
+        console.error('Error fetching balance:', error)
+        setBalance('Error')
+      } finally {
+        setIsLoadingBalance(false)
+      }
+    }
+
+    fetchBalance()
+  }, [isConnected, walletProvider, address])
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -316,20 +343,21 @@ export default function DashboardPage() {
             </Text>
           </header>
 
-          {/* <section aria-label="Account Information">
+          <section aria-label="Account Information">
             {isConnected ? (
               <Box bg="whiteAlpha.100" p={4} borderRadius="md">
                 <Text>Your Address: {address}</Text>
-                <Text color="green.400" mt={2}>
+                <Text>ETH Balance: {balance}</Text>
+                {/* <Text color="green.400" mt={2}>
                   ✓ Wallet Connected
-                </Text>
+                </Text> */}
               </Box>
             ) : (
               <Box bg="whiteAlpha.100" p={4} borderRadius="md">
                 <Text color="orange.400">Please connect your wallet to issue documents</Text>
               </Box>
             )}
-          </section> */}
+          </section>
 
           {/* <section aria-label="Configuration">
             <Box bg="whiteAlpha.100" p={4} borderRadius="md">
