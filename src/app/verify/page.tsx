@@ -583,7 +583,7 @@ export default function VerifyPage() {
                   Verify
                 </Button>
 
-                <Button
+                {/* <Button
                   onClick={loadDocumentDetails}
                   variant="outline"
                   borderColor="gray.600"
@@ -595,7 +595,7 @@ export default function VerifyPage() {
                   leftIcon={<Icon as={FiFile} />}
                 >
                   Get Details
-                </Button>
+                </Button> */}
               </HStack>
             </Box>
           </section>
