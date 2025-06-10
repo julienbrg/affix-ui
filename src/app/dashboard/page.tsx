@@ -373,7 +373,7 @@ export default function DashboardPage() {
 
           <section aria-label="Account Information">
             {isConnected ? (
-              <Box bg="whiteAlpha.100" p={4} borderRadius="md">
+              <Box pt={6} pb={6}>
                 <VStack spacing={2} align="stretch">
                   <Text>
                     <Text as="span" fontWeight="medium">
@@ -402,14 +402,12 @@ export default function DashboardPage() {
                 </VStack>
               </Box>
             ) : (
-              <Box bg="whiteAlpha.100" p={4} borderRadius="md">
-                <Text color="orange.400">Please connect your wallet to issue documents</Text>
-              </Box>
+              <Text color="orange.400">Please connect your wallet to issue documents</Text>
             )}
           </section>
 
           <section aria-label="Document Upload">
-            <Box bg="whiteAlpha.100" p={6} borderRadius="md">
+            <Box>
               <VStack spacing={6} align="stretch">
                 <FormControl>
                   <FormLabel fontSize="md" fontWeight="semibold" mb={3}>
