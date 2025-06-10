@@ -445,10 +445,8 @@ export default function VerifyTestPage() {
 
           {/* Document Upload & CID Generation */}
           <section aria-label="Document Upload">
-            <Box bg="whiteAlpha.100" p={6} borderRadius="md">
+            <Box borderRadius="md">
               <VStack spacing={6} align="stretch">
-                <Heading size="md">Upload Document to Verify</Heading>
-
                 {!selectedFile ? (
                   <Box
                     borderWidth={2}
@@ -665,7 +663,7 @@ export default function VerifyTestPage() {
 
               {!selectedFile && !cidInput.trim() && (
                 <Text fontSize="sm" color="gray.500" textAlign="center">
-                  Upload a document or enter a CID to verify
+                  Upload a document to verify
                 </Text>
               )}
             </VStack>
@@ -726,7 +724,7 @@ export default function VerifyTestPage() {
                             onClick={() => copyToClipboard(documentCID)}
                             _hover={{ color: 'green.100' }}
                           >
-                            {documentCID.slice(0, 20)}...{documentCID.slice(-10)}
+                            {documentCID}
                           </Text>
                         </HStack>
                       )}
