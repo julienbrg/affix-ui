@@ -21,7 +21,7 @@ createAppKit({
   metadata: {
     name: 'Veridocs',
     description: 'Verify document authenticity',
-    url: 'https://veridocs.netlify.app',
+    url: 'https://veridocs-ui.vercel.app',
     icons: ['./favicon.ico'],
   },
   enableEIP6963: true,

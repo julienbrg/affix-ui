@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'Verify Documents | Veridocs',
     description: 'Verify the authenticity of documents using blockchain technology',
-    url: 'https://veridocs.netlify.app/verify',
+    url: 'https://veridocs-ui.vercel.app/verify',
     siteName: 'Veridocs',
     images: [
       {
