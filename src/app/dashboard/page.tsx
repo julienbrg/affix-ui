@@ -20,9 +20,10 @@ import {
 import { useAppKitAccount, useAppKitProvider } from '@reown/appkit/react'
 import { useState, useRef, useEffect } from 'react'
 import { useTranslation } from '@/hooks/useTranslation'
-import { FiUpload, FiFile, FiX, FiHash, FiExternalLink, FiCheck } from 'react-icons/fi'
+import { FiUpload, FiFile, FiX, FiHash, FiExternalLink, FiCheck, FiPlay } from 'react-icons/fi'
 import { getDocumentCID } from '../lib/documentHash'
 import { BrowserProvider, Contract, formatEther, parseEther, JsonRpcSigner } from 'ethers'
+import Link from 'next/link'
 
 // Contract configuration
 const VERIDOCS_FACTORY_ADDRESS = '0x36FB4c117507a98e780922246860E499Bb7E996C'
@@ -439,6 +440,38 @@ export default function Dashboard() {
         <VStack spacing={8} align="center">
           <Heading>Dashboard</Heading>
           <Text>Please connect your wallet to access the dashboard.</Text>
+
+          {/* Test Dashboard Button */}
+          <Box
+            bg="blue.900"
+            border="1px solid"
+            borderColor="blue.500"
+            borderRadius="md"
+            p={6}
+            w="100%"
+            textAlign="center"
+          >
+            <VStack spacing={4}>
+              <Icon as={FiPlay} boxSize={8} color="blue.300" />
+              <Heading size="md" color="blue.300">
+                Want to Try Document Issuance?
+              </Heading>
+              <Text fontSize="sm" color="gray.400" textAlign="center">
+                Experience how the document issuance process works without connecting a wallet
+              </Text>
+              <Link href="/dashboard-test" passHref>
+                <Button
+                  bg="blue.600"
+                  color="white"
+                  _hover={{ bg: 'blue.500' }}
+                  leftIcon={<Icon as={FiPlay} />}
+                  size="lg"
+                >
+                  Try Test Dashboard
+                </Button>
+              </Link>
+            </VStack>
+          </Box>
         </VStack>
       </Container>
     )

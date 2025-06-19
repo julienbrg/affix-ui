@@ -20,9 +20,10 @@ import {
 import { useAppKitAccount, useAppKitProvider } from '@reown/appkit/react'
 import { useState, useRef, useEffect } from 'react'
 import { useTranslation } from '@/hooks/useTranslation'
-import { FiUpload, FiFile, FiX, FiHash, FiExternalLink, FiCheck } from 'react-icons/fi'
+import { FiUpload, FiFile, FiX, FiHash, FiExternalLink, FiCheck, FiSearch } from 'react-icons/fi'
 import { getDocumentCID } from '../lib/documentHash'
 import { BrowserProvider, Contract, formatEther, parseEther, JsonRpcSigner } from 'ethers'
+import Link from 'next/link'
 
 // Contract configuration - Direct registry address
 const VERIDOCS_REGISTRY_ADDRESS = '0x02b77E551a1779f3f091a1523A08e61cd2620f82'
@@ -653,6 +654,48 @@ export default function DashboardTestPage() {
                       <Text fontSize="xs" color="gray.400" textAlign="center">
                         Click any hash to copy • Click 🔗 to view on Etherscan
                       </Text>
+
+                      {/* Verify Document Invitation */}
+                      <Box
+                        bg="blue.900"
+                        border="1px solid"
+                        borderColor="blue.500"
+                        borderRadius="md"
+                        p={4}
+                        mt={4}
+                      >
+                        <VStack spacing={4}>
+                          <HStack spacing={3}>
+                            <Icon as={FiSearch} color="blue.300" boxSize={5} />
+                            <Text fontSize="md" color="blue.300" fontWeight="bold">
+                              Now Verify Your Document!
+                            </Text>
+                          </HStack>
+
+                          <Text fontSize="sm" color="blue.200" textAlign="center">
+                            Your document has been successfully issued on the blockchain. Want to
+                            see how verification works?
+                          </Text>
+
+                          <Link href="/verify-test" passHref>
+                            <Button
+                              bg="blue.600"
+                              color="white"
+                              _hover={{ bg: 'blue.500' }}
+                              leftIcon={<Icon as={FiSearch} />}
+                              size="lg"
+                              w="100%"
+                            >
+                              Verify This Document
+                            </Button>
+                          </Link>
+
+                          <Text fontSize="xs" color="gray.400" textAlign="center">
+                            The verification page will automatically check if your document exists
+                            in the registry
+                          </Text>
+                        </VStack>
+                      </Box>
                     </VStack>
                   </Box>
                 )}
