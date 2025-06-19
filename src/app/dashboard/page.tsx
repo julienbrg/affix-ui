@@ -515,7 +515,46 @@ export default function Dashboard() {
                     </Text>
                   </VStack>
                 ) : (
-                  <Text>Nobody (sorry!)</Text>
+                  <VStack spacing={3}>
+                    <Text color="red.400" fontWeight="medium">
+                      Unauthorized
+                    </Text>
+                    <Text fontSize="sm" color="gray.400" textAlign="center">
+                      You are not an admin or agent of any registered institution
+                    </Text>
+
+                    {/* Test Dashboard Redirect */}
+                    <Box
+                      bg="blue.900"
+                      border="1px solid"
+                      borderColor="blue.500"
+                      borderRadius="md"
+                      p={4}
+                      w="100%"
+                      textAlign="center"
+                    >
+                      <VStack spacing={3}>
+                        <Icon as={FiPlay} boxSize={6} color="blue.300" />
+                        <Text fontSize="sm" color="blue.300" fontWeight="medium">
+                          Want to Try Document Issuance?
+                        </Text>
+                        <Text fontSize="xs" color="gray.400" textAlign="center">
+                          Experience the process without authorization requirements
+                        </Text>
+                        <Link href="/dashboard-test" passHref>
+                          <Button
+                            bg="blue.600"
+                            color="white"
+                            _hover={{ bg: 'blue.500' }}
+                            leftIcon={<Icon as={FiPlay} />}
+                            size="md"
+                          >
+                            Try Test Dashboard
+                          </Button>
+                        </Link>
+                      </VStack>
+                    </Box>
+                  </VStack>
                 )}
               </VStack>
             </Box>
