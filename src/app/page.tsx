@@ -205,7 +205,7 @@ export default function Home() {
                 px={8}
                 w={{ base: '250px', md: 'auto' }}
               >
-                Access your Dashboard
+                Your Dashboard
               </Button>
             </Link>
 
@@ -224,7 +224,7 @@ export default function Home() {
                 px={8}
                 w={{ base: '250px', md: 'auto' }}
               >
-                Verify a document
+                Verify a Document
               </Button>
             </Link>
           </Flex>
