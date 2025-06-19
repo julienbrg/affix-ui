@@ -190,7 +190,7 @@ export default function Home() {
             justify="center"
             align="center"
           >
-            <Link href="/dashboard-test">
+            <Link href="/dashboard">
               <Button
                 size="lg"
                 bg="#45a2f8"
@@ -205,11 +205,11 @@ export default function Home() {
                 px={8}
                 w={{ base: '250px', md: 'auto' }}
               >
-                Issue Document
+                Your Dashboard
               </Button>
             </Link>
 
-            <Link href="/verify-test">
+            <Link href="/verify">
               <Button
                 size="lg"
                 variant="outline"
@@ -224,7 +224,7 @@ export default function Home() {
                 px={8}
                 w={{ base: '250px', md: 'auto' }}
               >
-                Verify Now
+                Verify a Document
               </Button>
             </Link>
           </Flex>
