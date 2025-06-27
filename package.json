@@ -11,11 +11,11 @@
     "format:check": "prettier --check ."
   },
   "dependencies": {
-    "@chakra-ui/icons": "^2.1.1",
-    "@chakra-ui/react": "^2.8.2",
+    "@chakra-ui/icons": "^2.2.4",
+    "@chakra-ui/react": "^2.10.4",
     "@chakra-ui/theme-utils": "^2.0.21",
-    "@emotion/react": "^11.11.3",
-    "@emotion/styled": "^11.11.0",
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.0",
     "@ipld/car": "^5.4.2",
     "@reown/appkit": "^1.5.3",
     "@reown/appkit-adapter-ethers": "^1.5.3",
