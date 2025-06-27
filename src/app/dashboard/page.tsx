@@ -154,7 +154,12 @@ export default function Dashboard() {
   // Check user role when connected
   useEffect(() => {
     if (isConnected && address && walletProvider) {
-      checkUserRole()
+      // Add a small delay to ensure wallet provider is fully ready
+      const timeoutId = setTimeout(() => {
+        checkUserRole()
+      }, 500)
+
+      return () => clearTimeout(timeoutId)
     } else {
       setUserRole(null)
       setAgents([])
@@ -199,57 +204,81 @@ export default function Dashboard() {
     setIsCheckingRole(true)
     try {
       const ethersProvider = new BrowserProvider(walletProvider as any)
-      const factoryContract = new Contract(VERIDOCS_FACTORY_ADDRESS, FACTORY_ABI, ethersProvider)
 
-      // Get all deployed registries
-      const registryAddresses = await factoryContract.getAllInstitutions()
-      console.log('All registries:', registryAddresses)
+      // Add retry logic with exponential backoff
+      const maxRetries = 3
+      let retryCount = 0
 
-      // Check each registry to see if user is admin or agent
-      for (const registryAddress of registryAddresses) {
-        const registryContract = new Contract(registryAddress, REGISTRY_ABI, ethersProvider)
-
+      while (retryCount < maxRetries) {
         try {
-          // Check if user is admin
-          const adminAddress = await registryContract.admin()
-          if (adminAddress.toLowerCase() === address.toLowerCase()) {
-            const institutionName = await registryContract.institutionName()
-            setUserRole({
-              type: 'admin',
-              registryAddress,
-              institutionName,
-            })
-            console.log('current user is: admin')
-            return
+          const factoryContract = new Contract(
+            VERIDOCS_FACTORY_ADDRESS,
+            FACTORY_ABI,
+            ethersProvider
+          )
+
+          // Get all deployed registries
+          const registryAddresses = await factoryContract.getAllInstitutions()
+          console.log('All registries:', registryAddresses)
+
+          // Check each registry to see if user is admin or agent
+          for (const registryAddress of registryAddresses) {
+            const registryContract = new Contract(registryAddress, REGISTRY_ABI, ethersProvider)
+
+            try {
+              // Check if user is admin
+              const adminAddress = await registryContract.admin()
+              if (adminAddress.toLowerCase() === address.toLowerCase()) {
+                const institutionName = await registryContract.institutionName()
+                setUserRole({
+                  type: 'admin',
+                  registryAddress,
+                  institutionName,
+                })
+                console.log('current user is: admin')
+                return
+              }
+
+              // Check if user is agent
+              const isAgent = await registryContract.agents(address)
+              if (isAgent) {
+                const institutionName = await registryContract.institutionName()
+                setUserRole({
+                  type: 'agent',
+                  registryAddress,
+                  institutionName,
+                })
+                console.log('current user is: agent')
+                return
+              }
+            } catch (error) {
+              console.error(`Error checking registry ${registryAddress}:`, error)
+            }
           }
 
-          // Check if user is agent
-          const isAgent = await registryContract.agents(address)
-          if (isAgent) {
-            const institutionName = await registryContract.institutionName()
-            setUserRole({
-              type: 'agent',
-              registryAddress,
-              institutionName,
-            })
-            console.log('current user is: agent')
-            return
-          }
+          // If we get here, user is neither admin nor agent of any registry
+          setUserRole(null)
+          console.log('current user is: nobody')
+          break // Success, exit retry loop
         } catch (error) {
-          console.error(`Error checking registry ${registryAddress}:`, error)
+          retryCount++
+          console.warn(`Role check attempt ${retryCount} failed:`, error)
+
+          if (retryCount === maxRetries) {
+            throw error // Throw on final attempt
+          }
+
+          // Wait before retrying (exponential backoff)
+          await new Promise(resolve => setTimeout(resolve, Math.pow(2, retryCount) * 1000))
         }
       }
-
-      // If we get here, user is neither admin nor agent of any registry
-      setUserRole(null)
-      console.log('current user is: nobody')
     } catch (error) {
       console.error('Error checking user role:', error)
       toast({
         title: 'Error',
-        description: 'Failed to check user permissions',
+        description: 'Failed to check user permissions. Please refresh the page.',
         status: 'error',
-        duration: 5000,
+        duration: 7000,
         isClosable: true,
       })
     } finally {
@@ -850,53 +879,56 @@ export default function Dashboard() {
           </section>
 
           <section aria-label="Account Information">
-            {/* User Address Highlight */}
-            <Box
-              bg="orange.900"
-              border="2px solid"
-              borderColor="orange.500"
-              borderRadius="lg"
-              p={6}
-              w="100%"
-              textAlign="center"
-            >
-              <VStack spacing={4}>
-                <Icon as={FiCopy} boxSize={8} color="orange.300" />
-                <Text fontSize="md" color="orange.300" fontWeight="bold">
-                  Your Wallet Address
-                </Text>
-                <Box
-                  bg="whiteAlpha.200"
-                  p={4}
-                  borderRadius="md"
-                  w="100%"
-                  cursor="pointer"
-                  onClick={() => copyToClipboard(address || '')}
-                  _hover={{ bg: 'whiteAlpha.300' }}
-                  transition="all 0.2s"
-                >
-                  <Text
-                    fontFamily="mono"
-                    fontSize="lg"
-                    fontWeight="bold"
-                    color="white"
-                    wordBreak="break-all"
-                  >
-                    {address}
+            {/* Only show the orange "Copy this address" box if user is NOT admin or agent */}
+            {!isCheckingRole && !userRole && (
+              <Box
+                bg="orange.900"
+                border="2px solid"
+                borderColor="orange.500"
+                borderRadius="lg"
+                p={6}
+                w="100%"
+                textAlign="center"
+              >
+                <VStack spacing={4}>
+                  <Icon as={FiCopy} boxSize={8} color="orange.300" />
+                  <Text fontSize="md" color="orange.300" fontWeight="bold">
+                    Your Wallet Address
                   </Text>
-                </Box>
-                <Text fontSize="sm" color="orange.200" textAlign="center" lineHeight="1.5">
-                  📋{' '}
-                  <Text as="span" fontWeight="medium">
-                    Copy this address
-                  </Text>{' '}
-                  and give it to your institution&apos;s admin so they can add you as an agent.
-                </Text>
-                <Text fontSize="xs" color="gray.400" textAlign="center">
-                  Click the address above to copy it to your clipboard
-                </Text>
-              </VStack>
-            </Box>
+                  <Box
+                    bg="whiteAlpha.200"
+                    p={4}
+                    borderRadius="md"
+                    w="100%"
+                    cursor="pointer"
+                    onClick={() => copyToClipboard(address || '')}
+                    _hover={{ bg: 'whiteAlpha.300' }}
+                    transition="all 0.2s"
+                  >
+                    <Text
+                      fontFamily="mono"
+                      fontSize="lg"
+                      fontWeight="bold"
+                      color="white"
+                      wordBreak="break-all"
+                    >
+                      {address}
+                    </Text>
+                  </Box>
+                  <Text fontSize="sm" color="orange.200" textAlign="center" lineHeight="1.5">
+                    📋{' '}
+                    <Text as="span" fontWeight="medium">
+                      Copy this address
+                    </Text>{' '}
+                    and give it to your institution&apos;s admin so they can add you as an agent.
+                  </Text>
+                  <Text fontSize="xs" color="gray.400" textAlign="center">
+                    Click the address above to copy it to your clipboard
+                  </Text>
+                </VStack>
+              </Box>
+            )}
+
             <Box pt={6} pb={6}>
               <VStack spacing={2} align="stretch">
                 <Text>
@@ -918,6 +950,18 @@ export default function Dashboard() {
                     <Text fontFamily="mono" color={balance === 'Error' ? 'red.400' : 'green.400'}>
                       {balance} ETH
                     </Text>
+                  )}
+                  {/* Add manual refresh button for role checking */}
+                  {!isCheckingRole && (
+                    <Button
+                      size="xs"
+                      variant="outline"
+                      leftIcon={<Icon as={FiRefreshCw} />}
+                      onClick={checkUserRole}
+                      ml={4}
+                    >
+                      Refresh Role
+                    </Button>
                   )}
                 </Flex>
               </VStack>
