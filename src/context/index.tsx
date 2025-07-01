@@ -2,7 +2,6 @@
 
 import { createAppKit } from '@reown/appkit/react'
 import { EthersAdapter } from '@reown/appkit-adapter-ethers'
-import { sepolia } from '@reown/appkit/networks'
 import { type ReactNode, memo } from 'react'
 import { ChakraProvider, extendTheme } from '@chakra-ui/react'
 
@@ -42,7 +41,7 @@ const ethersAdapter = new EthersAdapter()
 createAppKit({
   adapters: [ethersAdapter],
   projectId,
-  networks: [filecoinCalibration, sepolia],
+  networks: [filecoinCalibration],
   defaultNetwork: filecoinCalibration,
   metadata: {
     name: 'Veridocs',
