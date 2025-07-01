@@ -45,7 +45,7 @@ import {
   IconButton,
   Tooltip,
 } from '@chakra-ui/react'
-import { useAppKitAccount, useAppKitProvider } from '@reown/appkit/react'
+import { useAppKitAccount, useAppKitProvider, useAppKitNetwork } from '@reown/appkit/react'
 import { useState, useRef, useEffect } from 'react'
 import { useTranslation } from '@/hooks/useTranslation'
 import {
@@ -64,11 +64,33 @@ import {
   FiRefreshCw,
 } from 'react-icons/fi'
 import { getDocumentCID } from '../lib/documentHash'
-import { BrowserProvider, Contract, formatEther, parseEther, JsonRpcSigner } from 'ethers'
+import {
+  BrowserProvider,
+  Contract,
+  formatEther,
+  parseEther,
+  JsonRpcSigner,
+  JsonRpcProvider,
+} from 'ethers'
 import Link from 'next/link'
 
-// Contract configuration
-const VERIDOCS_FACTORY_ADDRESS = '0x36FB4c117507a98e780922246860E499Bb7E996C'
+// Network configuration
+const NETWORK_CONFIGS = {
+  11155111: {
+    name: 'Sepolia Testnet',
+    factoryAddress: '0x...', // Replace with actual Sepolia factory address
+    rpcUrl: 'https://sepolia.infura.io/v3/YOUR_INFURA_KEY', // Replace with actual Sepolia RPC
+    blockExplorer: 'https://sepolia.etherscan.io',
+    explorerName: 'Sepolia Etherscan',
+  },
+  314159: {
+    name: 'Filecoin Calibration',
+    factoryAddress: '0x1928Fb336C74432e129142c7E3ee57856486eFfa',
+    rpcUrl: 'https://api.calibration.node.glif.io/rpc/v1',
+    blockExplorer: 'https://calibration.filscan.io/en/message',
+    explorerName: 'Filscan Calibration',
+  },
+}
 
 // Factory contract ABI - only what we need
 const FACTORY_ABI = [
@@ -99,6 +121,7 @@ interface IssueResult {
   timestamp: string
   registryAddress: string
   blockNumber: number
+  network: string
 }
 
 interface UserRole {
@@ -115,6 +138,7 @@ interface Agent {
 export default function Dashboard() {
   const { isConnected, address } = useAppKitAccount()
   const { walletProvider } = useAppKitProvider('eip155')
+  const { chainId, caipNetwork } = useAppKitNetwork()
   const toast = useToast()
   const t = useTranslation()
 
@@ -151,9 +175,20 @@ export default function Dashboard() {
   const cancelRef = useRef<HTMLButtonElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  // Check user role when connected
+  // Get current network configuration
+  const currentNetwork = NETWORK_CONFIGS[chainId as keyof typeof NETWORK_CONFIGS]
+
+  // Debug network detection
   useEffect(() => {
-    if (isConnected && address && walletProvider) {
+    console.log('🌐 Dashboard Network Info:')
+    console.log('Chain ID:', chainId)
+    console.log('CAIP Network:', caipNetwork)
+    console.log('Current Network Config:', currentNetwork)
+  }, [chainId, caipNetwork, currentNetwork])
+
+  // Check user role when connected or network changes
+  useEffect(() => {
+    if (isConnected && address && walletProvider && currentNetwork) {
       // Add a small delay to ensure wallet provider is fully ready
       const timeoutId = setTimeout(() => {
         checkUserRole()
@@ -164,14 +199,14 @@ export default function Dashboard() {
       setUserRole(null)
       setAgents([])
     }
-  }, [isConnected, address, walletProvider])
+  }, [isConnected, address, walletProvider, currentNetwork])
 
   // Load agents when user role is admin
   useEffect(() => {
-    if (userRole?.type === 'admin') {
+    if (userRole?.type === 'admin' && currentNetwork) {
       loadAgents()
     }
-  }, [userRole])
+  }, [userRole, currentNetwork])
 
   // Fetch balance when wallet is connected
   useEffect(() => {
@@ -199,86 +234,135 @@ export default function Dashboard() {
   }, [isConnected, walletProvider, address])
 
   const checkUserRole = async () => {
-    if (!walletProvider || !address) return
+    if (!walletProvider || !address || !currentNetwork) return
 
     setIsCheckingRole(true)
-    try {
-      const ethersProvider = new BrowserProvider(walletProvider as any)
+    console.log('🔍 Starting role check for address:', address)
+    console.log('🌐 Using network:', currentNetwork.name)
 
-      // Add retry logic with exponential backoff
+    try {
+      const ethersProvider = new JsonRpcProvider(currentNetwork.rpcUrl)
+
+      console.log('🏭 Factory contract address:', currentNetwork.factoryAddress)
+
       const maxRetries = 3
       let retryCount = 0
 
       while (retryCount < maxRetries) {
         try {
           const factoryContract = new Contract(
-            VERIDOCS_FACTORY_ADDRESS,
+            currentNetwork.factoryAddress,
             FACTORY_ABI,
             ethersProvider
           )
 
+          // Test if factory contract exists and is accessible
+          try {
+            const institutionCount = await factoryContract.getInstitutionCount()
+            console.log('📊 Total institutions found:', institutionCount.toString())
+          } catch (error) {
+            console.error('❌ Failed to get institution count:', error)
+            throw new Error('Factory contract not accessible')
+          }
+
           // Get all deployed registries
           const registryAddresses = await factoryContract.getAllInstitutions()
-          console.log('All registries:', registryAddresses)
+          console.log('🏢 All registry addresses found:', registryAddresses)
+          console.log('📈 Number of registries:', registryAddresses.length)
+
+          if (registryAddresses.length === 0) {
+            console.log('ℹ️ No registries found in factory')
+            setUserRole(null)
+            return
+          }
 
           // Check each registry to see if user is admin or agent
-          for (const registryAddress of registryAddresses) {
-            const registryContract = new Contract(registryAddress, REGISTRY_ABI, ethersProvider)
+          for (let i = 0; i < registryAddresses.length; i++) {
+            const registryAddress = registryAddresses[i]
+            console.log(
+              `\n🔍 Checking registry ${i + 1}/${registryAddresses.length}:`,
+              registryAddress
+            )
 
             try {
+              const registryContract = new Contract(registryAddress, REGISTRY_ABI, ethersProvider)
+
+              // Get institution name first for logging
+              let institutionName = 'Unknown'
+              try {
+                institutionName = await registryContract.institutionName()
+                console.log('🏫 Institution name:', institutionName)
+              } catch (error) {
+                console.warn('⚠️ Could not get institution name:', error)
+              }
+
               // Check if user is admin
-              const adminAddress = await registryContract.admin()
-              if (adminAddress.toLowerCase() === address.toLowerCase()) {
-                const institutionName = await registryContract.institutionName()
-                setUserRole({
-                  type: 'admin',
-                  registryAddress,
-                  institutionName,
-                })
-                console.log('current user is: admin')
-                return
+              try {
+                const adminAddress = await registryContract.admin()
+                console.log('👑 Admin address from contract:', adminAddress)
+                console.log('🔑 Your address:', address)
+
+                if (adminAddress.toLowerCase() === address.toLowerCase()) {
+                  console.log('✅ ADMIN MATCH FOUND!')
+                  setUserRole({
+                    type: 'admin',
+                    registryAddress,
+                    institutionName,
+                  })
+                  console.log('🎉 User role set to admin for:', institutionName)
+                  return
+                }
+              } catch (error) {
+                console.error('❌ Error checking admin status:', error)
               }
 
               // Check if user is agent
-              const isAgent = await registryContract.agents(address)
-              if (isAgent) {
-                const institutionName = await registryContract.institutionName()
-                setUserRole({
-                  type: 'agent',
-                  registryAddress,
-                  institutionName,
-                })
-                console.log('current user is: agent')
-                return
+              try {
+                const isAgent = await registryContract.agents(address)
+                console.log('👥 Agent status:', isAgent)
+
+                if (isAgent) {
+                  console.log('✅ AGENT MATCH FOUND!')
+                  setUserRole({
+                    type: 'agent',
+                    registryAddress,
+                    institutionName,
+                  })
+                  console.log('🎉 User role set to agent for:', institutionName)
+                  return
+                }
+              } catch (error) {
+                console.error('❌ Error checking agent status:', error)
               }
             } catch (error) {
-              console.error(`Error checking registry ${registryAddress}:`, error)
+              console.error(`❌ Error checking registry ${registryAddress}:`, error)
             }
           }
 
           // If we get here, user is neither admin nor agent of any registry
+          console.log('❌ No matching admin or agent role found')
           setUserRole(null)
-          console.log('current user is: nobody')
           break // Success, exit retry loop
         } catch (error) {
           retryCount++
-          console.warn(`Role check attempt ${retryCount} failed:`, error)
+          console.warn(`⚠️ Role check attempt ${retryCount} failed:`, error)
 
           if (retryCount === maxRetries) {
             throw error // Throw on final attempt
           }
 
           // Wait before retrying (exponential backoff)
+          console.log(`⏳ Waiting ${Math.pow(2, retryCount)} seconds before retry...`)
           await new Promise(resolve => setTimeout(resolve, Math.pow(2, retryCount) * 1000))
         }
       }
-    } catch (error) {
-      console.error('Error checking user role:', error)
+    } catch (error: any) {
+      console.error('💥 Critical error in role checking:', error)
       toast({
-        title: 'Error',
-        description: 'Failed to check user permissions. Please refresh the page.',
+        title: 'Role Check Failed',
+        description: `Error: ${error.message || 'Unknown error'}. Please check console for details.`,
         status: 'error',
-        duration: 7000,
+        duration: 10000,
         isClosable: true,
       })
     } finally {
@@ -287,11 +371,11 @@ export default function Dashboard() {
   }
 
   const loadAgents = async () => {
-    if (!userRole || userRole.type !== 'admin' || !walletProvider) return
+    if (!userRole || userRole.type !== 'admin' || !currentNetwork) return
 
     setIsLoadingAgents(true)
     try {
-      const ethersProvider = new BrowserProvider(walletProvider as any)
+      const ethersProvider = new JsonRpcProvider(currentNetwork.rpcUrl)
       const registryContract = new Contract(userRole.registryAddress, REGISTRY_ABI, ethersProvider)
 
       // Get active agents from contract
@@ -343,7 +427,7 @@ export default function Dashboard() {
       return
     }
 
-    if (!userRole || userRole.type !== 'admin' || !walletProvider || !address) {
+    if (!userRole || userRole.type !== 'admin' || !walletProvider || !address || !currentNetwork) {
       toast({
         title: 'Not Authorized',
         description: 'Only admins can add agents',
@@ -510,7 +594,6 @@ export default function Dashboard() {
     })
   }
 
-  // ... (keeping existing file handling functions)
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (file) {
@@ -623,7 +706,7 @@ export default function Dashboard() {
       return
     }
 
-    if (!userRole) {
+    if (!userRole || !currentNetwork) {
       toast({
         title: 'Not authorized',
         description: 'You must be an admin or agent to issue documents',
@@ -638,6 +721,7 @@ export default function Dashboard() {
 
     try {
       console.log('Starting transaction process...')
+      console.log('Using network:', currentNetwork.name)
 
       // Create ethers provider
       const provider = new BrowserProvider(walletProvider as any)
@@ -646,6 +730,11 @@ export default function Dashboard() {
       // Get network first to avoid potential issues
       const network = await provider.getNetwork()
       console.log('Connected to network:', network.name, 'Chain ID:', network.chainId.toString())
+
+      // Verify network matches our configuration
+      if (network.chainId.toString() !== chainId?.toString()) {
+        throw new Error(`Network mismatch: expected ${chainId}, got ${network.chainId}`)
+      }
 
       // Create signer
       const signer = new JsonRpcSigner(provider, address)
@@ -685,6 +774,7 @@ export default function Dashboard() {
         timestamp: new Date().toISOString(),
         registryAddress: userRole.registryAddress,
         blockNumber: receipt.blockNumber,
+        network: currentNetwork.name,
       }
       setProgress(60)
 
@@ -752,6 +842,16 @@ export default function Dashboard() {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
   }
 
+  const getExplorerLink = (type: 'tx' | 'address', value: string) => {
+    if (!currentNetwork) return '#'
+
+    if (type === 'tx') {
+      return `${currentNetwork.blockExplorer}/tx/${value}`
+    } else {
+      return `${currentNetwork.blockExplorer}/address/${value}`
+    }
+  }
+
   if (!isConnected) {
     return (
       <Container maxW="container.sm" py={20}>
@@ -795,6 +895,33 @@ export default function Dashboard() {
     )
   }
 
+  // Show error if unsupported network
+  if (!currentNetwork) {
+    return (
+      <main>
+        <Container maxW="container.lg" py={20}>
+          <VStack spacing={8}>
+            <Box textAlign="center">
+              <Heading as="h1" size="xl" mb={4} color="red.400">
+                Unsupported Network
+              </Heading>
+              <Text fontSize="lg" color="gray.400" mb={6}>
+                Please switch to one of the supported networks:
+              </Text>
+              <VStack spacing={2}>
+                <Text color="blue.300">• Sepolia Testnet (Chain ID: 11155111)</Text>
+                <Text color="green.300">• Filecoin Calibration (Chain ID: 314159)</Text>
+              </VStack>
+              <Text fontSize="sm" color="gray.500" mt={4}>
+                Current Chain ID: {chainId || 'Unknown'}
+              </Text>
+            </Box>
+          </VStack>
+        </Container>
+      </main>
+    )
+  }
+
   return (
     <main>
       <Container maxW="container.lg" py={20}>
@@ -803,9 +930,19 @@ export default function Dashboard() {
             <Heading as="h1" size="xl" mb={2}>
               Dashboard
             </Heading>
-            <Text fontSize="lg" color="gray.400">
-              {userRole?.type === 'admin' ? 'Admin Management Portal' : 'Issue a document'}
-            </Text>
+            <HStack spacing={4} align="center">
+              <Text fontSize="lg" color="gray.400">
+                {userRole?.type === 'admin' ? 'Admin Management Portal' : 'Issue a document'}
+              </Text>
+              <Badge
+                colorScheme={
+                  chainId === 314159 ? 'green' : chainId === 11155111 ? 'blue' : 'orange'
+                }
+                size="md"
+              >
+                {currentNetwork.name}
+              </Badge>
+            </HStack>
           </header>
 
           {/* User Role Status */}
@@ -831,6 +968,9 @@ export default function Dashboard() {
                     <Text fontSize="sm" color="gray.400">
                       Registry: {userRole.registryAddress}
                     </Text>
+                    <Text fontSize="sm" color="gray.500">
+                      Network: {currentNetwork.name}
+                    </Text>
                   </VStack>
                 ) : (
                   <VStack spacing={4}>
@@ -838,7 +978,8 @@ export default function Dashboard() {
                       Unauthorized
                     </Text>
                     <Text fontSize="sm" color="gray.400" textAlign="center">
-                      You are not an admin or agent of any registered institution
+                      You are not an admin or agent of any registered institution on{' '}
+                      {currentNetwork.name}
                     </Text>
 
                     {/* Test Dashboard Redirect */}
@@ -938,7 +1079,7 @@ export default function Dashboard() {
                   {address}
                 </Text>
                 <Flex align="center" gap={2}>
-                  <Text fontWeight="medium">ETH Balance:</Text>
+                  <Text fontWeight="medium">{chainId === 314159 ? 'FIL' : 'ETH'} Balance:</Text>
                   {isLoadingBalance ? (
                     <HStack spacing={2}>
                       <Spinner size="xs" />
@@ -948,7 +1089,7 @@ export default function Dashboard() {
                     </HStack>
                   ) : (
                     <Text fontFamily="mono" color={balance === 'Error' ? 'red.400' : 'green.400'}>
-                      {balance} ETH
+                      {balance} {chainId === 314159 ? 'FIL' : 'ETH'}
                     </Text>
                   )}
                   {/* Add manual refresh button for role checking */}
@@ -973,7 +1114,7 @@ export default function Dashboard() {
               <VStack spacing={4}>
                 <Icon as={FiX} boxSize={8} color="red.400" />
                 <Text textAlign="center" fontSize="lg">
-                  You are not authorized to issue documents.
+                  You are not authorized to issue documents on {currentNetwork.name}.
                 </Text>
                 <Text textAlign="center" color="gray.400">
                   You must be an admin or agent of a registered institution to use this dashboard.
@@ -1083,15 +1224,15 @@ export default function Dashboard() {
                                       </Td>
                                       <Td>
                                         <HStack spacing={1}>
-                                          <Tooltip label="View on Etherscan">
+                                          <Tooltip label={`View on ${currentNetwork.explorerName}`}>
                                             <IconButton
-                                              aria-label="View on Etherscan"
+                                              aria-label="View on block explorer"
                                               icon={<FiExternalLink />}
                                               size="xs"
                                               variant="ghost"
                                               onClick={() =>
                                                 window.open(
-                                                  `https://sepolia.etherscan.io/address/${agent.address}`,
+                                                  getExplorerLink('address', agent.address),
                                                   '_blank'
                                                 )
                                               }
@@ -1337,7 +1478,7 @@ export default function Dashboard() {
                                       onClick={e => {
                                         e.stopPropagation()
                                         window.open(
-                                          `https://sepolia.etherscan.io/tx/${issueResult.txHash}`,
+                                          getExplorerLink('tx', issueResult.txHash),
                                           '_blank'
                                         )
                                       }}
@@ -1375,8 +1516,18 @@ export default function Dashboard() {
                                 </Box>
                               </Box>
 
+                              <Box>
+                                <Text fontSize="sm" color="green.300" fontWeight="medium" mb={1}>
+                                  Network:
+                                </Text>
+                                <Badge colorScheme="green" size="sm">
+                                  {issueResult.network}
+                                </Badge>
+                              </Box>
+
                               <Text fontSize="xs" color="gray.400" textAlign="center">
-                                Click any hash to copy • Click 🔗 to view on Etherscan
+                                Click any hash to copy • Click 🔗 to view on{' '}
+                                {currentNetwork.explorerName}
                               </Text>
                             </VStack>
                           </Box>
@@ -1404,8 +1555,8 @@ export default function Dashboard() {
             <ModalBody>
               <VStack spacing={4}>
                 <Text fontSize="sm" color="gray.400">
-                  Add a new agent to your registry. Agents can issue documents on behalf of your
-                  institution.
+                  Add a new agent to your registry on {currentNetwork.name}. Agents can issue
+                  documents on behalf of your institution.
                 </Text>
 
                 <FormControl isRequired>

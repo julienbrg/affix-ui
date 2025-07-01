@@ -6,6 +6,32 @@ import { sepolia } from '@reown/appkit/networks'
 import { type ReactNode, memo } from 'react'
 import { ChakraProvider, extendTheme } from '@chakra-ui/react'
 
+// Define Filecoin Calibration Network
+const filecoinCalibration = {
+  id: 314159,
+  name: 'Filecoin Calibration',
+  nativeCurrency: {
+    decimals: 18,
+    name: 'Filecoin',
+    symbol: 'tFIL',
+  },
+  rpcUrls: {
+    default: {
+      http: ['https://api.calibration.node.glif.io/rpc/v1'],
+    },
+    public: {
+      http: ['https://api.calibration.node.glif.io/rpc/v1'],
+    },
+  },
+  blockExplorers: {
+    default: {
+      name: 'Filscan Calibration',
+      url: 'https://calibration.filscan.io/en/message',
+    },
+  },
+  testnet: true,
+}
+
 const projectId = process.env['NEXT_PUBLIC_PROJECT_ID']
 if (!projectId) {
   throw new Error('NEXT_PUBLIC_PROJECT_ID is not set')
@@ -16,8 +42,8 @@ const ethersAdapter = new EthersAdapter()
 createAppKit({
   adapters: [ethersAdapter],
   projectId,
-  networks: [sepolia],
-  defaultNetwork: sepolia,
+  networks: [filecoinCalibration, sepolia],
+  defaultNetwork: filecoinCalibration,
   metadata: {
     name: 'Veridocs',
     description: 'Verify document authenticity',

@@ -26,7 +26,7 @@ import {
   AccordionPanel,
   AccordionIcon,
 } from '@chakra-ui/react'
-import { useAppKitAccount, useAppKitProvider } from '@reown/appkit/react'
+import { useAppKitAccount, useAppKitProvider, useAppKitNetwork } from '@reown/appkit/react'
 import { useState, useRef, useEffect } from 'react'
 import { useTranslation } from '@/hooks/useTranslation'
 import {
@@ -45,8 +45,21 @@ import {
 import { BrowserProvider, Contract, JsonRpcProvider } from 'ethers'
 import { getDocumentCID } from '../lib/documentHash'
 
-// Contract configuration
-const VERIDOCS_FACTORY_ADDRESS = '0x36FB4c117507a98e780922246860E499Bb7E996C'
+// Network configuration
+const NETWORK_CONFIGS = {
+  11155111: {
+    name: 'Sepolia Testnet',
+    factoryAddress: '0x02b77E551a1779f3f091a1523A08e61cd2620f82', // Replace with actual Sepolia factory address
+    rpcUrl: 'https://sepolia.infura.io/v3/YOUR_INFURA_KEY', // Replace with actual Sepolia RPC
+    blockExplorer: 'https://sepolia.etherscan.io',
+  },
+  314159: {
+    name: 'Filecoin Calibration',
+    factoryAddress: '0x1928Fb336C74432e129142c7E3ee57856486eFfa',
+    rpcUrl: 'https://api.calibration.node.glif.io/rpc/v1',
+    blockExplorer: 'https://calibration.filscan.io/en/message',
+  },
+}
 
 // Factory contract ABI - from actual Etherscan contract
 const VERIDOCS_FACTORY_ABI = [
@@ -105,6 +118,7 @@ interface DocumentDetails {
 export default function VerifyPage() {
   const { address, isConnected } = useAppKitAccount()
   const { walletProvider } = useAppKitProvider('eip155')
+  const { chainId, caipNetwork } = useAppKitNetwork()
   const [cidInput, setCidInput] = useState('')
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [isVerifying, setIsVerifying] = useState(false)
@@ -119,10 +133,26 @@ export default function VerifyPage() {
   const toast = useToast()
   const t = useTranslation()
 
-  // Load all registries on component mount
+  // Get current network configuration
+  const currentNetwork = NETWORK_CONFIGS[chainId as keyof typeof NETWORK_CONFIGS]
+
+  // Debug network detection
   useEffect(() => {
-    loadAllRegistries()
-  }, [])
+    console.log('🌐 Current Network Info:')
+    console.log('Chain ID:', chainId)
+    console.log('CAIP Network:', caipNetwork)
+    console.log('Network Name:', caipNetwork?.name)
+    console.log('Current Network Config:', currentNetwork)
+    console.log('Is Filecoin Calibration?', chainId === 314159)
+    console.log('Is Sepolia?', chainId === 11155111)
+  }, [chainId, caipNetwork, currentNetwork])
+
+  // Load all registries on component mount and when network changes
+  useEffect(() => {
+    if (currentNetwork) {
+      loadAllRegistries()
+    }
+  }, [currentNetwork])
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -167,15 +197,29 @@ export default function VerifyPage() {
   }
 
   const loadAllRegistries = async () => {
+    if (!currentNetwork) {
+      console.error('❌ No network configuration found for chain ID:', chainId)
+      toast({
+        title: 'Unsupported Network',
+        description: 'Please switch to Sepolia or Filecoin Calibration network',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      })
+      return
+    }
+
     console.log('🔄 Loading all registries from factory...')
-    console.log('📍 Factory Address:', VERIDOCS_FACTORY_ADDRESS)
+    console.log('📍 Factory Address:', currentNetwork.factoryAddress)
+    console.log('🌐 Current Network:', currentNetwork.name)
+    console.log('🌐 RPC URL:', currentNetwork.rpcUrl)
 
     setIsLoadingRegistries(true)
 
     try {
-      const ethersProvider = new JsonRpcProvider('https://ethereum-sepolia-rpc.publicnode.com')
+      const ethersProvider = new JsonRpcProvider(currentNetwork.rpcUrl)
       const factoryContract = new Contract(
-        VERIDOCS_FACTORY_ADDRESS,
+        currentNetwork.factoryAddress,
         VERIDOCS_FACTORY_ABI,
         ethersProvider
       )
@@ -187,6 +231,11 @@ export default function VerifyPage() {
         factoryContract.getInstitutionCount(),
         factoryContract.getAllInstitutions(),
       ])
+
+      console.log('📊 Raw institution count from contract:', institutionCount)
+      console.log('📊 Institution count as number:', Number(institutionCount))
+      console.log('📋 Raw registry addresses from contract:', registryAddresses)
+      console.log('📋 Registry addresses length:', registryAddresses.length)
 
       setTotalRegistries(Number(institutionCount))
 
@@ -221,28 +270,59 @@ export default function VerifyPage() {
             }
           }
 
-          // Load comprehensive registry details using getRegistryInfo
+          // Load comprehensive registry details - FIX: Use individual calls instead of getRegistryInfo
           const registryContract = new Contract(
             registryAddress,
             VERIDOCS_REGISTRY_ABI,
             ethersProvider
           )
 
-          const [registryAdmin, registryInstitutionName, documentCount, agentCount] =
-            await registryContract.getRegistryInfo()
-
-          // Get additional info
-          const [isValid, activeAgents] = await Promise.all([
+          // GET DATA USING INDIVIDUAL CONTRACT CALLS (more reliable)
+          const [
+            registryAdmin,
+            registryInstitutionName,
+            documentCount,
+            agentCount,
+            isValid,
+            activeAgents,
+          ] = await Promise.all([
+            registryContract.admin().catch(() => admin), // Fallback to factory admin
+            registryContract.institutionName().catch(() => institutionName), // Fallback to factory name
+            registryContract.getDocumentCount().catch(() => BigInt(0)), // Use individual call - THIS IS THE FIX!
+            registryContract.getAgentCount().catch(() => BigInt(0)),
             registryContract.isValidRegistry().catch(() => false),
             registryContract.getActiveAgents().catch(() => []),
           ])
 
-          console.log(`✅ Loaded registry info for ${institutionName}:`, {
+          // DEBUG: Compare getRegistryInfo vs individual calls
+          try {
+            const [regInfoAdmin, regInfoName, regInfoDocCount, regInfoAgentCount] =
+              await registryContract.getRegistryInfo()
+            console.log('🔍 COMPARISON - getRegistryInfo() vs individual calls:')
+            console.log('  getRegistryInfo documentCount:', regInfoDocCount.toString())
+            console.log('  getDocumentCount():', documentCount.toString())
+            console.log(
+              '  ⚠️ VALUES MATCH?',
+              regInfoDocCount.toString() === documentCount.toString()
+            )
+          } catch (e) {
+            console.log('⚠️ getRegistryInfo comparison failed:', e)
+          }
+
+          console.log(`✅ Loaded registry info for ${institutionName} (FIXED):`, {
             address: registryAddress,
             institutionName: registryInstitutionName,
-            documentCount: documentCount.toString(),
+
+            // USING CORRECT INDIVIDUAL CALLS
+            documentCount_CORRECT: documentCount,
+            documentCount_toString: documentCount.toString(),
+            documentCount_Number: Number(documentCount.toString()),
+
+            agentCount: agentCount,
+            agentCount_toString: agentCount.toString(),
+            agentCount_Number: Number(agentCount.toString()),
+
             admin: registryAdmin,
-            agentCount: agentCount.toString(),
             isValid,
             activeAgents: activeAgents.length,
           })
@@ -272,6 +352,18 @@ export default function VerifyPage() {
 
       const registryInfos = await Promise.all(registryInfoPromises)
 
+      // Debug registry info
+      console.log('📊 All registry info loaded:')
+      registryInfos.forEach((registry, index) => {
+        console.log(`Registry ${index + 1}:`, {
+          name: registry.institutionName,
+          documentCount: registry.documentCount.toString(),
+          documentCountAsNumber: Number(registry.documentCount.toString()),
+          agentCount: registry.agentCount.toString(),
+          agentCountAsNumber: Number(registry.agentCount.toString()),
+        })
+      })
+
       // Filter out invalid registries if needed
       const validRegistries = registryInfos.filter(
         registry => registry.institutionName !== 'Failed to Load'
@@ -279,13 +371,30 @@ export default function VerifyPage() {
 
       setRegistries(validRegistries)
 
+      // Calculate totals with proper BigInt handling
+      const totalDocs = validRegistries.reduce(
+        (sum, r) => sum + Number(r.documentCount.toString()),
+        0
+      )
+      const totalAgents = validRegistries.reduce(
+        (sum, r) => sum + Number(r.agentCount.toString()),
+        0
+      )
+
+      console.log('📊 Calculated totals:', { totalDocs, totalAgents })
       console.log('✅ Valid registries loaded successfully:', validRegistries.length)
       console.log('📋 Registry details:', validRegistries)
     } catch (error) {
       console.error('❌ Error loading registries:', error)
+      console.error('❌ Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        chainId: chainId,
+        factoryAddress: currentNetwork?.factoryAddress,
+        networkName: currentNetwork?.name,
+      })
       toast({
         title: 'Failed to load registries',
-        description: 'Could not connect to the factory contract',
+        description: `Could not connect to the factory contract on ${currentNetwork?.name}`,
         status: 'error',
         duration: 5000,
         isClosable: true,
@@ -313,6 +422,17 @@ export default function VerifyPage() {
         title: 'No registries available',
         description: 'Please wait for registries to load or refresh the page',
         status: 'warning',
+        duration: 5000,
+        isClosable: true,
+      })
+      return
+    }
+
+    if (!currentNetwork) {
+      toast({
+        title: 'Unsupported Network',
+        description: 'Please switch to a supported network',
+        status: 'error',
         duration: 5000,
         isClosable: true,
       })
@@ -353,7 +473,7 @@ export default function VerifyPage() {
       console.log('📄 CID to verify:', finalCID)
       console.log('🏛️ Checking across', registries.length, 'registries')
 
-      const ethersProvider = new JsonRpcProvider('https://ethereum-sepolia-rpc.publicnode.com')
+      const ethersProvider = new JsonRpcProvider(currentNetwork.rpcUrl)
       const results: VerificationResult[] = []
 
       // Check each registry
@@ -487,6 +607,33 @@ export default function VerifyPage() {
   const foundResults = verificationResults.filter(r => r.exists)
   const notFoundResults = verificationResults.filter(r => !r.exists)
 
+  // Show error if unsupported network
+  if (!currentNetwork) {
+    return (
+      <main>
+        <Container maxW="container.lg" py={20}>
+          <VStack spacing={8}>
+            <Box textAlign="center">
+              <Heading as="h1" size="xl" mb={4} color="red.400">
+                Unsupported Network
+              </Heading>
+              <Text fontSize="lg" color="gray.400" mb={6}>
+                Please switch to one of the supported networks:
+              </Text>
+              <VStack spacing={2}>
+                <Text color="blue.300">• Sepolia Testnet (Chain ID: 11155111)</Text>
+                <Text color="green.300">• Filecoin Calibration (Chain ID: 314159)</Text>
+              </VStack>
+              <Text fontSize="sm" color="gray.500" mt={4}>
+                Current Chain ID: {chainId || 'Unknown'}
+              </Text>
+            </Box>
+          </VStack>
+        </Container>
+      </main>
+    )
+  }
+
   return (
     <main>
       <Container maxW="container.lg" py={20}>
@@ -498,6 +645,9 @@ export default function VerifyPage() {
             <Text fontSize="lg" color="gray.400">
               Verify document authenticity across all registered institutions
             </Text>
+            <Badge colorScheme="blue" mt={2}>
+              Network: {currentNetwork.name}
+            </Badge>
           </header>
 
           {/* Registry Status */}
@@ -546,7 +696,43 @@ export default function VerifyPage() {
                   </Box>
                   <Box textAlign="center">
                     <Text fontSize="2xl" fontWeight="bold" color="green.300">
-                      {registries.reduce((sum, r) => sum + Number(r.documentCount), 0)}
+                      {registries.reduce((sum, r) => {
+                        console.log(`📊 Processing Registry: ${r.institutionName}`)
+                        console.log(`  - Raw documentCount:`, r.documentCount)
+                        console.log(`  - Type:`, typeof r.documentCount)
+                        console.log(`  - toString():`, r.documentCount.toString())
+                        console.log(`  - As hex:`, '0x' + r.documentCount.toString(16))
+                        console.log(`  - Number(toString()):`, Number(r.documentCount.toString()))
+                        console.log(`  - Direct Number():`, Number(r.documentCount))
+
+                        // SAFER CONVERSION METHOD
+                        let docCount = 0
+                        try {
+                          const strValue = r.documentCount.toString()
+                          console.log(`  - String value: "${strValue}"`)
+
+                          if (strValue === '0' || strValue === '') {
+                            docCount = 0
+                          } else {
+                            // Try parsing as integer
+                            const parsed = parseInt(strValue, 10)
+                            docCount = isNaN(parsed) ? 0 : Math.min(parsed, 1000) // Cap at 1000 for safety
+                          }
+
+                          console.log(`  - Final docCount used:`, docCount)
+                          console.log(`  - Running sum before:`, sum)
+                          console.log(`  - Running sum after:`, sum + docCount)
+                          console.log(`  -------------------------`)
+                        } catch (error) {
+                          console.error(
+                            `❌ Error converting documentCount for ${r.institutionName}:`,
+                            error
+                          )
+                          docCount = 0
+                        }
+
+                        return sum + docCount
+                      }, 0)}
                     </Text>
                     <Text fontSize="sm" color="gray.400">
                       Total Documents
@@ -554,7 +740,21 @@ export default function VerifyPage() {
                   </Box>
                   <Box textAlign="center">
                     <Text fontSize="2xl" fontWeight="bold" color="purple.300">
-                      {registries.reduce((sum, r) => sum + Number(r.agentCount), 0)}
+                      {registries.reduce((sum, r) => {
+                        let agentCount = 0
+                        try {
+                          const strValue = r.agentCount.toString()
+                          agentCount = strValue === '0' ? 0 : parseInt(strValue, 10)
+                          if (isNaN(agentCount)) agentCount = 0
+                        } catch (error) {
+                          console.error(
+                            `❌ Error converting agentCount for ${r.institutionName}:`,
+                            error
+                          )
+                          agentCount = 0
+                        }
+                        return sum + agentCount
+                      }, 0)}
                     </Text>
                     <Text fontSize="sm" color="gray.400">
                       Total Agents
@@ -595,10 +795,28 @@ export default function VerifyPage() {
                               </Text>
                               <HStack spacing={2}>
                                 <Badge colorScheme={registry.isValid ? 'green' : 'red'} size="sm">
-                                  {Number(registry.documentCount)} docs
+                                  {(() => {
+                                    try {
+                                      const strValue = registry.documentCount.toString()
+                                      const parsed = parseInt(strValue, 10)
+                                      return isNaN(parsed) ? 0 : parsed
+                                    } catch (e) {
+                                      return 0
+                                    }
+                                  })()}{' '}
+                                  docs
                                 </Badge>
                                 <Badge colorScheme="purple" size="sm">
-                                  {Number(registry.agentCount)} agents
+                                  {(() => {
+                                    try {
+                                      const strValue = registry.agentCount.toString()
+                                      const parsed = parseInt(strValue, 10)
+                                      return isNaN(parsed) ? 0 : parsed
+                                    } catch (e) {
+                                      return 0
+                                    }
+                                  })()}{' '}
+                                  agents
                                 </Badge>
                               </HStack>
                             </HStack>
@@ -1115,8 +1333,17 @@ export default function VerifyPage() {
                             <Text fontSize="sm" color="blue.300">
                               Network:
                             </Text>
-                            <Badge colorScheme="blue" size="sm">
-                              Sepolia Testnet
+                            <Badge
+                              colorScheme={
+                                chainId === 314159
+                                  ? 'green'
+                                  : chainId === 11155111
+                                    ? 'blue'
+                                    : 'orange'
+                              }
+                              size="sm"
+                            >
+                              {currentNetwork?.name || `Chain ${chainId}` || 'Unknown Network'}
                             </Badge>
                           </HStack>
 
@@ -1190,7 +1417,7 @@ export default function VerifyPage() {
                       4. Blockchain Security
                     </Text>
                     <Text fontSize="xs" color="gray.400">
-                      All verification data is stored immutably on the Ethereum blockchain, ensuring
+                      All verification data is stored immutably on the blockchain, ensuring
                       tamper-proof records.
                     </Text>
                   </VStack>
