@@ -220,6 +220,8 @@ export default function Dashboard() {
   }, [userRole, currentNetwork])
 
   // Fetch balance when wallet is connected
+  // Replace this section in your useEffect for fetching balance:
+
   useEffect(() => {
     const fetchBalance = async () => {
       if (!isConnected || !walletProvider || !address) {
@@ -228,21 +230,228 @@ export default function Dashboard() {
       }
 
       setIsLoadingBalance(true)
+      console.log('🔍 Starting balance fetch...')
+      console.log('📍 Address:', address)
+      console.log('🌐 Chain ID:', chainId)
+      console.log('🔗 Current Network:', currentNetwork?.name)
+
       try {
+        // Method 1: Try with wallet provider first
+        console.log('📊 Method 1: Using wallet provider...')
         const ethersProvider = new BrowserProvider(walletProvider as any)
-        const balanceWei = await ethersProvider.getBalance(address)
-        const balanceEth = formatEther(balanceWei)
-        setBalance(parseFloat(balanceEth).toFixed(4))
-      } catch (error) {
-        console.error('Error fetching balance:', error)
+
+        // Verify network connection
+        const network = await ethersProvider.getNetwork()
+        console.log('🌐 Connected network:', {
+          name: network.name,
+          chainId: network.chainId.toString(),
+          expected: chainId?.toString(),
+        })
+
+        // Check if network matches
+        if (network.chainId.toString() !== chainId?.toString()) {
+          console.warn('⚠️ Network mismatch detected!')
+          console.log('Expected:', chainId)
+          console.log('Actual:', network.chainId.toString())
+        }
+
+        let balanceWei
+        let balanceEth
+        let method = 'wallet'
+
+        try {
+          balanceWei = await ethersProvider.getBalance(address)
+          balanceEth = formatEther(balanceWei)
+          console.log('✅ Method 1 success - Wallet provider balance:', balanceEth)
+        } catch (walletError) {
+          console.warn('⚠️ Method 1 failed, trying RPC provider...')
+          console.error('Wallet provider error:', walletError)
+
+          // Method 2: Fallback to direct RPC if wallet provider fails
+          if (currentNetwork?.rpcUrl) {
+            console.log('📊 Method 2: Using direct RPC...', currentNetwork.rpcUrl)
+            const rpcProvider = new JsonRpcProvider(currentNetwork.rpcUrl)
+
+            // Test RPC connection
+            try {
+              const rpcNetwork = await rpcProvider.getNetwork()
+              console.log('🌐 RPC Network:', {
+                name: rpcNetwork.name,
+                chainId: rpcNetwork.chainId.toString(),
+              })
+            } catch (rpcNetworkError) {
+              console.error('❌ RPC network check failed:', rpcNetworkError)
+            }
+
+            balanceWei = await rpcProvider.getBalance(address)
+            balanceEth = formatEther(balanceWei)
+            method = 'rpc'
+            console.log('✅ Method 2 success - RPC provider balance:', balanceEth)
+          } else {
+            throw walletError
+          }
+        }
+
+        // Enhanced formatting with more precision for debugging
+        const balanceNum = parseFloat(balanceEth)
+        let formattedBalance: string
+
+        console.log('🔢 Balance conversion:')
+        console.log('  Raw Wei:', balanceWei.toString())
+        console.log('  Formatted ETH/FIL:', balanceEth)
+        console.log('  Parsed Number:', balanceNum)
+        console.log('  Method used:', method)
+
+        if (balanceNum === 0) {
+          formattedBalance = '0.0000'
+        } else if (balanceNum < 0.000001) {
+          // For extremely small amounts, show 8 decimal places
+          formattedBalance = balanceNum.toFixed(8)
+        } else if (balanceNum < 0.0001) {
+          // For very small amounts, show 6 decimal places
+          formattedBalance = balanceNum.toFixed(6)
+        } else if (balanceNum < 1) {
+          // For amounts less than 1, show 4 decimal places
+          formattedBalance = balanceNum.toFixed(4)
+        } else {
+          // For larger amounts, show 4 decimal places
+          formattedBalance = balanceNum.toFixed(4)
+        }
+
+        setBalance(formattedBalance)
+        console.log('✅ Final formatted balance:', formattedBalance)
+
+        // Additional network verification
+        if (chainId === 314159) {
+          console.log('✅ Confirmed on Filecoin Calibration network')
+
+          // Test a simple call to verify network is working
+          try {
+            const blockNumber = await (
+              method === 'wallet' ? ethersProvider : new JsonRpcProvider(currentNetwork!.rpcUrl)
+            ).getBlockNumber()
+            console.log('📦 Current block number:', blockNumber)
+          } catch (blockError) {
+            console.warn('⚠️ Could not fetch block number:', blockError)
+          }
+        }
+      } catch (error: any) {
+        console.error('💥 Balance fetch failed completely:', error)
+
+        // Enhanced error logging
+        if (error instanceof Error) {
+          console.error('Error name:', error.name)
+          console.error('Error message:', error.message)
+          console.error('Error stack:', error.stack)
+        }
+
+        // Try one more time with a different approach if it's a network error
+        if (error.message?.includes('network') || error.message?.includes('provider')) {
+          console.log('🔄 Network error detected, trying alternative RPC...')
+
+          try {
+            // Try alternative Filecoin RPC endpoints
+            const alternativeRpcs = [
+              'https://api.calibration.node.glif.io/rpc/v1',
+              'https://filecoin-calibration.chainup.net/rpc/v1',
+              'https://calibration.node.glif.io/rpc/v0',
+            ]
+
+            for (const rpcUrl of alternativeRpcs) {
+              try {
+                console.log('🔄 Trying RPC:', rpcUrl)
+                const altProvider = new JsonRpcProvider(rpcUrl)
+                const balanceWei = await altProvider.getBalance(address)
+                const balanceEth = formatEther(balanceWei)
+                const balanceNum = parseFloat(balanceEth)
+
+                const formattedBalance =
+                  balanceNum === 0
+                    ? '0.0000'
+                    : balanceNum < 0.0001
+                      ? balanceNum.toFixed(6)
+                      : balanceNum.toFixed(4)
+
+                setBalance(formattedBalance)
+                console.log('✅ Alternative RPC success:', formattedBalance)
+                return
+              } catch (altError: any) {
+                console.warn('⚠️ Alternative RPC failed:', rpcUrl, altError.message)
+              }
+            }
+          } catch (retryError) {
+            console.error('💥 All retry attempts failed:', retryError)
+          }
+        }
+
         setBalance('Error')
       } finally {
         setIsLoadingBalance(false)
       }
     }
 
-    fetchBalance()
-  }, [isConnected, walletProvider, address])
+    // Add a small delay to ensure wallet is fully connected
+    const timeoutId = setTimeout(() => {
+      fetchBalance()
+    }, 1000)
+
+    return () => clearTimeout(timeoutId)
+  }, [isConnected, walletProvider, address, chainId, currentNetwork])
+
+  const refreshBalance = async () => {
+    console.log('🔄 Manual balance refresh triggered')
+
+    if (!isConnected || !walletProvider || !address) {
+      toast({
+        title: 'Cannot Refresh Balance',
+        description: 'Wallet not connected',
+        status: 'warning',
+        duration: 3000,
+        isClosable: true,
+      })
+      return
+    }
+
+    setIsLoadingBalance(true)
+
+    try {
+      // Force a fresh balance check with direct RPC call
+      const rpcProvider = new JsonRpcProvider(currentNetwork!.rpcUrl)
+      const balanceWei = await rpcProvider.getBalance(address)
+      const balanceEth = formatEther(balanceWei)
+      const balanceNum = parseFloat(balanceEth)
+
+      const formattedBalance =
+        balanceNum === 0
+          ? '0.0000'
+          : balanceNum < 0.0001
+            ? balanceNum.toFixed(6)
+            : balanceNum.toFixed(4)
+
+      setBalance(formattedBalance)
+
+      toast({
+        title: 'Balance Refreshed',
+        description: `Current balance: ${formattedBalance} ${chainId === 314159 ? 'FIL' : 'ETH'}`,
+        status: 'success',
+        duration: 3000,
+        isClosable: true,
+      })
+
+      console.log('✅ Manual refresh successful:', formattedBalance)
+    } catch (error) {
+      console.error('💥 Manual refresh failed:', error)
+      toast({
+        title: 'Refresh Failed',
+        description: 'Could not fetch latest balance',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      })
+    } finally {
+      setIsLoadingBalance(false)
+    }
+  }
 
   const checkUserRole = async () => {
     if (!walletProvider || !address || !currentNetwork) return
@@ -820,7 +1029,22 @@ export default function Dashboard() {
           const provider = new BrowserProvider(walletProvider as any)
           const balanceWei = await provider.getBalance(address)
           const balanceEth = formatEther(balanceWei)
-          setBalance(parseFloat(balanceEth).toFixed(4))
+
+          // Use the same formatting logic
+          const balanceNum = parseFloat(balanceEth)
+          let formattedBalance: string
+
+          if (balanceNum === 0) {
+            formattedBalance = '0.0000'
+          } else if (balanceNum < 0.0001) {
+            formattedBalance = balanceNum.toFixed(6)
+          } else if (balanceNum < 0.01) {
+            formattedBalance = balanceNum.toFixed(4)
+          } else {
+            formattedBalance = balanceNum.toFixed(4)
+          }
+
+          setBalance(formattedBalance)
         } catch (error) {
           console.error('Error refreshing balance:', error)
         }
@@ -1127,9 +1351,21 @@ export default function Dashboard() {
                       </Text>
                     </HStack>
                   ) : (
-                    <Text fontFamily="mono" color={balance === 'Error' ? 'red.400' : 'green.400'}>
-                      {balance} {chainId === 314159 ? 'FIL' : 'ETH'}
-                    </Text>
+                    <HStack spacing={2}>
+                      <Text fontFamily="mono" color={balance === 'Error' ? 'red.400' : 'green.400'}>
+                        {balance} {chainId === 314159 ? 'FIL' : 'ETH'}
+                      </Text>
+                      <Tooltip label="Refresh balance">
+                        <IconButton
+                          aria-label="Refresh balance"
+                          icon={<Icon as={FiRefreshCw} />}
+                          size="xs"
+                          variant="ghost"
+                          onClick={refreshBalance}
+                          isLoading={isLoadingBalance}
+                        />
+                      </Tooltip>
+                    </HStack>
                   )}
                   {/* Add manual refresh button for role checking */}
                   {!isCheckingRole && (
