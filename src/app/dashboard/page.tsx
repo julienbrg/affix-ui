@@ -44,6 +44,7 @@ import {
   CardHeader,
   IconButton,
   Tooltip,
+  Textarea,
 } from '@chakra-ui/react'
 import { useAppKitAccount, useAppKitProvider, useAppKitNetwork } from '@reown/appkit/react'
 import { useState, useRef, useEffect } from 'react'
@@ -99,18 +100,25 @@ const FACTORY_ABI = [
   'function getAllInstitutions() view returns (address[])',
 ]
 
-// Registry contract ABI - enhanced with agent management functions
+// Registry contract ABI - updated to match the actual contract
 const REGISTRY_ABI = [
   'function admin() view returns (address)',
   'function agents(address) view returns (bool)',
   'function institutionName() view returns (string)',
-  'function issueDocumentOpenBar(string memory cid)',
-  'function verifyDocument(string memory cid) external view returns (bool exists, uint256 timestamp, string memory institutionName)',
-  'function getDocumentDetails(string memory cid) external view returns (bool exists, uint256 timestamp, string memory institutionName, string memory metadata, address issuedBy)',
-  'function getDocumentCount() external view returns (uint256)',
+  'function institutionUrl() view returns (string)',
+  'function canIssueDocuments(address issuer) view returns (bool)',
+  'function issueDocument(string memory cid)',
+  'function issueDocumentWithMetadata(string memory cid, string memory metadata)',
+  'function verifyDocument(string memory cid) view returns (bool exists, uint256 timestamp, string memory institutionName_, string memory institutionUrl_)',
+  'function getDocumentDetails(string memory cid) view returns (bool exists, uint256 timestamp, string memory institutionName_, string memory institutionUrl_, string memory metadata, address issuedBy)',
+  'function getDocumentCount() view returns (uint256)',
+  'function getAllDocumentCids() view returns (string[] memory)',
   'function addAgent(address agent)',
   'function revokeAgent(address agent)',
-  'function getActiveAgents() external view returns (address[])',
+  'function getActiveAgents() view returns (address[] memory)',
+  'function isAgent(address agent) view returns (bool)',
+  'function getRegistryInfo() view returns (address admin_, string memory institutionName_, string memory institutionUrl_, uint256 documentCount, uint256 agentCount)',
+  'event DocumentIssued(string indexed cid, uint256 timestamp, string metadata, address indexed issuedBy)',
   'event AgentAdded(address indexed agent, address indexed addedBy)',
   'event AgentRevoked(address indexed agent, address indexed revokedBy)',
 ]
@@ -122,12 +130,14 @@ interface IssueResult {
   registryAddress: string
   blockNumber: number
   network: string
+  metadata?: string
 }
 
 interface UserRole {
   type: 'admin' | 'agent'
   registryAddress: string
   institutionName: string
+  institutionUrl: string
 }
 
 interface Agent {
@@ -148,6 +158,7 @@ export default function Dashboard() {
   const [isIssuing, setIsIssuing] = useState(false)
   const [isCalculatingCID, setIsCalculatingCID] = useState(false)
   const [documentCID, setDocumentCID] = useState<string | null>(null)
+  const [documentMetadata, setDocumentMetadata] = useState<string>('')
   const [progress, setProgress] = useState(0)
   const [progressStatus, setProgressStatus] = useState('')
 
@@ -287,52 +298,52 @@ export default function Dashboard() {
             try {
               const registryContract = new Contract(registryAddress, REGISTRY_ABI, ethersProvider)
 
-              // Get institution name first for logging
+              // Get institution info first
               let institutionName = 'Unknown'
+              let institutionUrl = ''
               try {
                 institutionName = await registryContract.institutionName()
+                institutionUrl = await registryContract.institutionUrl()
                 console.log('🏫 Institution name:', institutionName)
+                console.log('🌐 Institution URL:', institutionUrl)
               } catch (error) {
-                console.warn('⚠️ Could not get institution name:', error)
+                console.warn('⚠️ Could not get institution info:', error)
               }
 
-              // Check if user is admin
+              // Check if user can issue documents (covers both admin and agent cases)
               try {
-                const adminAddress = await registryContract.admin()
-                console.log('👑 Admin address from contract:', adminAddress)
-                console.log('🔑 Your address:', address)
+                const canIssue = await registryContract.canIssueDocuments(address)
+                console.log('📝 Can issue documents:', canIssue)
 
-                if (adminAddress.toLowerCase() === address.toLowerCase()) {
-                  console.log('✅ ADMIN MATCH FOUND!')
-                  setUserRole({
-                    type: 'admin',
-                    registryAddress,
-                    institutionName,
-                  })
-                  console.log('🎉 User role set to admin for:', institutionName)
-                  return
+                if (canIssue) {
+                  // Check if user is admin
+                  try {
+                    const adminAddress = await registryContract.admin()
+                    const isAdmin = adminAddress.toLowerCase() === address.toLowerCase()
+
+                    console.log('👑 Admin address:', adminAddress)
+                    console.log('🔑 Your address:', address)
+                    console.log('👑 Is admin:', isAdmin)
+
+                    setUserRole({
+                      type: isAdmin ? 'admin' : 'agent',
+                      registryAddress,
+                      institutionName,
+                      institutionUrl,
+                    })
+
+                    console.log(`✅ ${isAdmin ? 'ADMIN' : 'AGENT'} MATCH FOUND!`)
+                    console.log(
+                      `🎉 User role set to ${isAdmin ? 'admin' : 'agent'} for:`,
+                      institutionName
+                    )
+                    return
+                  } catch (error) {
+                    console.error('❌ Error checking admin status:', error)
+                  }
                 }
               } catch (error) {
-                console.error('❌ Error checking admin status:', error)
-              }
-
-              // Check if user is agent
-              try {
-                const isAgent = await registryContract.agents(address)
-                console.log('👥 Agent status:', isAgent)
-
-                if (isAgent) {
-                  console.log('✅ AGENT MATCH FOUND!')
-                  setUserRole({
-                    type: 'agent',
-                    registryAddress,
-                    institutionName,
-                  })
-                  console.log('🎉 User role set to agent for:', institutionName)
-                  return
-                }
-              } catch (error) {
-                console.error('❌ Error checking agent status:', error)
+                console.error('❌ Error checking document issuance permission:', error)
               }
             } catch (error) {
               console.error(`❌ Error checking registry ${registryAddress}:`, error)
@@ -501,6 +512,8 @@ export default function Dashboard() {
         errorMessage = 'Insufficient funds for transaction'
       } else if (error.message?.includes('already exists')) {
         errorMessage = 'Agent already exists in the registry'
+      } else if (error.message?.includes('Invalid agent address')) {
+        errorMessage = 'Invalid agent address provided'
       }
 
       toast({
@@ -565,6 +578,8 @@ export default function Dashboard() {
         errorMessage = 'Transaction was rejected by user'
       } else if (error.message?.includes('insufficient funds')) {
         errorMessage = 'Insufficient funds for transaction'
+      } else if (error.message?.includes('Agent does not exist')) {
+        errorMessage = 'Agent does not exist in the registry'
       }
 
       toast({
@@ -666,6 +681,7 @@ export default function Dashboard() {
     setSelectedFile(null)
     setIssueResult(null)
     setDocumentCID(null)
+    setDocumentMetadata('')
     setProgress(0)
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
@@ -718,6 +734,8 @@ export default function Dashboard() {
     }
 
     setIsIssuing(true)
+    setProgress(20)
+    setProgressStatus('Preparing transaction...')
 
     try {
       console.log('Starting transaction process...')
@@ -747,18 +765,22 @@ export default function Dashboard() {
       // Create registry contract instance
       const registryContract = new Contract(userRole.registryAddress, REGISTRY_ABI, signer)
 
-      // Call issueDocumentOpenBar function
-      console.log('Issuing document with CID:', documentCID)
-
-      // Use a simple transaction object approach
-      const tx = await signer.sendTransaction({
-        to: userRole.registryAddress,
-        data: registryContract.interface.encodeFunctionData('issueDocumentOpenBar', [documentCID]),
-      })
-
-      console.log('Transaction submitted via sendTransaction:', tx.hash)
-
       setProgress(40)
+      setProgressStatus('Submitting transaction to blockchain...')
+
+      // Choose the appropriate function based on whether metadata is provided
+      let tx: any
+      if (documentMetadata.trim()) {
+        console.log('Issuing document with metadata:', documentCID, documentMetadata)
+        tx = await registryContract.issueDocumentWithMetadata(documentCID, documentMetadata.trim())
+      } else {
+        console.log('Issuing document without metadata:', documentCID)
+        tx = await registryContract.issueDocument(documentCID)
+      }
+
+      console.log('Transaction submitted:', tx.hash)
+
+      setProgress(60)
       setProgressStatus(
         `Transaction submitted (${tx.hash.slice(0, 10)}...) - Waiting for confirmation...`
       )
@@ -775,13 +797,22 @@ export default function Dashboard() {
         registryAddress: userRole.registryAddress,
         blockNumber: receipt.blockNumber,
         network: currentNetwork.name,
+        metadata: documentMetadata.trim() || undefined,
       }
-      setProgress(60)
+      setProgress(80)
 
       setProgressStatus(`Document registered successfully in block ${receipt.blockNumber}! 🎉`)
       setProgress(100)
 
       setIssueResult(result)
+
+      toast({
+        title: 'Document Issued Successfully! 🎉',
+        description: `Document has been registered on the blockchain`,
+        status: 'success',
+        duration: 8000,
+        isClosable: true,
+      })
 
       // Refresh balance after transaction
       if (address && walletProvider) {
@@ -804,10 +835,15 @@ export default function Dashboard() {
       } else if (error.message?.includes('insufficient funds')) {
         errorMessage = 'Insufficient funds for transaction'
       } else if (error.message?.includes('execution reverted')) {
-        errorMessage =
-          'Contract call failed - check if contract address is correct and function exists'
-      } else if (error.message?.includes('already exists')) {
-        errorMessage = 'Document with this hash already exists on blockchain'
+        if (error.message?.includes('Document already exists')) {
+          errorMessage = 'Document with this hash already exists on blockchain'
+        } else if (error.message?.includes('Not authorized')) {
+          errorMessage = 'You are not authorized to issue documents for this registry'
+        } else if (error.message?.includes('IPFS CID cannot be empty')) {
+          errorMessage = 'Invalid document hash (CID cannot be empty)'
+        } else {
+          errorMessage = 'Contract call failed - check permissions and try again'
+        }
       } else if (error.message?.includes('could not coalesce error')) {
         errorMessage =
           'Wallet connection issue. Please try disconnecting and reconnecting your wallet.'
@@ -829,6 +865,9 @@ export default function Dashboard() {
         duration: 7000,
         isClosable: true,
       })
+
+      setProgress(0)
+      setProgressStatus('')
     } finally {
       setIsIssuing(false)
     }
@@ -846,7 +885,7 @@ export default function Dashboard() {
     if (!currentNetwork) return '#'
 
     if (type === 'tx') {
-      return `${currentNetwork.blockExplorer}/tx/${value}`
+      return `${currentNetwork.blockExplorer}/${value}`
     } else {
       return `${currentNetwork.blockExplorer}/address/${value}`
     }
@@ -1377,9 +1416,69 @@ export default function Dashboard() {
                                   )}
                                 </Box>
                               )}
+
+                              {/* Display CID when available */}
+                              {documentCID && !isCalculatingCID && (
+                                <Box
+                                  bg="green.900"
+                                  border="1px solid"
+                                  borderColor="green.500"
+                                  borderRadius="md"
+                                  p={4}
+                                  w="100%"
+                                >
+                                  <VStack spacing={2} align="stretch">
+                                    <HStack>
+                                      <Icon as={FiHash} color="green.300" />
+                                      <Text fontSize="sm" color="green.300" fontWeight="medium">
+                                        Document Hash (CID)
+                                      </Text>
+                                    </HStack>
+                                    <Box
+                                      bg="whiteAlpha.100"
+                                      p={2}
+                                      borderRadius="sm"
+                                      cursor="pointer"
+                                      onClick={() => copyToClipboard(documentCID)}
+                                      _hover={{ bg: 'whiteAlpha.200' }}
+                                    >
+                                      <Text fontSize="xs" fontFamily="mono" wordBreak="break-all">
+                                        {documentCID}
+                                      </Text>
+                                    </Box>
+                                    <Text fontSize="xs" color="gray.400" textAlign="center">
+                                      Click to copy hash
+                                    </Text>
+                                  </VStack>
+                                </Box>
+                              )}
                             </VStack>
                           )}
                         </FormControl>
+
+                        {/* Metadata Input */}
+                        {selectedFile && (
+                          <FormControl>
+                            <FormLabel fontSize="md" fontWeight="semibold">
+                              Document Metadata (Optional)
+                            </FormLabel>
+                            <Textarea
+                              placeholder="Enter additional information about this document (e.g., document type, description, notes)..."
+                              value={documentMetadata}
+                              onChange={e => setDocumentMetadata(e.target.value)}
+                              size="sm"
+                              rows={3}
+                              bg="whiteAlpha.100"
+                              borderColor="gray.600"
+                              _hover={{ borderColor: 'gray.500' }}
+                              _focus={{ borderColor: 'blue.400', boxShadow: '0 0 0 1px #3182ce' }}
+                            />
+                            <Text fontSize="xs" color="gray.500" mt={1}>
+                              This information will be stored on the blockchain along with the
+                              document hash
+                            </Text>
+                          </FormControl>
+                        )}
 
                         <Button
                           onClick={handleIssue}
@@ -1411,7 +1510,7 @@ export default function Dashboard() {
                         )}
 
                         {/* Progress Status Bar */}
-                        {progress > 0 && (
+                        {progress > 0 && isIssuing && (
                           <Box
                             mt={6}
                             p={4}
@@ -1505,6 +1604,17 @@ export default function Dashboard() {
                                 </Box>
                               </Box>
 
+                              {issueResult.metadata && (
+                                <Box>
+                                  <Text fontSize="sm" color="green.300" fontWeight="medium" mb={1}>
+                                    Metadata:
+                                  </Text>
+                                  <Box bg="whiteAlpha.100" p={2} borderRadius="sm">
+                                    <Text fontSize="xs">{issueResult.metadata}</Text>
+                                  </Box>
+                                </Box>
+                              )}
+
                               <Box>
                                 <Text fontSize="sm" color="green.300" fontWeight="medium" mb={1}>
                                   Block Number:
@@ -1579,8 +1689,8 @@ export default function Dashboard() {
                   w="100%"
                 >
                   <Text fontSize="xs" color="yellow.200">
-                    ⚠️ Make sure the address is correct. Agent privileges cannot be easily revoked
-                    once granted.
+                    ⚠️ Make sure the address is correct. Agent privileges can be revoked but should
+                    be granted carefully.
                   </Text>
                 </Box>
               </VStack>
@@ -1632,8 +1742,8 @@ export default function Dashboard() {
                     w="100%"
                   >
                     <Text fontSize="sm" color="red.200">
-                      ⚠️ This action cannot be undone. The agent will immediately lose the ability
-                      to issue documents.
+                      ⚠️ This action will immediately remove the agent&apos;s ability to issue
+                      documents. The agent can be re-added later if needed.
                     </Text>
                   </Box>
                 </VStack>
