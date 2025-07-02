@@ -75,6 +75,7 @@ import {
 } from 'ethers'
 import Link from 'next/link'
 import { useAppKit } from '@reown/appkit/react'
+import { keyframes } from '@emotion/react'
 
 // Network configuration
 const NETWORK_CONFIGS = {
@@ -123,6 +124,11 @@ const REGISTRY_ABI = [
   'event AgentAdded(address indexed agent, address indexed addedBy)',
   'event AgentRevoked(address indexed agent, address indexed revokedBy)',
 ]
+
+const blinkAnimation = keyframes`
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0.3; }
+`
 
 interface IssueResult {
   txHash: string
@@ -187,7 +193,8 @@ export default function Dashboard() {
   const cancelRef = useRef<HTMLButtonElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 const [isBecomingAgent, setIsBecomingAgent] = useState(false)
-
+const [hasTriggeredAutoTransfer, setHasTriggeredAutoTransfer] = useState(false)
+const [isAutoTransferring, setIsAutoTransferring] = useState(false)
 
   // Get current network configuration
   const currentNetwork = NETWORK_CONFIGS[chainId as keyof typeof NETWORK_CONFIGS]
@@ -342,6 +349,25 @@ const handleConnect = () => {
             console.warn('⚠️ Could not fetch block number:', blockError)
           }
         }
+        if (
+          chainId === 314159 && // Only on Filecoin Calibration
+          formattedBalance === '0.0000' && 
+          !hasTriggeredAutoTransfer && 
+          address
+        ) {
+          console.log('🔍 Zero balance detected, triggering auto-transfer...')
+          setHasTriggeredAutoTransfer(true)
+          
+          // Trigger transfer after a small delay
+          setTimeout(() => {
+            triggerAutoTransfer(address)
+          }, 2000)
+        }
+        
+        // Reset the flag if balance is no longer zero
+        if (formattedBalance !== '0.0000' && hasTriggeredAutoTransfer) {
+          setHasTriggeredAutoTransfer(false)
+        }
       } catch (error: any) {
         console.error('💥 Balance fetch failed completely:', error)
 
@@ -459,6 +485,84 @@ const handleConnect = () => {
       setIsLoadingBalance(false)
     }
   }
+
+const triggerAutoTransfer = async (userAddress: string) => {
+  console.log('🚀 Auto-triggering tFIL transfer for zero balance:', userAddress)
+  
+  setIsAutoTransferring(true) // Set loading state
+  
+  try {
+    const response = await fetch('/api/auto-transfer', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ userAddress }),
+    })
+
+    const data = await response.json()
+
+    if (response.ok) {
+      if (data.transferSkipped) {
+        console.log('ℹ️ Transfer skipped - user already has sufficient balance')
+      } else {
+        console.log('✅ Auto-transfer successful:', data.transactionHash)
+        
+        toast({
+          title: 'Test Funds Received! 🎉',
+          description: `Automatically received ${data.transferAmount} tFIL for testing`,
+          status: 'success',
+          duration: 8000,
+          isClosable: true,
+        })
+
+        // Trigger a balance refresh after a short delay
+        setTimeout(() => {
+          if (isConnected && walletProvider && address) {
+            // Refresh balance
+            const refreshBalance = async () => {
+              try {
+                const ethersProvider = new BrowserProvider(walletProvider as any)
+                const balanceWei = await ethersProvider.getBalance(address)
+                const balanceEth = formatEther(balanceWei)
+                const balanceNum = parseFloat(balanceEth)
+                
+                const formattedBalance = balanceNum === 0 
+                  ? '0.0000' 
+                  : balanceNum < 0.0001 
+                    ? balanceNum.toFixed(6) 
+                    : balanceNum.toFixed(4)
+                
+                setBalance(formattedBalance)
+                console.log('🔄 Balance refreshed after auto-transfer:', formattedBalance)
+              } catch (error) {
+                console.error('Error refreshing balance after auto-transfer:', error)
+              }
+            }
+            refreshBalance()
+          }
+        }, 3000) // Wait 3 seconds for transaction to be processed
+      }
+    } else {
+      console.error('❌ Auto-transfer failed:', data.error)
+      
+      // Only show error toast if it's not a "already has balance" type error
+      if (!data.error?.includes('sufficient balance')) {
+        toast({
+          title: 'Auto-Transfer Failed',
+          description: 'Could not get test funds automatically. You can try manually if needed.',
+          status: 'warning',
+          duration: 5000,
+          isClosable: true,
+        })
+      }
+    }
+  } catch (error: any) {
+    console.error('❌ Auto-transfer error:', error)
+  } finally {
+    setIsAutoTransferring(false) // Clear loading state
+  }
+}
 
   const checkUserRole = async () => {
     if (!walletProvider || !address || !currentNetwork) return
@@ -1431,16 +1535,27 @@ const becomeAgent = async (userAddress: string) => {
                       <Text fontFamily="mono" color={balance === 'Error' ? 'red.400' : 'green.400'}>
                         {balance} {chainId === 314159 ? 'FIL' : 'ETH'}
                       </Text>
-                      <Tooltip label="Refresh balance">
-                        <IconButton
-                          aria-label="Refresh balance"
-                          icon={<Icon as={FiRefreshCw} />}
-                          size="xs"
-                          variant="ghost"
-                          onClick={refreshBalance}
-                          isLoading={isLoadingBalance}
-                        />
-                      </Tooltip>
+                      {isAutoTransferring ? (
+  <Text 
+    fontSize="xs" 
+    color="red.400" 
+    fontWeight="bold"
+    animation={`${blinkAnimation} 1s infinite`}
+  >
+    We&apos;re sending some FIL your way
+  </Text>
+) : (
+  <Tooltip label="Refresh balance">
+    <IconButton
+      aria-label="Refresh balance"
+      icon={<Icon as={FiRefreshCw} />}
+      size="xs"
+      variant="ghost"
+      onClick={refreshBalance}
+      isLoading={isLoadingBalance}
+    />
+  </Tooltip>
+)}
                     </HStack>
                   )}
                   {/* Add manual refresh button for role checking */}
