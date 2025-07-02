@@ -74,6 +74,7 @@ import {
   JsonRpcProvider,
 } from 'ethers'
 import Link from 'next/link'
+import { useAppKit } from '@reown/appkit/react'
 
 // Network configuration
 const NETWORK_CONFIGS = {
@@ -185,10 +186,16 @@ export default function Dashboard() {
   const { isOpen: isRevokeOpen, onOpen: onRevokeOpen, onClose: onRevokeClose } = useDisclosure()
   const cancelRef = useRef<HTMLButtonElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+const [isBecomingAgent, setIsBecomingAgent] = useState(false)
+
 
   // Get current network configuration
   const currentNetwork = NETWORK_CONFIGS[chainId as keyof typeof NETWORK_CONFIGS]
 
+  const { open } = useAppKit()
+const handleConnect = () => {
+  open({ view: 'Connect' })
+}
   // Debug network detection
   useEffect(() => {
     console.log('🌐 Dashboard Network Info:')
@@ -622,6 +629,73 @@ export default function Dashboard() {
       setIsLoadingAgents(false)
     }
   }
+
+const becomeAgent = async (userAddress: string) => {
+    setIsBecomingAgent(true)
+
+  try {
+    toast({
+      title: 'Checking Status',
+      description: 'Checking your agent status with Ministry of Sound...',
+      status: 'info',
+      duration: 3000,
+      isClosable: true,
+    })
+
+    const response = await fetch('/api/make-agent', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ userAddress }),
+    })
+
+    const data = await response.json()
+
+    if (response.ok) {
+      if (data.alreadyAgent) {
+        // User was already an agent
+        toast({
+          title: 'Already an Agent! 🎉',
+          description: 'You are already an agent of the Ministry of Sound. Redirecting to dashboard...',
+          status: 'success',
+          duration: 5000,
+          isClosable: true,
+        })
+      } else {
+        // User was successfully made an agent
+        toast({
+          title: 'Agent Status Granted! 🎉',
+          description: `Congratulations! You are now an agent of the Ministry of Sound. Transaction: ${data.transactionHash?.slice(0, 10)}...`,
+          status: 'success',
+          duration: 8000,
+          isClosable: true,
+        })
+      }
+      
+      setTimeout(() => {
+       checkUserRole()
+     }, 2000)
+         setIsBecomingAgent(false)
+
+      
+    } else {
+      throw new Error(data.error || 'Failed to process agent request')
+    }
+  } catch (error: any) {
+    console.error('Error with agent request:', error)
+    toast({
+      title: 'Agent Request Failed',
+      description: error.message || 'Failed to process agent request. Please try again.',
+      status: 'error',
+      duration: 6000,
+      isClosable: true,
+    })
+        setIsBecomingAgent(false)
+
+  }
+}
+
 
   const handleAddAgent = async () => {
     if (!newAgentAddress.trim()) {
@@ -1138,19 +1212,19 @@ export default function Dashboard() {
                 Want to Try Document Issuance?
               </Heading>
               <Text fontSize="sm" color="gray.400" textAlign="center">
-                Experience how the document issuance process works without connecting a wallet
+                Login and become an agent of the Ministry of Sound! 
               </Text>
-              <Link href="/dashboard-test" passHref>
-                <Button
-                  bg="blue.600"
-                  color="white"
-                  _hover={{ bg: 'blue.500' }}
-                  leftIcon={<Icon as={FiPlay} />}
-                  size="lg"
-                >
-                  Try Test Dashboard
-                </Button>
-              </Link>
+              
+              <Button
+                bg="blue.600"
+                color="white"
+                _hover={{ bg: 'blue.500' }}
+                leftIcon={<Icon as={FiUserPlus} />}
+                size="lg"
+                onClick={handleConnect}
+              >
+                Login to Become Agent
+              </Button>
             </VStack>
           </Box>
         </VStack>
@@ -1255,25 +1329,27 @@ export default function Dashboard() {
                       w="100%"
                       textAlign="center"
                     >
-                      <VStack spacing={3}>
-                        <Icon as={FiPlay} boxSize={6} color="blue.300" />
-                        <Text fontSize="sm" color="blue.300" fontWeight="medium">
+                      <VStack spacing={4}>
+                        <Icon as={FiPlay} boxSize={8} color="blue.300" />
+                        <Heading size="md" color="blue.300">
                           Want to Try Document Issuance?
+                        </Heading>
+                        <Text fontSize="sm" color="gray.400" textAlign="center">
+                          Become an agent of the Ministry of Sound! 
                         </Text>
-                        <Text fontSize="xs" color="gray.400" textAlign="center">
-                          Experience the process without authorization requirements
-                        </Text>
-                        <Link href="/dashboard-test" passHref>
-                          <Button
-                            bg="blue.600"
-                            color="white"
-                            _hover={{ bg: 'blue.500' }}
-                            leftIcon={<Icon as={FiPlay} />}
-                            size="md"
-                          >
-                            Try Test Dashboard
-                          </Button>
-                        </Link>
+                        
+                        <Button
+                          bg="blue.600"
+                          color="white"
+                          _hover={{ bg: 'blue.500' }}
+                          leftIcon={<Icon as={FiPlay} />}
+                          size="lg"
+                          onClick={() => becomeAgent(address!)}
+                          isLoading={isBecomingAgent}
+                          loadingText="Processing..."
+                        >
+                          Become Agent
+                        </Button>
                       </VStack>
                     </Box>
                   </VStack>
