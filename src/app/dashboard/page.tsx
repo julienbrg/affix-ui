@@ -44,8 +44,9 @@ import {
   CardHeader,
   IconButton,
   Tooltip,
+  Textarea,
 } from '@chakra-ui/react'
-import { useAppKitAccount, useAppKitProvider } from '@reown/appkit/react'
+import { useAppKitAccount, useAppKitProvider, useAppKitNetwork } from '@reown/appkit/react'
 import { useState, useRef, useEffect } from 'react'
 import { useTranslation } from '@/hooks/useTranslation'
 import {
@@ -64,11 +65,35 @@ import {
   FiRefreshCw,
 } from 'react-icons/fi'
 import { getDocumentCID } from '../lib/documentHash'
-import { BrowserProvider, Contract, formatEther, parseEther, JsonRpcSigner } from 'ethers'
+import {
+  BrowserProvider,
+  Contract,
+  formatEther,
+  parseEther,
+  JsonRpcSigner,
+  JsonRpcProvider,
+} from 'ethers'
 import Link from 'next/link'
+import { useAppKit } from '@reown/appkit/react'
+import { keyframes } from '@emotion/react'
 
-// Contract configuration
-const VERIDOCS_FACTORY_ADDRESS = '0x36FB4c117507a98e780922246860E499Bb7E996C'
+// Network configuration
+const NETWORK_CONFIGS = {
+  11155111: {
+    name: 'Sepolia Testnet',
+    factoryAddress: '0x...', // Replace with actual Sepolia factory address
+    rpcUrl: 'https://sepolia.infura.io/v3/YOUR_INFURA_KEY', // Replace with actual Sepolia RPC
+    blockExplorer: 'https://sepolia.etherscan.io',
+    explorerName: 'Sepolia Etherscan',
+  },
+  314159: {
+    name: 'Filecoin Calibration',
+    factoryAddress: '0x1928Fb336C74432e129142c7E3ee57856486eFfa',
+    rpcUrl: 'https://api.calibration.node.glif.io/rpc/v1',
+    blockExplorer: 'https://calibration.filscan.io/en/message',
+    explorerName: 'Filscan Calibration',
+  },
+}
 
 // Factory contract ABI - only what we need
 const FACTORY_ABI = [
@@ -77,21 +102,33 @@ const FACTORY_ABI = [
   'function getAllInstitutions() view returns (address[])',
 ]
 
-// Registry contract ABI - enhanced with agent management functions
+// Registry contract ABI - updated to match the actual contract
 const REGISTRY_ABI = [
   'function admin() view returns (address)',
   'function agents(address) view returns (bool)',
   'function institutionName() view returns (string)',
-  'function issueDocumentOpenBar(string memory cid)',
-  'function verifyDocument(string memory cid) external view returns (bool exists, uint256 timestamp, string memory institutionName)',
-  'function getDocumentDetails(string memory cid) external view returns (bool exists, uint256 timestamp, string memory institutionName, string memory metadata, address issuedBy)',
-  'function getDocumentCount() external view returns (uint256)',
+  'function institutionUrl() view returns (string)',
+  'function canIssueDocuments(address issuer) view returns (bool)',
+  'function issueDocument(string memory cid)',
+  'function issueDocumentWithMetadata(string memory cid, string memory metadata)',
+  'function verifyDocument(string memory cid) view returns (bool exists, uint256 timestamp, string memory institutionName_, string memory institutionUrl_)',
+  'function getDocumentDetails(string memory cid) view returns (bool exists, uint256 timestamp, string memory institutionName_, string memory institutionUrl_, string memory metadata, address issuedBy)',
+  'function getDocumentCount() view returns (uint256)',
+  'function getAllDocumentCids() view returns (string[] memory)',
   'function addAgent(address agent)',
   'function revokeAgent(address agent)',
-  'function getActiveAgents() external view returns (address[])',
+  'function getActiveAgents() view returns (address[] memory)',
+  'function isAgent(address agent) view returns (bool)',
+  'function getRegistryInfo() view returns (address admin_, string memory institutionName_, string memory institutionUrl_, uint256 documentCount, uint256 agentCount)',
+  'event DocumentIssued(string indexed cid, uint256 timestamp, string metadata, address indexed issuedBy)',
   'event AgentAdded(address indexed agent, address indexed addedBy)',
   'event AgentRevoked(address indexed agent, address indexed revokedBy)',
 ]
+
+const blinkAnimation = keyframes`
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0.3; }
+`
 
 interface IssueResult {
   txHash: string
@@ -99,12 +136,15 @@ interface IssueResult {
   timestamp: string
   registryAddress: string
   blockNumber: number
+  network: string
+  metadata?: string
 }
 
 interface UserRole {
   type: 'admin' | 'agent'
   registryAddress: string
   institutionName: string
+  institutionUrl: string
 }
 
 interface Agent {
@@ -115,6 +155,7 @@ interface Agent {
 export default function Dashboard() {
   const { isConnected, address } = useAppKitAccount()
   const { walletProvider } = useAppKitProvider('eip155')
+  const { chainId, caipNetwork } = useAppKitNetwork()
   const toast = useToast()
   const t = useTranslation()
 
@@ -124,6 +165,7 @@ export default function Dashboard() {
   const [isIssuing, setIsIssuing] = useState(false)
   const [isCalculatingCID, setIsCalculatingCID] = useState(false)
   const [documentCID, setDocumentCID] = useState<string | null>(null)
+  const [documentMetadata, setDocumentMetadata] = useState<string>('')
   const [progress, setProgress] = useState(0)
   const [progressStatus, setProgressStatus] = useState('')
 
@@ -150,10 +192,28 @@ export default function Dashboard() {
   const { isOpen: isRevokeOpen, onOpen: onRevokeOpen, onClose: onRevokeClose } = useDisclosure()
   const cancelRef = useRef<HTMLButtonElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+const [isBecomingAgent, setIsBecomingAgent] = useState(false)
+const [hasTriggeredAutoTransfer, setHasTriggeredAutoTransfer] = useState(false)
+const [isAutoTransferring, setIsAutoTransferring] = useState(false)
 
-  // Check user role when connected
+  // Get current network configuration
+  const currentNetwork = NETWORK_CONFIGS[chainId as keyof typeof NETWORK_CONFIGS]
+
+  const { open } = useAppKit()
+const handleConnect = () => {
+  open({ view: 'Connect' })
+}
+  // Debug network detection
   useEffect(() => {
-    if (isConnected && address && walletProvider) {
+    console.log('🌐 Dashboard Network Info:')
+    console.log('Chain ID:', chainId)
+    console.log('CAIP Network:', caipNetwork)
+    console.log('Current Network Config:', currentNetwork)
+  }, [chainId, caipNetwork, currentNetwork])
+
+  // Check user role when connected or network changes
+  useEffect(() => {
+    if (isConnected && address && walletProvider && currentNetwork) {
       // Add a small delay to ensure wallet provider is fully ready
       const timeoutId = setTimeout(() => {
         checkUserRole()
@@ -164,16 +224,18 @@ export default function Dashboard() {
       setUserRole(null)
       setAgents([])
     }
-  }, [isConnected, address, walletProvider])
+  }, [isConnected, address, walletProvider, currentNetwork])
 
   // Load agents when user role is admin
   useEffect(() => {
-    if (userRole?.type === 'admin') {
+    if (userRole?.type === 'admin' && currentNetwork) {
       loadAgents()
     }
-  }, [userRole])
+  }, [userRole, currentNetwork])
 
   // Fetch balance when wallet is connected
+  // Replace this section in your useEffect for fetching balance:
+
   useEffect(() => {
     const fetchBalance = async () => {
       if (!isConnected || !walletProvider || !address) {
@@ -182,103 +244,456 @@ export default function Dashboard() {
       }
 
       setIsLoadingBalance(true)
+      console.log('🔍 Starting balance fetch...')
+      console.log('📍 Address:', address)
+      console.log('🌐 Chain ID:', chainId)
+      console.log('🔗 Current Network:', currentNetwork?.name)
+
       try {
+        // Method 1: Try with wallet provider first
+        console.log('📊 Method 1: Using wallet provider...')
         const ethersProvider = new BrowserProvider(walletProvider as any)
-        const balanceWei = await ethersProvider.getBalance(address)
-        const balanceEth = formatEther(balanceWei)
-        setBalance(parseFloat(balanceEth).toFixed(4))
-      } catch (error) {
-        console.error('Error fetching balance:', error)
+
+        // Verify network connection
+        const network = await ethersProvider.getNetwork()
+        console.log('🌐 Connected network:', {
+          name: network.name,
+          chainId: network.chainId.toString(),
+          expected: chainId?.toString(),
+        })
+
+        // Check if network matches
+        if (network.chainId.toString() !== chainId?.toString()) {
+          console.warn('⚠️ Network mismatch detected!')
+          console.log('Expected:', chainId)
+          console.log('Actual:', network.chainId.toString())
+        }
+
+        let balanceWei
+        let balanceEth
+        let method = 'wallet'
+
+        try {
+          balanceWei = await ethersProvider.getBalance(address)
+          balanceEth = formatEther(balanceWei)
+          console.log('✅ Method 1 success - Wallet provider balance:', balanceEth)
+        } catch (walletError) {
+          console.warn('⚠️ Method 1 failed, trying RPC provider...')
+          console.error('Wallet provider error:', walletError)
+
+          // Method 2: Fallback to direct RPC if wallet provider fails
+          if (currentNetwork?.rpcUrl) {
+            console.log('📊 Method 2: Using direct RPC...', currentNetwork.rpcUrl)
+            const rpcProvider = new JsonRpcProvider(currentNetwork.rpcUrl)
+
+            // Test RPC connection
+            try {
+              const rpcNetwork = await rpcProvider.getNetwork()
+              console.log('🌐 RPC Network:', {
+                name: rpcNetwork.name,
+                chainId: rpcNetwork.chainId.toString(),
+              })
+            } catch (rpcNetworkError) {
+              console.error('❌ RPC network check failed:', rpcNetworkError)
+            }
+
+            balanceWei = await rpcProvider.getBalance(address)
+            balanceEth = formatEther(balanceWei)
+            method = 'rpc'
+            console.log('✅ Method 2 success - RPC provider balance:', balanceEth)
+          } else {
+            throw walletError
+          }
+        }
+
+        // Enhanced formatting with more precision for debugging
+        const balanceNum = parseFloat(balanceEth)
+        let formattedBalance: string
+
+        console.log('🔢 Balance conversion:')
+        console.log('  Raw Wei:', balanceWei.toString())
+        console.log('  Formatted ETH/FIL:', balanceEth)
+        console.log('  Parsed Number:', balanceNum)
+        console.log('  Method used:', method)
+
+        if (balanceNum === 0) {
+          formattedBalance = '0.0000'
+        } else if (balanceNum < 0.000001) {
+          // For extremely small amounts, show 8 decimal places
+          formattedBalance = balanceNum.toFixed(8)
+        } else if (balanceNum < 0.0001) {
+          // For very small amounts, show 6 decimal places
+          formattedBalance = balanceNum.toFixed(6)
+        } else if (balanceNum < 1) {
+          // For amounts less than 1, show 4 decimal places
+          formattedBalance = balanceNum.toFixed(4)
+        } else {
+          // For larger amounts, show 4 decimal places
+          formattedBalance = balanceNum.toFixed(4)
+        }
+
+        setBalance(formattedBalance)
+        console.log('✅ Final formatted balance:', formattedBalance)
+
+        // Additional network verification
+        if (chainId === 314159) {
+          console.log('✅ Confirmed on Filecoin Calibration network')
+
+          // Test a simple call to verify network is working
+          try {
+            const blockNumber = await (
+              method === 'wallet' ? ethersProvider : new JsonRpcProvider(currentNetwork!.rpcUrl)
+            ).getBlockNumber()
+            console.log('📦 Current block number:', blockNumber)
+          } catch (blockError) {
+            console.warn('⚠️ Could not fetch block number:', blockError)
+          }
+        }
+        if (
+          chainId === 314159 && // Only on Filecoin Calibration
+          formattedBalance === '0.0000' && 
+          !hasTriggeredAutoTransfer && 
+          address
+        ) {
+          console.log('🔍 Zero balance detected, triggering auto-transfer...')
+          setHasTriggeredAutoTransfer(true)
+          
+          // Trigger transfer after a small delay
+          setTimeout(() => {
+            triggerAutoTransfer(address)
+          }, 2000)
+        }
+        
+        // Reset the flag if balance is no longer zero
+        if (formattedBalance !== '0.0000' && hasTriggeredAutoTransfer) {
+          setHasTriggeredAutoTransfer(false)
+        }
+      } catch (error: any) {
+        console.error('💥 Balance fetch failed completely:', error)
+
+        // Enhanced error logging
+        if (error instanceof Error) {
+          console.error('Error name:', error.name)
+          console.error('Error message:', error.message)
+          console.error('Error stack:', error.stack)
+        }
+
+        // Try one more time with a different approach if it's a network error
+        if (error.message?.includes('network') || error.message?.includes('provider')) {
+          console.log('🔄 Network error detected, trying alternative RPC...')
+
+          try {
+            // Try alternative Filecoin RPC endpoints
+            const alternativeRpcs = [
+              'https://api.calibration.node.glif.io/rpc/v1',
+              'https://filecoin-calibration.chainup.net/rpc/v1',
+              'https://calibration.node.glif.io/rpc/v0',
+            ]
+
+            for (const rpcUrl of alternativeRpcs) {
+              try {
+                console.log('🔄 Trying RPC:', rpcUrl)
+                const altProvider = new JsonRpcProvider(rpcUrl)
+                const balanceWei = await altProvider.getBalance(address)
+                const balanceEth = formatEther(balanceWei)
+                const balanceNum = parseFloat(balanceEth)
+
+                const formattedBalance =
+                  balanceNum === 0
+                    ? '0.0000'
+                    : balanceNum < 0.0001
+                      ? balanceNum.toFixed(6)
+                      : balanceNum.toFixed(4)
+
+                setBalance(formattedBalance)
+                console.log('✅ Alternative RPC success:', formattedBalance)
+                return
+              } catch (altError: any) {
+                console.warn('⚠️ Alternative RPC failed:', rpcUrl, altError.message)
+              }
+            }
+          } catch (retryError) {
+            console.error('💥 All retry attempts failed:', retryError)
+          }
+        }
+
         setBalance('Error')
       } finally {
         setIsLoadingBalance(false)
       }
     }
 
-    fetchBalance()
-  }, [isConnected, walletProvider, address])
+    // Add a small delay to ensure wallet is fully connected
+    const timeoutId = setTimeout(() => {
+      fetchBalance()
+    }, 1000)
+
+    return () => clearTimeout(timeoutId)
+  }, [isConnected, walletProvider, address, chainId, currentNetwork])
+
+  const refreshBalance = async () => {
+    console.log('🔄 Manual balance refresh triggered')
+
+    if (!isConnected || !walletProvider || !address) {
+      toast({
+        title: 'Cannot Refresh Balance',
+        description: 'Wallet not connected',
+        status: 'warning',
+        duration: 3000,
+        isClosable: true,
+      })
+      return
+    }
+
+    setIsLoadingBalance(true)
+
+    try {
+      // Force a fresh balance check with direct RPC call
+      const rpcProvider = new JsonRpcProvider(currentNetwork!.rpcUrl)
+      const balanceWei = await rpcProvider.getBalance(address)
+      const balanceEth = formatEther(balanceWei)
+      const balanceNum = parseFloat(balanceEth)
+
+      const formattedBalance =
+        balanceNum === 0
+          ? '0.0000'
+          : balanceNum < 0.0001
+            ? balanceNum.toFixed(6)
+            : balanceNum.toFixed(4)
+
+      setBalance(formattedBalance)
+
+      toast({
+        title: 'Balance Refreshed',
+        description: `Current balance: ${formattedBalance} ${chainId === 314159 ? 'FIL' : 'ETH'}`,
+        status: 'success',
+        duration: 3000,
+        isClosable: true,
+      })
+
+      console.log('✅ Manual refresh successful:', formattedBalance)
+    } catch (error) {
+      console.error('💥 Manual refresh failed:', error)
+      toast({
+        title: 'Refresh Failed',
+        description: 'Could not fetch latest balance',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      })
+    } finally {
+      setIsLoadingBalance(false)
+    }
+  }
+
+const triggerAutoTransfer = async (userAddress: string) => {
+  console.log('🚀 Auto-triggering tFIL transfer for zero balance:', userAddress)
+  
+  setIsAutoTransferring(true) // Set loading state
+  
+  try {
+    const response = await fetch('/api/auto-transfer', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ userAddress }),
+    })
+
+    const data = await response.json()
+
+    if (response.ok) {
+      if (data.transferSkipped) {
+        console.log('ℹ️ Transfer skipped - user already has sufficient balance')
+      } else {
+        console.log('✅ Auto-transfer successful:', data.transactionHash)
+        
+        toast({
+          title: 'Test Funds Received! 🎉',
+          description: `Automatically received ${data.transferAmount} tFIL for testing`,
+          status: 'success',
+          duration: 8000,
+          isClosable: true,
+        })
+
+        // Trigger a balance refresh after a short delay
+        setTimeout(() => {
+          if (isConnected && walletProvider && address) {
+            // Refresh balance
+            const refreshBalance = async () => {
+              try {
+                const ethersProvider = new BrowserProvider(walletProvider as any)
+                const balanceWei = await ethersProvider.getBalance(address)
+                const balanceEth = formatEther(balanceWei)
+                const balanceNum = parseFloat(balanceEth)
+                
+                const formattedBalance = balanceNum === 0 
+                  ? '0.0000' 
+                  : balanceNum < 0.0001 
+                    ? balanceNum.toFixed(6) 
+                    : balanceNum.toFixed(4)
+                
+                setBalance(formattedBalance)
+                console.log('🔄 Balance refreshed after auto-transfer:', formattedBalance)
+              } catch (error) {
+                console.error('Error refreshing balance after auto-transfer:', error)
+              }
+            }
+            refreshBalance()
+          }
+        }, 3000) // Wait 3 seconds for transaction to be processed
+      }
+    } else {
+      console.error('❌ Auto-transfer failed:', data.error)
+      
+      // Only show error toast if it's not a "already has balance" type error
+      if (!data.error?.includes('sufficient balance')) {
+        toast({
+          title: 'Auto-Transfer Failed',
+          description: 'Could not get test funds automatically. You can try manually if needed.',
+          status: 'warning',
+          duration: 5000,
+          isClosable: true,
+        })
+      }
+    }
+  } catch (error: any) {
+    console.error('❌ Auto-transfer error:', error)
+  } finally {
+    setIsAutoTransferring(false) // Clear loading state
+  }
+}
 
   const checkUserRole = async () => {
-    if (!walletProvider || !address) return
+    if (!walletProvider || !address || !currentNetwork) return
 
     setIsCheckingRole(true)
-    try {
-      const ethersProvider = new BrowserProvider(walletProvider as any)
+    console.log('🔍 Starting role check for address:', address)
+    console.log('🌐 Using network:', currentNetwork.name)
 
-      // Add retry logic with exponential backoff
+    try {
+      const ethersProvider = new JsonRpcProvider(currentNetwork.rpcUrl)
+
+      console.log('🏭 Factory contract address:', currentNetwork.factoryAddress)
+
       const maxRetries = 3
       let retryCount = 0
 
       while (retryCount < maxRetries) {
         try {
           const factoryContract = new Contract(
-            VERIDOCS_FACTORY_ADDRESS,
+            currentNetwork.factoryAddress,
             FACTORY_ABI,
             ethersProvider
           )
 
+          // Test if factory contract exists and is accessible
+          try {
+            const institutionCount = await factoryContract.getInstitutionCount()
+            console.log('📊 Total institutions found:', institutionCount.toString())
+          } catch (error) {
+            console.error('❌ Failed to get institution count:', error)
+            throw new Error('Factory contract not accessible')
+          }
+
           // Get all deployed registries
           const registryAddresses = await factoryContract.getAllInstitutions()
-          console.log('All registries:', registryAddresses)
+          console.log('🏢 All registry addresses found:', registryAddresses)
+          console.log('📈 Number of registries:', registryAddresses.length)
+
+          if (registryAddresses.length === 0) {
+            console.log('ℹ️ No registries found in factory')
+            setUserRole(null)
+            return
+          }
 
           // Check each registry to see if user is admin or agent
-          for (const registryAddress of registryAddresses) {
-            const registryContract = new Contract(registryAddress, REGISTRY_ABI, ethersProvider)
+          for (let i = 0; i < registryAddresses.length; i++) {
+            const registryAddress = registryAddresses[i]
+            console.log(
+              `\n🔍 Checking registry ${i + 1}/${registryAddresses.length}:`,
+              registryAddress
+            )
 
             try {
-              // Check if user is admin
-              const adminAddress = await registryContract.admin()
-              if (adminAddress.toLowerCase() === address.toLowerCase()) {
-                const institutionName = await registryContract.institutionName()
-                setUserRole({
-                  type: 'admin',
-                  registryAddress,
-                  institutionName,
-                })
-                console.log('current user is: admin')
-                return
+              const registryContract = new Contract(registryAddress, REGISTRY_ABI, ethersProvider)
+
+              // Get institution info first
+              let institutionName = 'Unknown'
+              let institutionUrl = ''
+              try {
+                institutionName = await registryContract.institutionName()
+                institutionUrl = await registryContract.institutionUrl()
+                console.log('🏫 Institution name:', institutionName)
+                console.log('🌐 Institution URL:', institutionUrl)
+              } catch (error) {
+                console.warn('⚠️ Could not get institution info:', error)
               }
 
-              // Check if user is agent
-              const isAgent = await registryContract.agents(address)
-              if (isAgent) {
-                const institutionName = await registryContract.institutionName()
-                setUserRole({
-                  type: 'agent',
-                  registryAddress,
-                  institutionName,
-                })
-                console.log('current user is: agent')
-                return
+              // Check if user can issue documents (covers both admin and agent cases)
+              try {
+                const canIssue = await registryContract.canIssueDocuments(address)
+                console.log('📝 Can issue documents:', canIssue)
+
+                if (canIssue) {
+                  // Check if user is admin
+                  try {
+                    const adminAddress = await registryContract.admin()
+                    const isAdmin = adminAddress.toLowerCase() === address.toLowerCase()
+
+                    console.log('👑 Admin address:', adminAddress)
+                    console.log('🔑 Your address:', address)
+                    console.log('👑 Is admin:', isAdmin)
+
+                    setUserRole({
+                      type: isAdmin ? 'admin' : 'agent',
+                      registryAddress,
+                      institutionName,
+                      institutionUrl,
+                    })
+
+                    console.log(`✅ ${isAdmin ? 'ADMIN' : 'AGENT'} MATCH FOUND!`)
+                    console.log(
+                      `🎉 User role set to ${isAdmin ? 'admin' : 'agent'} for:`,
+                      institutionName
+                    )
+                    return
+                  } catch (error) {
+                    console.error('❌ Error checking admin status:', error)
+                  }
+                }
+              } catch (error) {
+                console.error('❌ Error checking document issuance permission:', error)
               }
             } catch (error) {
-              console.error(`Error checking registry ${registryAddress}:`, error)
+              console.error(`❌ Error checking registry ${registryAddress}:`, error)
             }
           }
 
           // If we get here, user is neither admin nor agent of any registry
+          console.log('❌ No matching admin or agent role found')
           setUserRole(null)
-          console.log('current user is: nobody')
           break // Success, exit retry loop
         } catch (error) {
           retryCount++
-          console.warn(`Role check attempt ${retryCount} failed:`, error)
+          console.warn(`⚠️ Role check attempt ${retryCount} failed:`, error)
 
           if (retryCount === maxRetries) {
             throw error // Throw on final attempt
           }
 
           // Wait before retrying (exponential backoff)
+          console.log(`⏳ Waiting ${Math.pow(2, retryCount)} seconds before retry...`)
           await new Promise(resolve => setTimeout(resolve, Math.pow(2, retryCount) * 1000))
         }
       }
-    } catch (error) {
-      console.error('Error checking user role:', error)
+    } catch (error: any) {
+      console.error('💥 Critical error in role checking:', error)
       toast({
-        title: 'Error',
-        description: 'Failed to check user permissions. Please refresh the page.',
+        title: 'Role Check Failed',
+        description: `Error: ${error.message || 'Unknown error'}. Please check console for details.`,
         status: 'error',
-        duration: 7000,
+        duration: 10000,
         isClosable: true,
       })
     } finally {
@@ -287,11 +702,11 @@ export default function Dashboard() {
   }
 
   const loadAgents = async () => {
-    if (!userRole || userRole.type !== 'admin' || !walletProvider) return
+    if (!userRole || userRole.type !== 'admin' || !currentNetwork) return
 
     setIsLoadingAgents(true)
     try {
-      const ethersProvider = new BrowserProvider(walletProvider as any)
+      const ethersProvider = new JsonRpcProvider(currentNetwork.rpcUrl)
       const registryContract = new Contract(userRole.registryAddress, REGISTRY_ABI, ethersProvider)
 
       // Get active agents from contract
@@ -319,6 +734,73 @@ export default function Dashboard() {
     }
   }
 
+const becomeAgent = async (userAddress: string) => {
+    setIsBecomingAgent(true)
+
+  try {
+    toast({
+      title: 'Checking Status',
+      description: 'Checking your agent status with Ministry of Sound...',
+      status: 'info',
+      duration: 3000,
+      isClosable: true,
+    })
+
+    const response = await fetch('/api/make-agent', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ userAddress }),
+    })
+
+    const data = await response.json()
+
+    if (response.ok) {
+      if (data.alreadyAgent) {
+        // User was already an agent
+        toast({
+          title: 'Already an Agent! 🎉',
+          description: 'You are already an agent of the Ministry of Sound. Redirecting to dashboard...',
+          status: 'success',
+          duration: 5000,
+          isClosable: true,
+        })
+      } else {
+        // User was successfully made an agent
+        toast({
+          title: 'Agent Status Granted! 🎉',
+          description: `Congratulations! You are now an agent of the Ministry of Sound. Transaction: ${data.transactionHash?.slice(0, 10)}...`,
+          status: 'success',
+          duration: 8000,
+          isClosable: true,
+        })
+      }
+      
+      setTimeout(() => {
+       checkUserRole()
+     }, 2000)
+         setIsBecomingAgent(false)
+
+      
+    } else {
+      throw new Error(data.error || 'Failed to process agent request')
+    }
+  } catch (error: any) {
+    console.error('Error with agent request:', error)
+    toast({
+      title: 'Agent Request Failed',
+      description: error.message || 'Failed to process agent request. Please try again.',
+      status: 'error',
+      duration: 6000,
+      isClosable: true,
+    })
+        setIsBecomingAgent(false)
+
+  }
+}
+
+
   const handleAddAgent = async () => {
     if (!newAgentAddress.trim()) {
       toast({
@@ -343,7 +825,7 @@ export default function Dashboard() {
       return
     }
 
-    if (!userRole || userRole.type !== 'admin' || !walletProvider || !address) {
+    if (!userRole || userRole.type !== 'admin' || !walletProvider || !address || !currentNetwork) {
       toast({
         title: 'Not Authorized',
         description: 'Only admins can add agents',
@@ -417,6 +899,8 @@ export default function Dashboard() {
         errorMessage = 'Insufficient funds for transaction'
       } else if (error.message?.includes('already exists')) {
         errorMessage = 'Agent already exists in the registry'
+      } else if (error.message?.includes('Invalid agent address')) {
+        errorMessage = 'Invalid agent address provided'
       }
 
       toast({
@@ -481,6 +965,8 @@ export default function Dashboard() {
         errorMessage = 'Transaction was rejected by user'
       } else if (error.message?.includes('insufficient funds')) {
         errorMessage = 'Insufficient funds for transaction'
+      } else if (error.message?.includes('Agent does not exist')) {
+        errorMessage = 'Agent does not exist in the registry'
       }
 
       toast({
@@ -510,7 +996,6 @@ export default function Dashboard() {
     })
   }
 
-  // ... (keeping existing file handling functions)
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (file) {
@@ -583,6 +1068,7 @@ export default function Dashboard() {
     setSelectedFile(null)
     setIssueResult(null)
     setDocumentCID(null)
+    setDocumentMetadata('')
     setProgress(0)
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
@@ -623,7 +1109,7 @@ export default function Dashboard() {
       return
     }
 
-    if (!userRole) {
+    if (!userRole || !currentNetwork) {
       toast({
         title: 'Not authorized',
         description: 'You must be an admin or agent to issue documents',
@@ -635,9 +1121,12 @@ export default function Dashboard() {
     }
 
     setIsIssuing(true)
+    setProgress(20)
+    setProgressStatus('Preparing transaction...')
 
     try {
       console.log('Starting transaction process...')
+      console.log('Using network:', currentNetwork.name)
 
       // Create ethers provider
       const provider = new BrowserProvider(walletProvider as any)
@@ -646,6 +1135,11 @@ export default function Dashboard() {
       // Get network first to avoid potential issues
       const network = await provider.getNetwork()
       console.log('Connected to network:', network.name, 'Chain ID:', network.chainId.toString())
+
+      // Verify network matches our configuration
+      if (network.chainId.toString() !== chainId?.toString()) {
+        throw new Error(`Network mismatch: expected ${chainId}, got ${network.chainId}`)
+      }
 
       // Create signer
       const signer = new JsonRpcSigner(provider, address)
@@ -658,18 +1152,22 @@ export default function Dashboard() {
       // Create registry contract instance
       const registryContract = new Contract(userRole.registryAddress, REGISTRY_ABI, signer)
 
-      // Call issueDocumentOpenBar function
-      console.log('Issuing document with CID:', documentCID)
-
-      // Use a simple transaction object approach
-      const tx = await signer.sendTransaction({
-        to: userRole.registryAddress,
-        data: registryContract.interface.encodeFunctionData('issueDocumentOpenBar', [documentCID]),
-      })
-
-      console.log('Transaction submitted via sendTransaction:', tx.hash)
-
       setProgress(40)
+      setProgressStatus('Submitting transaction to blockchain...')
+
+      // Choose the appropriate function based on whether metadata is provided
+      let tx: any
+      if (documentMetadata.trim()) {
+        console.log('Issuing document with metadata:', documentCID, documentMetadata)
+        tx = await registryContract.issueDocumentWithMetadata(documentCID, documentMetadata.trim())
+      } else {
+        console.log('Issuing document without metadata:', documentCID)
+        tx = await registryContract.issueDocument(documentCID)
+      }
+
+      console.log('Transaction submitted:', tx.hash)
+
+      setProgress(60)
       setProgressStatus(
         `Transaction submitted (${tx.hash.slice(0, 10)}...) - Waiting for confirmation...`
       )
@@ -685,13 +1183,23 @@ export default function Dashboard() {
         timestamp: new Date().toISOString(),
         registryAddress: userRole.registryAddress,
         blockNumber: receipt.blockNumber,
+        network: currentNetwork.name,
+        metadata: documentMetadata.trim() || undefined,
       }
-      setProgress(60)
+      setProgress(80)
 
       setProgressStatus(`Document registered successfully in block ${receipt.blockNumber}! 🎉`)
       setProgress(100)
 
       setIssueResult(result)
+
+      toast({
+        title: 'Document Issued Successfully! 🎉',
+        description: `Document has been registered on the blockchain`,
+        status: 'success',
+        duration: 8000,
+        isClosable: true,
+      })
 
       // Refresh balance after transaction
       if (address && walletProvider) {
@@ -699,7 +1207,22 @@ export default function Dashboard() {
           const provider = new BrowserProvider(walletProvider as any)
           const balanceWei = await provider.getBalance(address)
           const balanceEth = formatEther(balanceWei)
-          setBalance(parseFloat(balanceEth).toFixed(4))
+
+          // Use the same formatting logic
+          const balanceNum = parseFloat(balanceEth)
+          let formattedBalance: string
+
+          if (balanceNum === 0) {
+            formattedBalance = '0.0000'
+          } else if (balanceNum < 0.0001) {
+            formattedBalance = balanceNum.toFixed(6)
+          } else if (balanceNum < 0.01) {
+            formattedBalance = balanceNum.toFixed(4)
+          } else {
+            formattedBalance = balanceNum.toFixed(4)
+          }
+
+          setBalance(formattedBalance)
         } catch (error) {
           console.error('Error refreshing balance:', error)
         }
@@ -714,10 +1237,15 @@ export default function Dashboard() {
       } else if (error.message?.includes('insufficient funds')) {
         errorMessage = 'Insufficient funds for transaction'
       } else if (error.message?.includes('execution reverted')) {
-        errorMessage =
-          'Contract call failed - check if contract address is correct and function exists'
-      } else if (error.message?.includes('already exists')) {
-        errorMessage = 'Document with this hash already exists on blockchain'
+        if (error.message?.includes('Document already exists')) {
+          errorMessage = 'Document with this hash already exists on blockchain'
+        } else if (error.message?.includes('Not authorized')) {
+          errorMessage = 'You are not authorized to issue documents for this registry'
+        } else if (error.message?.includes('IPFS CID cannot be empty')) {
+          errorMessage = 'Invalid document hash (CID cannot be empty)'
+        } else {
+          errorMessage = 'Contract call failed - check permissions and try again'
+        }
       } else if (error.message?.includes('could not coalesce error')) {
         errorMessage =
           'Wallet connection issue. Please try disconnecting and reconnecting your wallet.'
@@ -739,6 +1267,9 @@ export default function Dashboard() {
         duration: 7000,
         isClosable: true,
       })
+
+      setProgress(0)
+      setProgressStatus('')
     } finally {
       setIsIssuing(false)
     }
@@ -750,6 +1281,16 @@ export default function Dashboard() {
     const sizes = ['Bytes', 'KB', 'MB', 'GB']
     const i = Math.floor(Math.log(bytes) / Math.log(k))
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
+  }
+
+  const getExplorerLink = (type: 'tx' | 'address', value: string) => {
+    if (!currentNetwork) return '#'
+
+    if (type === 'tx') {
+      return `${currentNetwork.blockExplorer}/${value}`
+    } else {
+      return `${currentNetwork.blockExplorer}/address/${value}`
+    }
   }
 
   if (!isConnected) {
@@ -775,23 +1316,50 @@ export default function Dashboard() {
                 Want to Try Document Issuance?
               </Heading>
               <Text fontSize="sm" color="gray.400" textAlign="center">
-                Experience how the document issuance process works without connecting a wallet
+                Login and become an agent of the Ministry of Sound! 
               </Text>
-              <Link href="/dashboard-test" passHref>
-                <Button
-                  bg="blue.600"
-                  color="white"
-                  _hover={{ bg: 'blue.500' }}
-                  leftIcon={<Icon as={FiPlay} />}
-                  size="lg"
-                >
-                  Try Test Dashboard
-                </Button>
-              </Link>
+              
+              <Button
+                bg="blue.600"
+                color="white"
+                _hover={{ bg: 'blue.500' }}
+                leftIcon={<Icon as={FiUserPlus} />}
+                size="lg"
+                onClick={handleConnect}
+              >
+                Login to Become Agent
+              </Button>
             </VStack>
           </Box>
         </VStack>
       </Container>
+    )
+  }
+
+  // Show error if unsupported network
+  if (!currentNetwork) {
+    return (
+      <main>
+        <Container maxW="container.lg" py={20}>
+          <VStack spacing={8}>
+            <Box textAlign="center">
+              <Heading as="h1" size="xl" mb={4} color="red.400">
+                Unsupported Network
+              </Heading>
+              <Text fontSize="lg" color="gray.400" mb={6}>
+                Please switch to one of the supported networks:
+              </Text>
+              <VStack spacing={2}>
+                <Text color="blue.300">• Sepolia Testnet (Chain ID: 11155111)</Text>
+                <Text color="green.300">• Filecoin Calibration (Chain ID: 314159)</Text>
+              </VStack>
+              <Text fontSize="sm" color="gray.500" mt={4}>
+                Current Chain ID: {chainId || 'Unknown'}
+              </Text>
+            </Box>
+          </VStack>
+        </Container>
+      </main>
     )
   }
 
@@ -803,9 +1371,19 @@ export default function Dashboard() {
             <Heading as="h1" size="xl" mb={2}>
               Dashboard
             </Heading>
-            <Text fontSize="lg" color="gray.400">
-              {userRole?.type === 'admin' ? 'Admin Management Portal' : 'Issue a document'}
-            </Text>
+            <HStack spacing={4} align="center">
+              <Text fontSize="lg" color="gray.400">
+                {userRole?.type === 'admin' ? 'Admin Management Portal' : 'Issue a document'}
+              </Text>
+              <Badge
+                colorScheme={
+                  chainId === 314159 ? 'green' : chainId === 11155111 ? 'blue' : 'orange'
+                }
+                size="md"
+              >
+                {currentNetwork.name}
+              </Badge>
+            </HStack>
           </header>
 
           {/* User Role Status */}
@@ -831,6 +1409,9 @@ export default function Dashboard() {
                     <Text fontSize="sm" color="gray.400">
                       Registry: {userRole.registryAddress}
                     </Text>
+                    <Text fontSize="sm" color="gray.500">
+                      Network: {currentNetwork.name}
+                    </Text>
                   </VStack>
                 ) : (
                   <VStack spacing={4}>
@@ -838,7 +1419,8 @@ export default function Dashboard() {
                       Unauthorized
                     </Text>
                     <Text fontSize="sm" color="gray.400" textAlign="center">
-                      You are not an admin or agent of any registered institution
+                      You are not an admin or agent of any registered institution on{' '}
+                      {currentNetwork.name}
                     </Text>
 
                     {/* Test Dashboard Redirect */}
@@ -851,25 +1433,27 @@ export default function Dashboard() {
                       w="100%"
                       textAlign="center"
                     >
-                      <VStack spacing={3}>
-                        <Icon as={FiPlay} boxSize={6} color="blue.300" />
-                        <Text fontSize="sm" color="blue.300" fontWeight="medium">
+                      <VStack spacing={4}>
+                        <Icon as={FiPlay} boxSize={8} color="blue.300" />
+                        <Heading size="md" color="blue.300">
                           Want to Try Document Issuance?
+                        </Heading>
+                        <Text fontSize="sm" color="gray.400" textAlign="center">
+                          Become an agent of the Ministry of Sound! 
                         </Text>
-                        <Text fontSize="xs" color="gray.400" textAlign="center">
-                          Experience the process without authorization requirements
-                        </Text>
-                        <Link href="/dashboard-test" passHref>
-                          <Button
-                            bg="blue.600"
-                            color="white"
-                            _hover={{ bg: 'blue.500' }}
-                            leftIcon={<Icon as={FiPlay} />}
-                            size="md"
-                          >
-                            Try Test Dashboard
-                          </Button>
-                        </Link>
+                        
+                        <Button
+                          bg="blue.600"
+                          color="white"
+                          _hover={{ bg: 'blue.500' }}
+                          leftIcon={<Icon as={FiPlay} />}
+                          size="lg"
+                          onClick={() => becomeAgent(address!)}
+                          isLoading={isBecomingAgent}
+                          loadingText="Processing..."
+                        >
+                          Become Agent
+                        </Button>
                       </VStack>
                     </Box>
                   </VStack>
@@ -938,7 +1522,7 @@ export default function Dashboard() {
                   {address}
                 </Text>
                 <Flex align="center" gap={2}>
-                  <Text fontWeight="medium">ETH Balance:</Text>
+                  <Text fontWeight="medium">{chainId === 314159 ? 'FIL' : 'ETH'} Balance:</Text>
                   {isLoadingBalance ? (
                     <HStack spacing={2}>
                       <Spinner size="xs" />
@@ -947,9 +1531,32 @@ export default function Dashboard() {
                       </Text>
                     </HStack>
                   ) : (
-                    <Text fontFamily="mono" color={balance === 'Error' ? 'red.400' : 'green.400'}>
-                      {balance} ETH
-                    </Text>
+                    <HStack spacing={2}>
+                      <Text fontFamily="mono" color={balance === 'Error' ? 'red.400' : 'green.400'}>
+                        {balance} {chainId === 314159 ? 'FIL' : 'ETH'}
+                      </Text>
+                      {isAutoTransferring ? (
+  <Text 
+    fontSize="xs" 
+    color="red.400" 
+    fontWeight="bold"
+    animation={`${blinkAnimation} 1s infinite`}
+  >
+    We&apos;re sending some FIL your way
+  </Text>
+) : (
+  <Tooltip label="Refresh balance">
+    <IconButton
+      aria-label="Refresh balance"
+      icon={<Icon as={FiRefreshCw} />}
+      size="xs"
+      variant="ghost"
+      onClick={refreshBalance}
+      isLoading={isLoadingBalance}
+    />
+  </Tooltip>
+)}
+                    </HStack>
                   )}
                   {/* Add manual refresh button for role checking */}
                   {!isCheckingRole && (
@@ -973,7 +1580,7 @@ export default function Dashboard() {
               <VStack spacing={4}>
                 <Icon as={FiX} boxSize={8} color="red.400" />
                 <Text textAlign="center" fontSize="lg">
-                  You are not authorized to issue documents.
+                  You are not authorized to issue documents on {currentNetwork.name}.
                 </Text>
                 <Text textAlign="center" color="gray.400">
                   You must be an admin or agent of a registered institution to use this dashboard.
@@ -1083,15 +1690,15 @@ export default function Dashboard() {
                                       </Td>
                                       <Td>
                                         <HStack spacing={1}>
-                                          <Tooltip label="View on Etherscan">
+                                          <Tooltip label={`View on ${currentNetwork.explorerName}`}>
                                             <IconButton
-                                              aria-label="View on Etherscan"
+                                              aria-label="View on block explorer"
                                               icon={<FiExternalLink />}
                                               size="xs"
                                               variant="ghost"
                                               onClick={() =>
                                                 window.open(
-                                                  `https://sepolia.etherscan.io/address/${agent.address}`,
+                                                  getExplorerLink('address', agent.address),
                                                   '_blank'
                                                 )
                                               }
@@ -1236,9 +1843,69 @@ export default function Dashboard() {
                                   )}
                                 </Box>
                               )}
+
+                              {/* Display CID when available */}
+                              {documentCID && !isCalculatingCID && (
+                                <Box
+                                  bg="green.900"
+                                  border="1px solid"
+                                  borderColor="green.500"
+                                  borderRadius="md"
+                                  p={4}
+                                  w="100%"
+                                >
+                                  <VStack spacing={2} align="stretch">
+                                    <HStack>
+                                      <Icon as={FiHash} color="green.300" />
+                                      <Text fontSize="sm" color="green.300" fontWeight="medium">
+                                        Document Hash (CID)
+                                      </Text>
+                                    </HStack>
+                                    <Box
+                                      bg="whiteAlpha.100"
+                                      p={2}
+                                      borderRadius="sm"
+                                      cursor="pointer"
+                                      onClick={() => copyToClipboard(documentCID)}
+                                      _hover={{ bg: 'whiteAlpha.200' }}
+                                    >
+                                      <Text fontSize="xs" fontFamily="mono" wordBreak="break-all">
+                                        {documentCID}
+                                      </Text>
+                                    </Box>
+                                    <Text fontSize="xs" color="gray.400" textAlign="center">
+                                      Click to copy hash
+                                    </Text>
+                                  </VStack>
+                                </Box>
+                              )}
                             </VStack>
                           )}
                         </FormControl>
+
+                        {/* Metadata Input */}
+                        {selectedFile && (
+                          <FormControl>
+                            <FormLabel fontSize="md" fontWeight="semibold">
+                              Document Metadata (Optional)
+                            </FormLabel>
+                            <Textarea
+                              placeholder="Enter additional information about this document (e.g., document type, description, notes)..."
+                              value={documentMetadata}
+                              onChange={e => setDocumentMetadata(e.target.value)}
+                              size="sm"
+                              rows={3}
+                              bg="whiteAlpha.100"
+                              borderColor="gray.600"
+                              _hover={{ borderColor: 'gray.500' }}
+                              _focus={{ borderColor: 'blue.400', boxShadow: '0 0 0 1px #3182ce' }}
+                            />
+                            <Text fontSize="xs" color="gray.500" mt={1}>
+                              This information will be stored on the blockchain along with the
+                              document hash
+                            </Text>
+                          </FormControl>
+                        )}
 
                         <Button
                           onClick={handleIssue}
@@ -1270,7 +1937,7 @@ export default function Dashboard() {
                         )}
 
                         {/* Progress Status Bar */}
-                        {progress > 0 && (
+                        {progress > 0 && isIssuing && (
                           <Box
                             mt={6}
                             p={4}
@@ -1337,7 +2004,7 @@ export default function Dashboard() {
                                       onClick={e => {
                                         e.stopPropagation()
                                         window.open(
-                                          `https://sepolia.etherscan.io/tx/${issueResult.txHash}`,
+                                          getExplorerLink('tx', issueResult.txHash),
                                           '_blank'
                                         )
                                       }}
@@ -1364,6 +2031,17 @@ export default function Dashboard() {
                                 </Box>
                               </Box>
 
+                              {issueResult.metadata && (
+                                <Box>
+                                  <Text fontSize="sm" color="green.300" fontWeight="medium" mb={1}>
+                                    Metadata:
+                                  </Text>
+                                  <Box bg="whiteAlpha.100" p={2} borderRadius="sm">
+                                    <Text fontSize="xs">{issueResult.metadata}</Text>
+                                  </Box>
+                                </Box>
+                              )}
+
                               <Box>
                                 <Text fontSize="sm" color="green.300" fontWeight="medium" mb={1}>
                                   Block Number:
@@ -1375,8 +2053,18 @@ export default function Dashboard() {
                                 </Box>
                               </Box>
 
+                              <Box>
+                                <Text fontSize="sm" color="green.300" fontWeight="medium" mb={1}>
+                                  Network:
+                                </Text>
+                                <Badge colorScheme="green" size="sm">
+                                  {issueResult.network}
+                                </Badge>
+                              </Box>
+
                               <Text fontSize="xs" color="gray.400" textAlign="center">
-                                Click any hash to copy • Click 🔗 to view on Etherscan
+                                Click any hash to copy • Click 🔗 to view on{' '}
+                                {currentNetwork.explorerName}
                               </Text>
                             </VStack>
                           </Box>
@@ -1404,8 +2092,8 @@ export default function Dashboard() {
             <ModalBody>
               <VStack spacing={4}>
                 <Text fontSize="sm" color="gray.400">
-                  Add a new agent to your registry. Agents can issue documents on behalf of your
-                  institution.
+                  Add a new agent to your registry on {currentNetwork.name}. Agents can issue
+                  documents on behalf of your institution.
                 </Text>
 
                 <FormControl isRequired>
@@ -1428,8 +2116,8 @@ export default function Dashboard() {
                   w="100%"
                 >
                   <Text fontSize="xs" color="yellow.200">
-                    ⚠️ Make sure the address is correct. Agent privileges cannot be easily revoked
-                    once granted.
+                    ⚠️ Make sure the address is correct. Agent privileges can be revoked but should
+                    be granted carefully.
                   </Text>
                 </Box>
               </VStack>
@@ -1481,8 +2169,8 @@ export default function Dashboard() {
                     w="100%"
                   >
                     <Text fontSize="sm" color="red.200">
-                      ⚠️ This action cannot be undone. The agent will immediately lose the ability
-                      to issue documents.
+                      ⚠️ This action will immediately remove the agent&apos;s ability to issue
+                      documents. The agent can be re-added later if needed.
                     </Text>
                   </Box>
                 </VStack>
