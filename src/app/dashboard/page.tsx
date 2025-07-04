@@ -88,7 +88,7 @@ const NETWORK_CONFIGS = {
   },
   314159: {
     name: 'Filecoin Calibration',
-    factoryAddress: '0x1928Fb336C74432e129142c7E3ee57856486eFfa',
+    factoryAddress: '0xB5CAb4359CBd4C03867A1320a14a6e4DBe7141dd',
     rpcUrl: 'https://api.calibration.node.glif.io/rpc/v1',
     blockExplorer: 'https://calibration.filscan.io/en/message',
     explorerName: 'Filscan Calibration',
@@ -431,90 +431,89 @@ export default function Dashboard() {
     return () => clearTimeout(timeoutId)
   }, [isConnected, walletProvider, address, chainId, currentNetwork])
 
-const debugVerification = async (cid: string) => {
-  if (!currentNetwork || !userRole) {
-    console.error('No network or user role')
-    return
-  }
+  const debugVerification = async (cid: string) => {
+    if (!currentNetwork || !userRole) {
+      console.error('No network or user role')
+      return
+    }
 
-  try {
-    console.log('🔍 Debug verification for CID:', cid)
-    console.log('📍 Registry address:', userRole.registryAddress)
-    
-    const ethersProvider = new JsonRpcProvider(currentNetwork.rpcUrl)
-    const registryContract = new Contract(userRole.registryAddress, REGISTRY_ABI, ethersProvider)
+    try {
+      console.log('🔍 Debug verification for CID:', cid)
+      console.log('📍 Registry address:', userRole.registryAddress)
 
-    // Test getDocumentDetails
-    console.log('📋 Calling getDocumentDetails...')
-    const details = await registryContract.getDocumentDetails(cid)
-    console.log('Result:', {
-      exists: details[0],
-      timestamp: details[1].toString(),
-      institutionName: details[2],
-      institutionUrl: details[3],
-      metadata: details[4],
-      issuedBy: details[5]
-    })
+      const ethersProvider = new JsonRpcProvider(currentNetwork.rpcUrl)
+      const registryContract = new Contract(userRole.registryAddress, REGISTRY_ABI, ethersProvider)
 
-    // Test verifyDocument  
-    console.log('📋 Calling verifyDocument...')
-    const verification = await registryContract.verifyDocument(cid)
-    console.log('Result:', {
-      exists: verification[0],
-      timestamp: verification[1].toString(),
-      institutionName: verification[2],
-      institutionUrl: verification[3]
-    })
-
-    // Check contract basic info
-    console.log('📋 Contract info:')
-    const adminAddr = await registryContract.admin()
-    const instName = await registryContract.institutionName()
-    const instUrl = await registryContract.institutionUrl()
-    
-    console.log('Admin:', adminAddr)
-    console.log('Institution Name:', instName)
-    console.log('Institution URL:', instUrl)
-    
-  } catch (error) {
-    console.error('Debug verification error:', error)
-  }
-}
-
-const verifyRegistryAddress = async () => {
-  if (!currentNetwork || !userRole) return
-  
-  console.log('🔍 Verifying registry address:', userRole.registryAddress)
-  
-  try {
-    const ethersProvider = new JsonRpcProvider(currentNetwork.rpcUrl)
-    const code = await ethersProvider.getCode(userRole.registryAddress)
-    
-    if (code === '0x') {
-      console.error('❌ No contract found at this address!')
-      toast({
-        title: 'Contract Error',
-        description: 'No contract found at the registry address',
-        status: 'error',
-        duration: 5000,
-        isClosable: true,
+      // Test getDocumentDetails
+      console.log('📋 Calling getDocumentDetails...')
+      const details = await registryContract.getDocumentDetails(cid)
+      console.log('Result:', {
+        exists: details[0],
+        timestamp: details[1].toString(),
+        institutionName: details[2],
+        institutionUrl: details[3],
+        metadata: details[4],
+        issuedBy: details[5],
       })
+
+      // Test verifyDocument
+      console.log('📋 Calling verifyDocument...')
+      const verification = await registryContract.verifyDocument(cid)
+      console.log('Result:', {
+        exists: verification[0],
+        timestamp: verification[1].toString(),
+        institutionName: verification[2],
+        institutionUrl: verification[3],
+      })
+
+      // Check contract basic info
+      console.log('📋 Contract info:')
+      const adminAddr = await registryContract.admin()
+      const instName = await registryContract.institutionName()
+      const instUrl = await registryContract.institutionUrl()
+
+      console.log('Admin:', adminAddr)
+      console.log('Institution Name:', instName)
+      console.log('Institution URL:', instUrl)
+    } catch (error) {
+      console.error('Debug verification error:', error)
+    }
+  }
+
+  const verifyRegistryAddress = async () => {
+    if (!currentNetwork || !userRole) return
+
+    console.log('🔍 Verifying registry address:', userRole.registryAddress)
+
+    try {
+      const ethersProvider = new JsonRpcProvider(currentNetwork.rpcUrl)
+      const code = await ethersProvider.getCode(userRole.registryAddress)
+
+      if (code === '0x') {
+        console.error('❌ No contract found at this address!')
+        toast({
+          title: 'Contract Error',
+          description: 'No contract found at the registry address',
+          status: 'error',
+          duration: 5000,
+          isClosable: true,
+        })
+        return false
+      }
+
+      console.log('✅ Contract exists at address')
+
+      // Test basic contract call
+      const registryContract = new Contract(userRole.registryAddress, REGISTRY_ABI, ethersProvider)
+      const institutionName = await registryContract.institutionName()
+      console.log('✅ Contract is responding, institution:', institutionName)
+
+      return true
+    } catch (error) {
+      console.error('❌ Registry verification error:', error)
       return false
     }
-    
-    console.log('✅ Contract exists at address')
-    
-    // Test basic contract call
-    const registryContract = new Contract(userRole.registryAddress, REGISTRY_ABI, ethersProvider)
-    const institutionName = await registryContract.institutionName()
-    console.log('✅ Contract is responding, institution:', institutionName)
-    
-    return true
-  } catch (error) {
-    console.error('❌ Registry verification error:', error)
-    return false
   }
-}
 
   const refreshBalance = async () => {
     console.log('🔄 Manual balance refresh triggered')
@@ -1218,7 +1217,7 @@ const verifyRegistryAddress = async () => {
 
       const provider = new BrowserProvider(walletProvider as any)
       const network = await provider.getNetwork()
-      
+
       if (network.chainId.toString() !== chainId?.toString()) {
         throw new Error(`Network mismatch: expected ${chainId}, got ${network.chainId}`)
       }
@@ -1231,20 +1230,22 @@ const verifyRegistryAddress = async () => {
 
       // CRITICAL FIX: Always use issueDocumentWithMetadata for consistency
       const metadataToSend = documentMetadata.trim()
-      
+
       console.log('📤 Calling issueDocumentWithMetadata with:')
       console.log('  - CID:', documentCID)
       console.log('  - Metadata:', metadataToSend === '' ? '(empty string)' : metadataToSend)
-      
+
       const tx = await registryContract.issueDocumentWithMetadata(documentCID, metadataToSend)
       console.log('✅ Transaction submitted:', tx.hash)
 
       setProgress(60)
-      setProgressStatus(`Transaction submitted (${tx.hash.slice(0, 10)}...) - Waiting for confirmation...`)
+      setProgressStatus(
+        `Transaction submitted (${tx.hash.slice(0, 10)}...) - Waiting for confirmation...`
+      )
 
       const receipt = await tx.wait(1)
       console.log('✅ Transaction confirmed in block:', receipt.blockNumber)
-      
+
       // Log the transaction receipt events to debug
       console.log('📊 Transaction receipt:', receipt)
       if (receipt.logs) {
@@ -1264,16 +1265,16 @@ const verifyRegistryAddress = async () => {
           institutionName: verificationResult[2],
           institutionUrl: verificationResult[3],
           metadata: verificationResult[4],
-          issuedBy: verificationResult[5]
+          issuedBy: verificationResult[5],
         })
-        
+
         // Check if the issuedBy address matches the sender
         if (verificationResult[5].toLowerCase() !== address.toLowerCase()) {
           console.warn('⚠️ WARNING: IssuedBy address mismatch!')
           console.warn('Expected:', address)
           console.warn('Actual:', verificationResult[5])
         }
-        
+
         // Check if metadata matches what we sent
         if (verificationResult[4] !== metadataToSend) {
           console.warn('⚠️ WARNING: Metadata mismatch!')
@@ -1313,15 +1314,18 @@ const verifyRegistryAddress = async () => {
           const balanceEth = formatEther(balanceWei)
           const balanceNum = parseFloat(balanceEth)
 
-          const formattedBalance = balanceNum === 0 ? '0.0000' : 
-            balanceNum < 0.0001 ? balanceNum.toFixed(6) : balanceNum.toFixed(4)
+          const formattedBalance =
+            balanceNum === 0
+              ? '0.0000'
+              : balanceNum < 0.0001
+                ? balanceNum.toFixed(6)
+                : balanceNum.toFixed(4)
 
           setBalance(formattedBalance)
         } catch (error) {
           console.error('Error refreshing balance:', error)
         }
       }
-
     } catch (error: any) {
       console.error('💥 Error issuing document:', error)
 
@@ -1342,9 +1346,11 @@ const verifyRegistryAddress = async () => {
           errorMessage = 'Contract call failed - check permissions and try again'
         }
       } else if (error.message?.includes('could not coalesce error')) {
-        errorMessage = 'Wallet connection issue. Please try disconnecting and reconnecting your wallet.'
+        errorMessage =
+          'Wallet connection issue. Please try disconnecting and reconnecting your wallet.'
       } else if (error.message?.includes('eth_requestAccounts')) {
-        errorMessage = 'Authentication issue with social login. Please try reconnecting your wallet.'
+        errorMessage =
+          'Authentication issue with social login. Please try reconnecting your wallet.'
       } else if (error.code === 'CALL_EXCEPTION') {
         errorMessage = 'Contract call failed - verify contract address and network'
       } else if (error.message) {

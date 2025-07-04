@@ -55,7 +55,7 @@ const NETWORK_CONFIGS = {
   },
   314159: {
     name: 'Filecoin Calibration',
-    factoryAddress: '0x1928Fb336C74432e129142c7E3ee57856486eFfa',
+    factoryAddress: '0xB5CAb4359CBd4C03867A1320a14a6e4DBe7141dd',
     rpcUrl: 'https://api.calibration.node.glif.io/rpc/v1',
     blockExplorer: 'https://calibration.filscan.io/en/message',
   },
