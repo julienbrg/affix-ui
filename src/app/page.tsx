@@ -175,11 +175,13 @@ export default function Home() {
 
           <Heading
             as="h1"
-            size="3xl"
+            size={{ base: 'xl', sm: '2xl', md: '3xl' }}
             bgGradient="linear(to-r, white, #45a2f8)"
             bgClip="text"
             lineHeight="1.2"
-            maxW="800px"
+            maxW={{ base: '100%', md: '800px' }}
+            px={{ base: 4, md: 0 }}
+            textAlign={{ base: 'center', md: 'left' }}
           >
             <Text as="span" color="#45a2f8">
               Affix{' '}
@@ -188,13 +190,15 @@ export default function Home() {
           </Heading>
           <Heading
             as="h1"
-            size="3xl"
+            size={{ base: 'xl', sm: '2xl', md: '3xl' }}
             bgGradient="linear(to-r, white, #45a2f8)"
             bgClip="text"
             lineHeight="1.2"
-            maxW="800px"
+            maxW={{ base: '100%', md: '800px' }}
+            px={{ base: 4, md: 0 }}
+            textAlign={{ base: 'center', md: 'left' }}
           >
-            and let the world{' '}
+            Let the world{' '}
             <Text as="span" color="#45a2f8">
               verify
             </Text>{' '}
