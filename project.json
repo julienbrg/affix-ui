@@ -1,0 +1,23 @@
+{
+    "name": "Affix",
+    "tagline": "Affix your digital seal and let the world verify it.",
+    "description": "Organisations, businesses and individuals can authenticate their documents using Filecoin while keeping their existing workflows intact. Anyone can then instantly verify that documents are genuine and unaltered.",
+    "team": [
+        {
+            "name": "Julien Béranger",
+            "email": "julien@strat.cc"
+        }
+    ],
+    "demo_url": "https://v-ui.vercel.app",
+    "video_url": "https://youtube.com/watch?v=your-demo-video",
+    "technologies": [
+        "React",
+        "Ethers.js",
+        "Next.js",
+        "Filecoin",
+        "Solidity",
+        "Foundry",
+        "IPFS",
+        "Web3.storage"
+    ]
+}
