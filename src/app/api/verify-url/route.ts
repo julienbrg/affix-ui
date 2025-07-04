@@ -3,7 +3,7 @@ import { ethers } from 'ethers'
 
 // Registry ABI to get the URL
 const REGISTRY_ABI = [
-  'function url() external view returns (string)',
+  'function institutionUrl() external view returns (string)',
 ]
 
 async function verifyUrl(address: string) {
