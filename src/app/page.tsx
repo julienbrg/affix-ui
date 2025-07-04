@@ -43,6 +43,7 @@ import {
   FiTrendingUp,
   FiGlobe,
   FiEdit3,
+  FiStar,
   FiCpu,
   FiAlertTriangle,
   FiTarget,
@@ -201,9 +202,8 @@ export default function Home() {
           </Heading>
 
           <Text fontSize="xl" color="gray.300" maxW="600px" lineHeight="1.6">
-            Organisations, businesses and individuals can authenticate their documents using
-            Filecoin while keeping their existing workflows intact. Anyone can then instantly verify
-            that documents are genuine and unaltered.
+            Authenticate your documents using Filecoin while keeping your existing workflows intact.
+            Anyone can then instantly verify that documents are genuine and unaltered.
           </Text>
 
           <Flex
@@ -247,7 +247,7 @@ export default function Home() {
                 px={8}
                 w={{ base: '250px', md: 'auto' }}
               >
-                Verify a Document
+                Verify
               </Button>
             </Link>
           </Flex>
@@ -259,7 +259,7 @@ export default function Home() {
         <VStack spacing={6}>
           {/* <Icon as={FiAlertTriangle} boxSize={12} color="red.400" /> */}
           <Heading as="h2" size="lg" color="white">
-            The Document Fraud Epidemic
+            The Document Fraud Epidemic...
           </Heading>
           <Text fontSize="lg" color="gray.300" maxW="700px" lineHeight="1.6">
             Fake documents cause{' '}
@@ -269,28 +269,6 @@ export default function Home() {
             every year. From fraudulent certificates to forged contracts, document verification is
             broken. Web3 fixes this.
           </Text>
-        </VStack>
-      </Box>
-
-      {/* Document Types */}
-      <Box py={20}>
-        <VStack spacing={12}>
-          <Heading
-            as="h2"
-            size="xl"
-            textAlign="center"
-            bgGradient="linear(to-r, white, gray.300)"
-            bgClip="text"
-          >
-            Works with Any Document Type
-          </Heading>
-
-          <SimpleGrid columns={{ base: 2, md: 4 }} spacing={6} w="full">
-            <DocumentTypeCard icon={FiFile} title="PDFs" color="#45a2f8" />
-            <DocumentTypeCard icon={FiImage} title="Images" color="green.400" />
-            <DocumentTypeCard icon={FiVideo} title="Videos" color="purple.400" />
-            <DocumentTypeCard icon={FiDatabase} title="Any File" color="orange.400" />
-          </SimpleGrid>
         </VStack>
       </Box>
 
@@ -304,7 +282,7 @@ export default function Home() {
             bgGradient="linear(to-r, white, gray.300)"
             bgClip="text"
           >
-            Why Choose Affix?
+            Discover Affix!
           </Heading>
 
           <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={8} w="full">
@@ -355,6 +333,28 @@ export default function Home() {
               color="red.400"
               delay="1s"
             />
+          </SimpleGrid>
+        </VStack>
+      </Box>
+
+      {/* Document Types */}
+      <Box py={20}>
+        <VStack spacing={12}>
+          <Heading
+            as="h2"
+            size="xl"
+            textAlign="center"
+            bgGradient="linear(to-r, white, gray.300)"
+            bgClip="text"
+          >
+            Works with Any Document Type
+          </Heading>
+
+          <SimpleGrid columns={{ base: 2, md: 4 }} spacing={6} w="full">
+            <DocumentTypeCard icon={FiFile} title="PDFs" color="#45a2f8" />
+            <DocumentTypeCard icon={FiImage} title="Images" color="green.400" />
+            <DocumentTypeCard icon={FiVideo} title="Videos" color="purple.400" />
+            <DocumentTypeCard icon={FiDatabase} title="Any File" color="orange.400" />
           </SimpleGrid>
         </VStack>
       </Box>
@@ -414,7 +414,7 @@ export default function Home() {
             <TrustCard
               icon={FiUserCheck}
               title="Guarantee Authorship"
-              description="Cryptographically prove a statement was made by you at a specific time with AI verification."
+              description="Cryptographically prove a statement was made by you at a specific time. That's the magic of IPFS + Filecoin."
               iconColor="green.400"
             />
           </SimpleGrid>
@@ -434,7 +434,7 @@ export default function Home() {
             Roadmap
           </Heading>
 
-          <SimpleGrid columns={{ base: 1, md: 2 }} spacing={8} w="full" maxW="800px">
+          <SimpleGrid columns={{ base: 1, md: 3 }} spacing={8} w="full" maxW="1100px">
             <RoadmapCard
               icon={FiGlobe}
               title="Public documents"
@@ -448,7 +448,15 @@ export default function Home() {
               title="Digital Agreements"
               description="DocuSign-style functionality for agreements and contract signing"
               status="Coming Soon"
-              statusColor="orange.400"
+              statusColor="blue.400"
+            />
+
+            <RoadmapCard
+              icon={FiStar}
+              title="Mainnet Launch"
+              description="We're in contact with several institutions in Burkina Faso. They're ready to deploy their own instance..."
+              status="Coming Soon"
+              statusColor="blue.400"
             />
           </SimpleGrid>
         </VStack>
@@ -478,7 +486,7 @@ export default function Home() {
 
         <VStack spacing={6}>
           <Heading as="h2" size="xl" color="white">
-            Ready to Affix Your Documents?
+            Ready to Authenticate Your Documents with Affix?
           </Heading>
 
           <Text fontSize="lg" color="gray.300" maxW="500px">
