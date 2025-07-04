@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'Dashboard | Affix',
     description: 'Manage your document verification dashboard',
-    url: 'https://affix.vercel.app/dashboard',
+    url: 'https://affix-ui.vercel.app/dashboard',
     siteName: 'Affix',
     images: [
       {

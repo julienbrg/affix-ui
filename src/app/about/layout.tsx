@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'About | Ministry of Sound',
     description: 'Ministry of Sound official website and onchain registry information',
-    url: 'https://affix.vercel.app/about',
+    url: 'https://affix-ui.vercel.app/about',
     siteName: 'Ministry of Sound',
     images: [
       {

@@ -46,7 +46,7 @@ createAppKit({
   metadata: {
     name: 'Affix',
     description: 'Verify document authenticity',
-    url: 'https://affix.vercel.app',
+    url: 'https://affix-ui.vercel.app',
     icons: ['./favicon.ico'],
   },
   enableEIP6963: true,
