@@ -15,6 +15,9 @@ import {
   Flex,
   Badge,
   Divider,
+  List,
+  ListItem,
+  ListIcon,
 } from '@chakra-ui/react'
 import { keyframes } from '@emotion/react'
 import { useAppKitAccount, useAppKitNetwork, useAppKitProvider } from '@reown/appkit/react'
@@ -34,6 +37,15 @@ import {
   FiEye,
   FiDatabase,
   FiUserCheck,
+  FiFile,
+  FiImage,
+  FiVideo,
+  FiTrendingUp,
+  FiGlobe,
+  FiEdit3,
+  FiCpu,
+  FiAlertTriangle,
+  FiTarget,
 } from 'react-icons/fi'
 
 const float = keyframes`
@@ -148,19 +160,17 @@ export default function Home() {
         />
 
         <VStack spacing={6} animation={`${slideIn} 0.8s ease-out`}>
-          {/* <Badge
-            bg="whiteAlpha.200"
-            color="#45a2f8"
-            px={4}
-            py={2}
-            borderRadius="full"
-            fontSize="sm"
-            fontWeight="semibold"
-            border="1px solid"
-            borderColor="#45a2f8"
+          <Heading
+            as="h1"
+            fontSize={{ base: '6xl', md: '8xl', lg: '10xl' }}
+            fontWeight="black"
+            bgGradient="linear(to-r, #45a2f8, white, #45a2f8)"
+            bgClip="text"
+            letterSpacing="tight"
+            textShadow="0 0 40px rgba(69, 162, 248, 0.3)"
           >
-            🔗 Powered by JUJU
-          </Badge> */}
+            AFFIX
+          </Heading>
 
           <Heading
             as="h1"
@@ -170,21 +180,34 @@ export default function Home() {
             lineHeight="1.2"
             maxW="800px"
           >
-            Verify Document Authenticity with{' '}
             <Text as="span" color="#45a2f8">
-              Unbreakable
+              Affix{' '}
+            </Text>
+            your onchain seal
+          </Heading>
+          <Heading
+            as="h1"
+            size="3xl"
+            bgGradient="linear(to-r, white, #45a2f8)"
+            bgClip="text"
+            lineHeight="1.2"
+            maxW="800px"
+          >
+            and let the world{' '}
+            <Text as="span" color="#45a2f8">
+              verify
             </Text>{' '}
-            Proof
+            it{' '}
           </Heading>
 
           <Text fontSize="xl" color="gray.300" maxW="600px" lineHeight="1.6">
-            Publish digital footprints onchain. Anyone can verify. Your documents stay private.
-            Zero-knowledge, maximum trust.
+            Organisations, businesses and individuals can authenticate their documents using
+            Filecoin while keeping their existing workflows intact. Anyone can then instantly verify
+            that documents are genuine and unaltered.
           </Text>
 
           <Flex
             direction={{ base: 'column', md: 'row' }}
-            // spacing={4}
             gap={4}
             pt={4}
             justify="center"
@@ -231,6 +254,46 @@ export default function Home() {
         </VStack>
       </Box>
 
+      {/* Problem Statement */}
+      <Box py={20} textAlign="center">
+        <VStack spacing={6}>
+          {/* <Icon as={FiAlertTriangle} boxSize={12} color="red.400" /> */}
+          <Heading as="h2" size="lg" color="white">
+            The Document Fraud Epidemic
+          </Heading>
+          <Text fontSize="lg" color="gray.300" maxW="700px" lineHeight="1.6">
+            Fake documents cause{' '}
+            <Text as="span" color="red.400" fontWeight="bold">
+              billions of dollars in losses
+            </Text>{' '}
+            every year. From fraudulent certificates to forged contracts, document verification is
+            broken. Web3 fixes this.
+          </Text>
+        </VStack>
+      </Box>
+
+      {/* Document Types */}
+      <Box py={20}>
+        <VStack spacing={12}>
+          <Heading
+            as="h2"
+            size="xl"
+            textAlign="center"
+            bgGradient="linear(to-r, white, gray.300)"
+            bgClip="text"
+          >
+            Works with Any Document Type
+          </Heading>
+
+          <SimpleGrid columns={{ base: 2, md: 4 }} spacing={6} w="full">
+            <DocumentTypeCard icon={FiFile} title="PDFs" color="#45a2f8" />
+            <DocumentTypeCard icon={FiImage} title="Images" color="green.400" />
+            <DocumentTypeCard icon={FiVideo} title="Videos" color="purple.400" />
+            <DocumentTypeCard icon={FiDatabase} title="Any File" color="orange.400" />
+          </SimpleGrid>
+        </VStack>
+      </Box>
+
       {/* Features Grid */}
       <Box py={20}>
         <VStack spacing={12}>
@@ -268,6 +331,30 @@ export default function Home() {
               color="purple.400"
               delay="0.4s"
             />
+
+            <FeatureCard
+              icon={FiCpu}
+              title="AI-Powered Verification"
+              description="AI helps you verify things. It checks if instance addresses match URLs registered onchain for enhanced security."
+              color="cyan.400"
+              delay="0.6s"
+            />
+
+            <FeatureCard
+              icon={FiUsers}
+              title="For Everyone"
+              description="Perfect for organizations, businesses, and individuals who need document authenticity."
+              color="yellow.400"
+              delay="0.8s"
+            />
+
+            <FeatureCard
+              icon={FiTarget}
+              title="Anti-Fraud Protection"
+              description="Combat the billions in annual losses from fake documents with blockchain verification."
+              color="red.400"
+              delay="1s"
+            />
           </SimpleGrid>
         </VStack>
       </Box>
@@ -290,7 +377,7 @@ export default function Home() {
               step={1}
               icon={FiUpload}
               title="Publish Digital Footprint"
-              description="Upload your document and we create a unique cryptographic fingerprint that goes onchain"
+              description="Upload any document type and we create a unique cryptographic fingerprint that goes onchain"
               animation={`${float} 3s ease-in-out infinite`}
             />
 
@@ -298,7 +385,7 @@ export default function Home() {
               step={2}
               icon={FiEye}
               title="Anyone Can Verify"
-              description="Share the document with anyone - they can instantly verify its authenticity"
+              description="Share the document with anyone - they can instantly verify its authenticity with AI assistance"
               animation={`${float} 3s ease-in-out infinite 0.5s`}
             />
 
@@ -306,7 +393,7 @@ export default function Home() {
               step={3}
               icon={FiUserCheck}
               title="Guaranteed Authenticity"
-              description="Prove a statement was made by you with immutable blockchain evidence"
+              description="Prove a statement was made by you with immutable blockchain evidence and AI verification"
               animation={`${float} 3s ease-in-out infinite 1s`}
             />
           </SimpleGrid>
@@ -327,8 +414,41 @@ export default function Home() {
             <TrustCard
               icon={FiUserCheck}
               title="Guarantee Authorship"
-              description="Cryptographically prove a statement was made by you at a specific time."
+              description="Cryptographically prove a statement was made by you at a specific time with AI verification."
               iconColor="green.400"
+            />
+          </SimpleGrid>
+        </VStack>
+      </Box>
+
+      {/* Roadmap */}
+      <Box py={20}>
+        <VStack spacing={12}>
+          <Heading
+            as="h2"
+            size="xl"
+            textAlign="center"
+            bgGradient="linear(to-r, white, gray.300)"
+            bgClip="text"
+          >
+            Roadmap
+          </Heading>
+
+          <SimpleGrid columns={{ base: 1, md: 2 }} spacing={8} w="full" maxW="800px">
+            <RoadmapCard
+              icon={FiGlobe}
+              title="Public documents"
+              description="Public documents stored in a decentralized fashion for permanent accessibility, transparency, and more"
+              status="Coming Soon"
+              statusColor="blue.400"
+            />
+
+            <RoadmapCard
+              icon={FiEdit3}
+              title="Digital Agreements"
+              description="DocuSign-style functionality for agreements and contract signing"
+              status="Coming Soon"
+              statusColor="orange.400"
             />
           </SimpleGrid>
         </VStack>
@@ -358,11 +478,12 @@ export default function Home() {
 
         <VStack spacing={6}>
           <Heading as="h2" size="xl" color="white">
-            Ready to Secure Your Documents?
+            Ready to Affix Your Documents?
           </Heading>
 
           <Text fontSize="lg" color="gray.300" maxW="500px">
-            Join the future of document verification. Get started today or reach out to learn more.
+            Join organizations, businesses, and individuals in the fight against document fraud. Get
+            started today or reach out to learn more.
           </Text>
 
           <Button
@@ -385,6 +506,37 @@ export default function Home() {
         </VStack>
       </Box>
     </Container>
+  )
+}
+
+interface DocumentTypeCardProps {
+  icon: any
+  title: string
+  color: string
+}
+
+function DocumentTypeCard({ icon, title, color }: DocumentTypeCardProps) {
+  return (
+    <VStack
+      spacing={3}
+      p={4}
+      bg="whiteAlpha.100"
+      borderRadius="lg"
+      border="1px solid"
+      borderColor="whiteAlpha.200"
+      _hover={{
+        bg: 'whiteAlpha.200',
+        transform: 'translateY(-2px)',
+        borderColor: color,
+      }}
+      transition="all 0.3s ease"
+      cursor="pointer"
+    >
+      <Icon as={icon} boxSize={8} color={color} />
+      <Text color="white" fontWeight="semibold">
+        {title}
+      </Text>
+    </VStack>
   )
 }
 
@@ -477,6 +629,53 @@ function StepCard({ step, icon, title, description, animation }: StepCardProps) 
         {description}
       </Text>
     </VStack>
+  )
+}
+
+interface RoadmapCardProps {
+  icon: any
+  title: string
+  description: string
+  status: string
+  statusColor: string
+}
+
+function RoadmapCard({ icon, title, description, status, statusColor }: RoadmapCardProps) {
+  return (
+    <Box
+      bg="whiteAlpha.100"
+      p={6}
+      borderRadius="xl"
+      border="1px solid"
+      borderColor="whiteAlpha.200"
+      _hover={{
+        bg: 'whiteAlpha.200',
+        transform: 'translateY(-2px)',
+      }}
+      transition="all 0.3s ease"
+    >
+      <VStack spacing={4} align="start">
+        <HStack justify="space-between" w="full">
+          <Icon as={icon} boxSize={8} color="#45a2f8" />
+          <Badge
+            colorScheme="blue"
+            bg={statusColor}
+            color="white"
+            px={3}
+            py={1}
+            borderRadius="full"
+          >
+            {status}
+          </Badge>
+        </HStack>
+        <Heading as="h3" size="md" color="white">
+          {title}
+        </Heading>
+        <Text color="gray.300" lineHeight="1.6">
+          {description}
+        </Text>
+      </VStack>
+    </Box>
   )
 }
 
