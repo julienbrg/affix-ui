@@ -241,7 +241,7 @@ export default function Home() {
             bgGradient="linear(to-r, white, gray.300)"
             bgClip="text"
           >
-            Why Choose Veridocs?
+            Why Choose Affix?
           </Heading>
 
           <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={8} w="full">

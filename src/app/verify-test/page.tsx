@@ -38,10 +38,10 @@ import { BrowserProvider, Contract, JsonRpcProvider } from 'ethers'
 import { getDocumentCID } from '../lib/documentHash'
 
 // Contract configuration - Your registry address
-const VERIDOCS_REGISTRY_ADDRESS = '0x02b77E551a1779f3f091a1523A08e61cd2620f82'
+const AFFIX_REGISTRY_ADDRESS = '0x02b77E551a1779f3f091a1523A08e61cd2620f82'
 
 // Registry contract ABI - read functions
-const VERIDOCS_REGISTRY_ABI = [
+const AFFIX_REGISTRY_ABI = [
   'function verifyDocument(string memory cid) external view returns (bool exists, uint256 timestamp, string memory institutionName)',
   'function getDocumentDetails(string memory cid) external view returns (bool exists, uint256 timestamp, string memory institutionName, string memory metadata, address issuedBy)',
   'function institutionName() external view returns (string memory)',
@@ -142,14 +142,14 @@ export default function VerifyTestPage() {
     }
 
     console.log('🔄 Loading registry information...')
-    console.log('📍 Registry Address:', VERIDOCS_REGISTRY_ADDRESS)
+    console.log('📍 Registry Address:', AFFIX_REGISTRY_ADDRESS)
 
     try {
       // const ethersProvider = new BrowserProvider(walletProvider as any)
       const ethersProvider = new JsonRpcProvider('https://ethereum-sepolia-rpc.publicnode.com')
       const registryContract = new Contract(
-        VERIDOCS_REGISTRY_ADDRESS,
-        VERIDOCS_REGISTRY_ABI,
+        AFFIX_REGISTRY_ADDRESS,
+        AFFIX_REGISTRY_ABI,
         ethersProvider
       )
 
@@ -251,7 +251,7 @@ export default function VerifyTestPage() {
       setProgressStatus('Verifying document on blockchain...')
 
       console.log('📄 CID to verify:', finalCID)
-      console.log('📍 Registry Address:', VERIDOCS_REGISTRY_ADDRESS)
+      console.log('📍 Registry Address:', AFFIX_REGISTRY_ADDRESS)
 
       // const ethersProvider = new BrowserProvider(walletProvider as any)
       const ethersProvider = new JsonRpcProvider('https://ethereum-sepolia-rpc.publicnode.com')
@@ -260,8 +260,8 @@ export default function VerifyTestPage() {
       console.log('🌐 Connected to network:', network.name, 'Chain ID:', network.chainId.toString())
 
       const registryContract = new Contract(
-        VERIDOCS_REGISTRY_ADDRESS,
-        VERIDOCS_REGISTRY_ABI,
+        AFFIX_REGISTRY_ADDRESS,
+        AFFIX_REGISTRY_ABI,
         ethersProvider
       )
 
@@ -358,8 +358,8 @@ export default function VerifyTestPage() {
     try {
       const ethersProvider = new BrowserProvider(walletProvider as any)
       const registryContract = new Contract(
-        VERIDOCS_REGISTRY_ADDRESS,
-        VERIDOCS_REGISTRY_ABI,
+        AFFIX_REGISTRY_ADDRESS,
+        AFFIX_REGISTRY_ABI,
         ethersProvider
       )
 

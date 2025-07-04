@@ -26,10 +26,10 @@ import { BrowserProvider, Contract, formatEther, parseEther, JsonRpcSigner } fro
 import Link from 'next/link'
 
 // Contract configuration - Direct registry address
-const VERIDOCS_REGISTRY_ADDRESS = '0x02b77E551a1779f3f091a1523A08e61cd2620f82'
+const AFFIX_REGISTRY_ADDRESS = '0x02b77E551a1779f3f091a1523A08e61cd2620f82'
 
 // Registry contract ABI - only what we need
-const VERIDOCS_REGISTRY_ABI = [
+const AFFIX_REGISTRY_ABI = [
   'function issueDocumentOpenBar(string memory cid) external',
   'function verifyDocument(string memory cid) external view returns (bool exists, uint256 timestamp, string memory institutionName)',
   'function getDocumentDetails(string memory cid) external view returns (bool exists, uint256 timestamp, string memory institutionName, string memory metadata, address issuedBy)',
@@ -230,19 +230,15 @@ export default function DashboardTestPage() {
 
       // Try creating a read-only contract first to avoid auth issues
       const readOnlyContract = new Contract(
-        VERIDOCS_REGISTRY_ADDRESS,
-        VERIDOCS_REGISTRY_ABI,
+        AFFIX_REGISTRY_ADDRESS,
+        AFFIX_REGISTRY_ABI,
         provider // Use provider instead of signer for read-only calls
       )
 
       console.log('Read-only contract created, now creating signer contract...')
 
       // Now create the contract with signer for the actual transaction
-      const registryContract = new Contract(
-        VERIDOCS_REGISTRY_ADDRESS,
-        VERIDOCS_REGISTRY_ABI,
-        signer
-      )
+      const registryContract = new Contract(AFFIX_REGISTRY_ADDRESS, AFFIX_REGISTRY_ABI, signer)
       console.log('Contract instance created successfully')
 
       // Skip optional calls completely to avoid any auth issues with social login
@@ -250,14 +246,14 @@ export default function DashboardTestPage() {
 
       // Call issueDocumentOpenBar function directly without any preliminary checks
       console.log('Issuing document with CID:', documentCID)
-      console.log('Registry contract address:', VERIDOCS_REGISTRY_ADDRESS)
+      console.log('Registry contract address:', AFFIX_REGISTRY_ADDRESS)
 
       // Try a more direct approach - send transaction directly without gas estimation
       console.log('Attempting direct contract call...')
 
       // Use a simple transaction object approach
       const tx = await signer.sendTransaction({
-        to: VERIDOCS_REGISTRY_ADDRESS,
+        to: AFFIX_REGISTRY_ADDRESS,
         data: registryContract.interface.encodeFunctionData('issueDocumentOpenBar', [documentCID]),
         // Let the wallet/provider handle gas estimation
       })
@@ -280,7 +276,7 @@ export default function DashboardTestPage() {
         txHash: tx.hash,
         cid: documentCID,
         timestamp: new Date().toISOString(),
-        registryAddress: VERIDOCS_REGISTRY_ADDRESS,
+        registryAddress: AFFIX_REGISTRY_ADDRESS,
         blockNumber: receipt.blockNumber,
       }
       setProgress(60)

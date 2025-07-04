@@ -62,7 +62,7 @@ const NETWORK_CONFIGS = {
 }
 
 // Factory contract ABI - from actual Etherscan contract
-const VERIDOCS_FACTORY_ABI = [
+const AFFIX_FACTORY_ABI = [
   'function getAllInstitutions() external view returns (address[] memory)',
   'function getInstitutionCount() external view returns (uint256)',
   'function getInstitutionByIndex(uint256 index) external view returns (address)',
@@ -73,7 +73,7 @@ const VERIDOCS_FACTORY_ABI = [
 ]
 
 // Registry contract ABI
-const VERIDOCS_REGISTRY_ABI = [
+const AFFIX_REGISTRY_ABI = [
   'function verifyDocument(string memory cid) external view returns (bool exists, uint256 timestamp, string memory institutionName_, string memory institutionUrl_)',
   'function getDocumentDetails(string memory cid) external view returns (bool exists, uint256 timestamp, string memory institutionName_, string memory institutionUrl_, string memory metadata, address issuedBy)',
   'function institutionName() external view returns (string memory)',
@@ -224,7 +224,7 @@ export default function VerifyPage() {
       const ethersProvider = new JsonRpcProvider(currentNetwork.rpcUrl)
       const factoryContract = new Contract(
         currentNetwork.factoryAddress,
-        VERIDOCS_FACTORY_ABI,
+        AFFIX_FACTORY_ABI,
         ethersProvider
       )
 
@@ -275,11 +275,7 @@ export default function VerifyPage() {
           }
 
           // Load comprehensive registry details - FIX: Use individual calls instead of getRegistryInfo
-          const registryContract = new Contract(
-            registryAddress,
-            VERIDOCS_REGISTRY_ABI,
-            ethersProvider
-          )
+          const registryContract = new Contract(registryAddress, AFFIX_REGISTRY_ABI, ethersProvider)
 
           // GET DATA USING INDIVIDUAL CONTRACT CALLS (more reliable)
           const [
@@ -496,13 +492,13 @@ export default function VerifyPage() {
 
           const registryContract = new Contract(
             registry.address,
-            VERIDOCS_REGISTRY_ABI,
+            AFFIX_REGISTRY_ABI,
             ethersProvider
           )
 
           console.log('📋 Calling getDocumentDetails for CID:', finalCID)
           const documentDetails = await registryContract.getDocumentDetails(finalCID)
-          
+
           console.log('📊 Raw document details result:', documentDetails)
           console.log('📊 Document details breakdown:')
           console.log('  [0] exists:', documentDetails[0])
@@ -524,7 +520,7 @@ export default function VerifyPage() {
             timestamp: timestamp.toString(),
             metadata: metadata === '' ? '(empty)' : metadata,
             issuedBy,
-            institutionUrl
+            institutionUrl,
           })
 
           const result: VerificationResult = {
@@ -538,7 +534,6 @@ export default function VerifyPage() {
           }
 
           results.push(result)
-
         } catch (error) {
           console.error(`❌ Error checking registry ${registry.institutionName}:`, error)
           // Add error result
@@ -566,15 +561,17 @@ export default function VerifyPage() {
 
       if (foundInRegistries > 0) {
         console.log('🎉 Document verification SUCCESS in', foundInRegistries, 'registries!')
-        
+
         // Simple: just verify URL for the first registry that found the document
         try {
           const firstFoundResult = results.find(r => r.exists)
           if (firstFoundResult) {
             console.log('🔍 Verifying URL with registry address:', firstFoundResult.registryAddress)
-            const verifyResponse = await fetch(`/api/verify-url?address=${encodeURIComponent(firstFoundResult.registryAddress)}`)
+            const verifyResponse = await fetch(
+              `/api/verify-url?address=${encodeURIComponent(firstFoundResult.registryAddress)}`
+            )
             const verifyData = await verifyResponse.json()
-            
+
             if (verifyResponse.ok && verifyData.success) {
               console.log('✅ URL verification successful:', verifyData)
               setUrlVerified(verifyData.verified)
@@ -594,7 +591,6 @@ export default function VerifyPage() {
 
       setProgress(0)
       setProgressStatus('')
-
     } catch (error: any) {
       console.error('❌ Error during verification process:', error)
 
