@@ -129,6 +129,7 @@ export default function VerifyPage() {
   const [verificationResults, setVerificationResults] = useState<VerificationResult[]>([])
   const [registries, setRegistries] = useState<RegistryInfo[]>([])
   const [totalRegistries, setTotalRegistries] = useState(0)
+  const [urlVerified, setUrlVerified] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const toast = useToast()
   const t = useTranslation()
@@ -552,19 +553,39 @@ export default function VerifyPage() {
           : 'Document not found in any registry ❌'
       )
 
-      setVerificationResults(results)
+setVerificationResults(results)
 
-      if (foundInRegistries > 0) {
-        console.log('🎉 Document verification SUCCESS in', foundInRegistries, 'registries!')
+if (foundInRegistries > 0) {
+  console.log('🎉 Document verification SUCCESS in', foundInRegistries, 'registries!')
+  
+  // Simple: just verify URL for the first registry that found the document
+  try {
+    const firstFoundResult = results.find(r => r.exists)
+    if (firstFoundResult) {
+      console.log('🔍 Verifying URL with registry address:', firstFoundResult.registryAddress)
+      const verifyResponse = await fetch(`/api/verify-url?address=${encodeURIComponent(firstFoundResult.registryAddress)}`)
+      const verifyData = await verifyResponse.json()
+      
+      if (verifyResponse.ok && verifyData.success) {
+        console.log('✅ URL verification successful:', verifyData)
+        setUrlVerified(verifyData.verified)
       } else {
-        console.log('⚠️ Document NOT FOUND in any registry')
+        console.warn('⚠️ URL verification failed:', verifyData.error)
+        setUrlVerified(false)
       }
+    }
+  } catch (error) {
+    console.error('Error verifying URL:', error)
+    setUrlVerified(false)
+  }
+} else {
+  console.log('⚠️ Document NOT FOUND in any registry')
+  setUrlVerified(false)
+}
 
-      // Reset progress after delay
-      setTimeout(() => {
-        setProgress(0)
-        setProgressStatus('')
-      }, 3000)
+setProgress(0)
+setProgressStatus('')
+
     } catch (error: any) {
       console.error('❌ Error during verification process:', error)
 
@@ -1176,7 +1197,8 @@ export default function VerifyPage() {
                               )}
                             </SimpleGrid>
 
-                            {result.metadata && (
+                            {/* Only show metadata if it exists and is not empty */}
+                            {result.metadata && result.metadata.trim() && (
                               <Box>
                                 <Text fontSize="sm" fontWeight="medium" color="green.300" mb={2}>
                                   Metadata:
@@ -1192,6 +1214,46 @@ export default function VerifyPage() {
                                     {result.metadata}
                                   </Text>
                                 </Box>
+                              </Box>
+                            )}
+
+                            {/* Show verified URL if URL verification was successful */}
+                            {urlVerified ? (
+                              <Box>
+                                <Text fontSize="sm" fontWeight="medium" color="green.300" mb={2}>
+                                  ✅ Verified URL:
+                                </Text>
+                                <Box
+                                  bg="whiteAlpha.100"
+                                  p={2}
+                                  borderRadius="sm"
+                                >
+                                  <Text
+                                    fontSize="xs"
+                                    color="green.200"
+                                    fontFamily="mono"
+                                    cursor="pointer"
+                                    textDecoration="underline"
+                                    _hover={{ color: 'green.100' }}
+                                    onClick={() => {
+                                      // Extract URL from metadata or use a default
+                                      const url = result.metadata && result.metadata.includes('http') 
+                                        ? result.metadata 
+                                        : `https://${result.institutionName.toLowerCase().replace(/\s+/g, '')}.com`
+                                      window.open(url, '_blank')
+                                    }}
+                                  >
+                                    {result.metadata && result.metadata.includes('http') 
+                                      ? result.metadata 
+                                      : `https://${result.institutionName.toLowerCase().replace(/\s+/g, '')}.com`}
+                                  </Text>
+                                </Box>
+                              </Box>
+                            ) : (
+                              <Box>
+                                <Text fontSize="sm" fontWeight="medium" color="orange.300" mb={2}>
+                                  Institution URL unverified
+                                </Text>
                               </Box>
                             )}
                           </VStack>
