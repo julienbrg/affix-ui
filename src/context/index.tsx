@@ -44,9 +44,9 @@ createAppKit({
   networks: [filecoinCalibration],
   defaultNetwork: filecoinCalibration,
   metadata: {
-    name: 'Veridocs',
+    name: 'Affix',
     description: 'Verify document authenticity',
-    url: 'https://veridocs-ui.vercel.app',
+    url: 'https://affix.vercel.app',
     icons: ['./favicon.ico'],
   },
   enableEIP6963: true,

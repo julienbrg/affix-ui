@@ -1,20 +1,20 @@
 import { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Verify Documents | Veridocs',
+  title: 'Verify Documents | Affix',
   description: 'Verify the authenticity of documents using blockchain technology',
 
   openGraph: {
-    title: 'Verify Documents | Veridocs',
+    title: 'Verify Documents | Affix',
     description: 'Verify the authenticity of documents using blockchain technology',
-    url: 'https://veridocs-ui.vercel.app/verify',
-    siteName: 'Veridocs',
+    url: 'https://affix.vercel.app/verify',
+    siteName: 'Affix',
     images: [
       {
         url: '/huangshan.png',
         width: 1200,
         height: 630,
-        alt: 'Veridocs Verify - Document Authentication Platform',
+        alt: 'Affix Verify - Document Authentication Platform',
       },
     ],
     locale: 'en_US',
@@ -23,7 +23,7 @@ export const metadata: Metadata = {
 
   twitter: {
     card: 'summary_large_image',
-    title: 'Verify Documents | Veridocs',
+    title: 'Verify Documents | Affix',
     description: 'Verify the authenticity of documents using blockchain technology',
     images: ['/huangshan.png'],
   },

@@ -1,20 +1,20 @@
 import { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Dashboard | Veridocs',
+  title: 'Dashboard | Affix',
   description: 'Manage your document verification dashboard',
 
   openGraph: {
-    title: 'Dashboard | Veridocs',
+    title: 'Dashboard | Affix',
     description: 'Manage your document verification dashboard',
-    url: 'https://veridocs-ui.vercel.app/dashboard',
-    siteName: 'Veridocs',
+    url: 'https://affix.vercel.app/dashboard',
+    siteName: 'Affix',
     images: [
       {
         url: '/huangshan.png',
         width: 1200,
         height: 630,
-        alt: 'Veridocs Dashboard - Document Verification Management',
+        alt: 'Affix Dashboard - Document Verification Management',
       },
     ],
     locale: 'en_US',
@@ -23,7 +23,7 @@ export const metadata: Metadata = {
 
   twitter: {
     card: 'summary_large_image',
-    title: 'Dashboard | Veridocs',
+    title: 'Dashboard | Affix',
     description: 'Manage your document verification dashboard',
     images: ['/huangshan.png'],
   },

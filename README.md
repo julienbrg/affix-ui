@@ -1,8 +1,11 @@
-# Veridocs UI
+# Affix UI
 
-Verify document authenticity.
+Affix your onchain seal and let the world verify it.
 
-View the [Solidity contracts](https://github.com/julienbrg/veridocs-contracts).
+- Contracts repo: https://github.com/julienbrg/affix-contracts
+- Live demo: https://affix.vercel.app/
+
+Organisations, businesses and individuals can authenticate their documents using Filecoin while keeping their existing workflows intact. Anyone can then instantly verify that documents are genuine and unaltered.
 
 ## Install
 

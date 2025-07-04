@@ -62,7 +62,7 @@ export default function Header() {
         <Box transform={`translateX(-${leftSlideValue}px)`} transition="transform 0.5s ease-in-out">
           <Link href="/">
             <Heading as="h3" size="md" textAlign="center">
-              Veridocs
+              Affix
             </Heading>
           </Link>
         </Box>

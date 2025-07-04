@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { ethers } from 'ethers'
 
-const VERIDOCS_REGISTRY_ADDRESS = '0x5bCf8999c91594EC0CCB2093d128F75B6008Af45'
+const AFFIX_REGISTRY_ADDRESS = '0xE2b7f08d9879594e69784a86c5ca07cCae86A76a'
 
 // Registry ABI for agent functions
 const REGISTRY_ABI = [
@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Server configuration error' }, { status: 500 })
     }
     console.log('✅ Admin private key found')
-    console.log('🏢 Using registry address:', VERIDOCS_REGISTRY_ADDRESS)
+    console.log('🏢 Using registry address:', AFFIX_REGISTRY_ADDRESS)
 
     // Connect to Filecoin Calibration network
     const provider = new ethers.JsonRpcProvider('https://api.calibration.node.glif.io/rpc/v1')
@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
     console.log('👑 Admin wallet address:', adminWallet.address)
 
     // Create contract instance
-    const contract = new ethers.Contract(VERIDOCS_REGISTRY_ADDRESS, REGISTRY_ABI, adminWallet)
+    const contract = new ethers.Contract(AFFIX_REGISTRY_ADDRESS, REGISTRY_ABI, adminWallet)
     console.log('📄 Contract instance created')
 
     // Get registry info
@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
         success: true,
         message: 'User is already an agent',
         alreadyAgent: true,
-        registryAddress: VERIDOCS_REGISTRY_ADDRESS,
+        registryAddress: AFFIX_REGISTRY_ADDRESS,
       })
     }
 
@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       transactionHash: tx.hash,
-      registryAddress: VERIDOCS_REGISTRY_ADDRESS,
+      registryAddress: AFFIX_REGISTRY_ADDRESS,
       message: 'Successfully added as agent',
       alreadyAgent: false,
     })

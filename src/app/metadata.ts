@@ -1,23 +1,23 @@
 import { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Veridocs',
+  title: 'Affix',
   description: 'Verify document authenticity',
 
   keywords: ['Web3', 'Next.js', 'Ethereum', 'DApp', 'Blockchain', 'Wallet'],
   authors: [{ name: 'Julien Béranger', url: 'https://github.com/julienbrg' }],
 
   openGraph: {
-    title: 'Veridocs',
+    title: 'Affix',
     description: 'Verify document authenticity',
-    url: 'https://veridocs-ui.vercel.app',
-    siteName: 'Veridocs',
+    url: 'https://affix.vercel.app',
+    siteName: 'Affix',
     images: [
       {
         url: '/huangshan.png',
         width: 1200,
         height: 630,
-        alt: 'Veridocs',
+        alt: 'Affix',
       },
     ],
     locale: 'en_US',
@@ -26,7 +26,7 @@ export const metadata: Metadata = {
 
   twitter: {
     card: 'summary_large_image',
-    title: 'Veridocs',
+    title: 'Affix',
     description: 'Verify document authenticity',
     images: ['/huangshan.png'],
     creator: '@julienbrg',
