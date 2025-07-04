@@ -72,17 +72,18 @@ const VERIDOCS_FACTORY_ABI = [
   'function owner() external view returns (address)',
 ]
 
-// Registry contract ABI - from actual contract source
+// Registry contract ABI
 const VERIDOCS_REGISTRY_ABI = [
-  'function verifyDocument(string memory cid) external view returns (bool exists, uint256 timestamp, string memory institutionName_)',
-  'function getDocumentDetails(string memory cid) external view returns (bool exists, uint256 timestamp, string memory institutionName_, string memory metadata, address issuedBy)',
+  'function verifyDocument(string memory cid) external view returns (bool exists, uint256 timestamp, string memory institutionName_, string memory institutionUrl_)',
+  'function getDocumentDetails(string memory cid) external view returns (bool exists, uint256 timestamp, string memory institutionName_, string memory institutionUrl_, string memory metadata, address issuedBy)',
   'function institutionName() external view returns (string memory)',
+  'function institutionUrl() external view returns (string memory)',
   'function getDocumentCount() external view returns (uint256)',
   'function admin() external view returns (address)',
   'function getAgentCount() external view returns (uint256)',
   'function getActiveAgents() external view returns (address[] memory)',
   'function getAllDocumentCids() external view returns (string[] memory)',
-  'function getRegistryInfo() external view returns (address admin_, string memory institutionName_, uint256 documentCount, uint256 agentCount)',
+  'function getRegistryInfo() external view returns (address admin_, string memory institutionName_, string memory institutionUrl_, uint256 documentCount, uint256 agentCount)',
   'function isValidRegistry() external view returns (bool)',
   'function isAgent(address agent) external view returns (bool)',
   'function canIssueDocuments(address issuer) external view returns (bool)',
@@ -105,12 +106,14 @@ interface VerificationResult {
   timestamp: bigint
   metadata?: string
   issuedBy?: string
+  institutionUrl?: string
 }
 
 interface DocumentDetails {
   exists: boolean
   timestamp: bigint
   institutionName: string
+  institutionUrl: string
   metadata: string
   issuedBy: string
 }
@@ -297,7 +300,7 @@ export default function VerifyPage() {
 
           // DEBUG: Compare getRegistryInfo vs individual calls
           try {
-            const [regInfoAdmin, regInfoName, regInfoDocCount, regInfoAgentCount] =
+            const [regInfoAdmin, regInfoName, regInfoUrl, regInfoDocCount, regInfoAgentCount] =
               await registryContract.getRegistryInfo()
             console.log('🔍 COMPARISON - getRegistryInfo() vs individual calls:')
             console.log('  getRegistryInfo documentCount:', regInfoDocCount.toString())
@@ -440,7 +443,7 @@ export default function VerifyPage() {
       return
     }
 
-    console.log('🔍 Starting multi-registry verification...')
+    console.log('🔍 === STARTING VERIFICATION ===')
 
     setIsVerifying(true)
     setVerificationResults([])
@@ -497,24 +500,32 @@ export default function VerifyPage() {
             ethersProvider
           )
 
-          // First try basic verification
-          const [exists, timestamp, institutionName] =
-            await registryContract.verifyDocument(finalCID)
+          console.log('📋 Calling getDocumentDetails for CID:', finalCID)
+          const documentDetails = await registryContract.getDocumentDetails(finalCID)
+          
+          console.log('📊 Raw document details result:', documentDetails)
+          console.log('📊 Document details breakdown:')
+          console.log('  [0] exists:', documentDetails[0])
+          console.log('  [1] timestamp:', documentDetails[1])
+          console.log('  [2] institutionName:', documentDetails[2])
+          console.log('  [3] institutionUrl:', documentDetails[3])
+          console.log('  [4] metadata:', documentDetails[4])
+          console.log('  [5] issuedBy:', documentDetails[5])
 
-          let metadata = ''
-          let issuedBy = ''
+          const exists = documentDetails[0]
+          const timestamp = documentDetails[1]
+          const institutionName = documentDetails[2]
+          const institutionUrl = documentDetails[3] // This was missing before!
+          const metadata = documentDetails[4] || '' // Handle potential undefined
+          const issuedBy = documentDetails[5]
 
-          // If document exists, get detailed information
-          if (exists) {
-            try {
-              const [, , , detailMetadata, detailIssuedBy] =
-                await registryContract.getDocumentDetails(finalCID)
-              metadata = detailMetadata
-              issuedBy = detailIssuedBy
-            } catch (detailError) {
-              console.log('⚠️ Could not get detailed info, using basic verification result')
-            }
-          }
+          console.log(`✅ Registry ${institutionName} result:`, {
+            exists,
+            timestamp: timestamp.toString(),
+            metadata: metadata === '' ? '(empty)' : metadata,
+            issuedBy,
+            institutionUrl
+          })
 
           const result: VerificationResult = {
             registryAddress: registry.address,
@@ -523,14 +534,11 @@ export default function VerifyPage() {
             timestamp,
             metadata,
             issuedBy,
+            institutionUrl,
           }
 
           results.push(result)
 
-          console.log(`✅ Registry ${institutionName} result:`, {
-            exists,
-            timestamp: timestamp.toString(),
-          })
         } catch (error) {
           console.error(`❌ Error checking registry ${registry.institutionName}:`, error)
           // Add error result
@@ -541,6 +549,7 @@ export default function VerifyPage() {
             timestamp: BigInt(0),
             metadata: '',
             issuedBy: '',
+            institutionUrl: '',
           })
         }
       }
@@ -553,38 +562,38 @@ export default function VerifyPage() {
           : 'Document not found in any registry ❌'
       )
 
-setVerificationResults(results)
+      setVerificationResults(results)
 
-if (foundInRegistries > 0) {
-  console.log('🎉 Document verification SUCCESS in', foundInRegistries, 'registries!')
-  
-  // Simple: just verify URL for the first registry that found the document
-  try {
-    const firstFoundResult = results.find(r => r.exists)
-    if (firstFoundResult) {
-      console.log('🔍 Verifying URL with registry address:', firstFoundResult.registryAddress)
-      const verifyResponse = await fetch(`/api/verify-url?address=${encodeURIComponent(firstFoundResult.registryAddress)}`)
-      const verifyData = await verifyResponse.json()
-      
-      if (verifyResponse.ok && verifyData.success) {
-        console.log('✅ URL verification successful:', verifyData)
-        setUrlVerified(verifyData.verified)
+      if (foundInRegistries > 0) {
+        console.log('🎉 Document verification SUCCESS in', foundInRegistries, 'registries!')
+        
+        // Simple: just verify URL for the first registry that found the document
+        try {
+          const firstFoundResult = results.find(r => r.exists)
+          if (firstFoundResult) {
+            console.log('🔍 Verifying URL with registry address:', firstFoundResult.registryAddress)
+            const verifyResponse = await fetch(`/api/verify-url?address=${encodeURIComponent(firstFoundResult.registryAddress)}`)
+            const verifyData = await verifyResponse.json()
+            
+            if (verifyResponse.ok && verifyData.success) {
+              console.log('✅ URL verification successful:', verifyData)
+              setUrlVerified(verifyData.verified)
+            } else {
+              console.warn('⚠️ URL verification failed:', verifyData.error)
+              setUrlVerified(false)
+            }
+          }
+        } catch (error) {
+          console.error('Error verifying URL:', error)
+          setUrlVerified(false)
+        }
       } else {
-        console.warn('⚠️ URL verification failed:', verifyData.error)
+        console.log('⚠️ Document NOT FOUND in any registry')
         setUrlVerified(false)
       }
-    }
-  } catch (error) {
-    console.error('Error verifying URL:', error)
-    setUrlVerified(false)
-  }
-} else {
-  console.log('⚠️ Document NOT FOUND in any registry')
-  setUrlVerified(false)
-}
 
-setProgress(0)
-setProgressStatus('')
+      setProgress(0)
+      setProgressStatus('')
 
     } catch (error: any) {
       console.error('❌ Error during verification process:', error)
@@ -1176,8 +1185,8 @@ setProgressStatus('')
                                 </HStack>
                               </VStack>
 
-                              {result.issuedBy && (
-                                <VStack align="stretch" spacing={2}>
+                              <VStack align="stretch" spacing={2}>
+                                {result.issuedBy && (
                                   <HStack justify="space-between">
                                     <Text fontSize="sm" color="green.300">
                                       Issued By:
@@ -1193,8 +1202,26 @@ setProgressStatus('')
                                       {result.issuedBy!}
                                     </Text>
                                   </HStack>
-                                </VStack>
-                              )}
+                                )}
+
+                                {result.institutionUrl && (
+                                  <HStack justify="space-between">
+                                    <Text fontSize="sm" color="green.300">
+                                      ✅ Verified URL:
+                                    </Text>
+                                    <Text
+                                      fontSize="xs"
+                                      color="green.200"
+                                      cursor="pointer"
+                                      textDecoration="underline"
+                                      onClick={() => window.open(result.institutionUrl, '_blank')}
+                                      _hover={{ color: 'green.100' }}
+                                    >
+                                      {result.institutionUrl}
+                                    </Text>
+                                  </HStack>
+                                )}
+                              </VStack>
                             </SimpleGrid>
 
                             {/* Only show metadata if it exists and is not empty */}
@@ -1214,46 +1241,6 @@ setProgressStatus('')
                                     {result.metadata}
                                   </Text>
                                 </Box>
-                              </Box>
-                            )}
-
-                            {/* Show verified URL if URL verification was successful */}
-                            {urlVerified ? (
-                              <Box>
-                                <Text fontSize="sm" fontWeight="medium" color="green.300" mb={2}>
-                                  ✅ Verified URL:
-                                </Text>
-                                <Box
-                                  bg="whiteAlpha.100"
-                                  p={2}
-                                  borderRadius="sm"
-                                >
-                                  <Text
-                                    fontSize="xs"
-                                    color="green.200"
-                                    fontFamily="mono"
-                                    cursor="pointer"
-                                    textDecoration="underline"
-                                    _hover={{ color: 'green.100' }}
-                                    onClick={() => {
-                                      // Extract URL from metadata or use a default
-                                      const url = result.metadata && result.metadata.includes('http') 
-                                        ? result.metadata 
-                                        : `https://${result.institutionName.toLowerCase().replace(/\s+/g, '')}.com`
-                                      window.open(url, '_blank')
-                                    }}
-                                  >
-                                    {result.metadata && result.metadata.includes('http') 
-                                      ? result.metadata 
-                                      : `https://${result.institutionName.toLowerCase().replace(/\s+/g, '')}.com`}
-                                  </Text>
-                                </Box>
-                              </Box>
-                            ) : (
-                              <Box>
-                                <Text fontSize="sm" fontWeight="medium" color="orange.300" mb={2}>
-                                  Institution URL unverified
-                                </Text>
                               </Box>
                             )}
                           </VStack>
@@ -1344,7 +1331,7 @@ setProgressStatus('')
                         <VStack align="stretch" spacing={2}>
                           <HStack justify="space-between">
                             <Text fontSize="sm" color="blue.300">
-                              Document CID:
+                              CID:
                             </Text>
                             <Text
                               fontSize="xs"
