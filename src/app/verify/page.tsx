@@ -669,7 +669,7 @@ export default function VerifyPage() {
               Verify Documents
             </Heading>
             <Text fontSize="lg" color="gray.400">
-              Verify document authenticity across all registered institutions
+              Verify document authenticity across all registered instances
             </Text>
             <Badge colorScheme="blue" mt={2}>
               Network: {currentNetwork.name}

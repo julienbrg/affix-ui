@@ -1677,7 +1677,7 @@ export default function Dashboard() {
               <VStack spacing={4}>
                 <Icon as={FiX} boxSize={8} color="red.400" />
                 <Text textAlign="center" fontSize="lg">
-                  You are not authorized to issue documents on {currentNetwork.name}.
+                  You are not authorized to authenticate documents for now.
                 </Text>
                 <Text textAlign="center" color="gray.400">
                   You must be an admin or agent of a registered institution to use this dashboard.
