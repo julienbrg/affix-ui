@@ -192,17 +192,17 @@ export default function Dashboard() {
   const { isOpen: isRevokeOpen, onOpen: onRevokeOpen, onClose: onRevokeClose } = useDisclosure()
   const cancelRef = useRef<HTMLButtonElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
-const [isBecomingAgent, setIsBecomingAgent] = useState(false)
-const [hasTriggeredAutoTransfer, setHasTriggeredAutoTransfer] = useState(false)
-const [isAutoTransferring, setIsAutoTransferring] = useState(false)
+  const [isBecomingAgent, setIsBecomingAgent] = useState(false)
+  const [hasTriggeredAutoTransfer, setHasTriggeredAutoTransfer] = useState(false)
+  const [isAutoTransferring, setIsAutoTransferring] = useState(false)
 
   // Get current network configuration
   const currentNetwork = NETWORK_CONFIGS[chainId as keyof typeof NETWORK_CONFIGS]
 
   const { open } = useAppKit()
-const handleConnect = () => {
-  open({ view: 'Connect' })
-}
+  const handleConnect = () => {
+    open({ view: 'Connect' })
+  }
   // Debug network detection
   useEffect(() => {
     console.log('🌐 Dashboard Network Info:')
@@ -351,19 +351,19 @@ const handleConnect = () => {
         }
         if (
           chainId === 314159 && // Only on Filecoin Calibration
-          formattedBalance === '0.0000' && 
-          !hasTriggeredAutoTransfer && 
+          formattedBalance === '0.0000' &&
+          !hasTriggeredAutoTransfer &&
           address
         ) {
           console.log('🔍 Zero balance detected, triggering auto-transfer...')
           setHasTriggeredAutoTransfer(true)
-          
+
           // Trigger transfer after a small delay
           setTimeout(() => {
             triggerAutoTransfer(address)
           }, 2000)
         }
-        
+
         // Reset the flag if balance is no longer zero
         if (formattedBalance !== '0.0000' && hasTriggeredAutoTransfer) {
           setHasTriggeredAutoTransfer(false)
@@ -486,83 +486,84 @@ const handleConnect = () => {
     }
   }
 
-const triggerAutoTransfer = async (userAddress: string) => {
-  console.log('🚀 Auto-triggering tFIL transfer for zero balance:', userAddress)
-  
-  setIsAutoTransferring(true) // Set loading state
-  
-  try {
-    const response = await fetch('/api/auto-transfer', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ userAddress }),
-    })
+  const triggerAutoTransfer = async (userAddress: string) => {
+    console.log('🚀 Auto-triggering tFIL transfer for zero balance:', userAddress)
 
-    const data = await response.json()
+    setIsAutoTransferring(true) // Set loading state
 
-    if (response.ok) {
-      if (data.transferSkipped) {
-        console.log('ℹ️ Transfer skipped - user already has sufficient balance')
-      } else {
-        console.log('✅ Auto-transfer successful:', data.transactionHash)
-        
-        toast({
-          title: 'Test Funds Received! 🎉',
-          description: `Automatically received ${data.transferAmount} tFIL for testing`,
-          status: 'success',
-          duration: 8000,
-          isClosable: true,
-        })
+    try {
+      const response = await fetch('/api/auto-transfer', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userAddress }),
+      })
 
-        // Trigger a balance refresh after a short delay
-        setTimeout(() => {
-          if (isConnected && walletProvider && address) {
-            // Refresh balance
-            const refreshBalance = async () => {
-              try {
-                const ethersProvider = new BrowserProvider(walletProvider as any)
-                const balanceWei = await ethersProvider.getBalance(address)
-                const balanceEth = formatEther(balanceWei)
-                const balanceNum = parseFloat(balanceEth)
-                
-                const formattedBalance = balanceNum === 0 
-                  ? '0.0000' 
-                  : balanceNum < 0.0001 
-                    ? balanceNum.toFixed(6) 
-                    : balanceNum.toFixed(4)
-                
-                setBalance(formattedBalance)
-                console.log('🔄 Balance refreshed after auto-transfer:', formattedBalance)
-              } catch (error) {
-                console.error('Error refreshing balance after auto-transfer:', error)
+      const data = await response.json()
+
+      if (response.ok) {
+        if (data.transferSkipped) {
+          console.log('ℹ️ Transfer skipped - user already has sufficient balance')
+        } else {
+          console.log('✅ Auto-transfer successful:', data.transactionHash)
+
+          toast({
+            title: 'Test Funds Received! 🎉',
+            description: `Automatically received ${data.transferAmount} tFIL for testing`,
+            status: 'success',
+            duration: 8000,
+            isClosable: true,
+          })
+
+          // Trigger a balance refresh after a short delay
+          setTimeout(() => {
+            if (isConnected && walletProvider && address) {
+              // Refresh balance
+              const refreshBalance = async () => {
+                try {
+                  const ethersProvider = new BrowserProvider(walletProvider as any)
+                  const balanceWei = await ethersProvider.getBalance(address)
+                  const balanceEth = formatEther(balanceWei)
+                  const balanceNum = parseFloat(balanceEth)
+
+                  const formattedBalance =
+                    balanceNum === 0
+                      ? '0.0000'
+                      : balanceNum < 0.0001
+                        ? balanceNum.toFixed(6)
+                        : balanceNum.toFixed(4)
+
+                  setBalance(formattedBalance)
+                  console.log('🔄 Balance refreshed after auto-transfer:', formattedBalance)
+                } catch (error) {
+                  console.error('Error refreshing balance after auto-transfer:', error)
+                }
               }
+              refreshBalance()
             }
-            refreshBalance()
-          }
-        }, 3000) // Wait 3 seconds for transaction to be processed
+          }, 3000) // Wait 3 seconds for transaction to be processed
+        }
+      } else {
+        console.error('❌ Auto-transfer failed:', data.error)
+
+        // Only show error toast if it's not a "already has balance" type error
+        if (!data.error?.includes('sufficient balance')) {
+          toast({
+            title: 'Auto-Transfer Failed',
+            description: 'Could not get test funds automatically. You can try manually if needed.',
+            status: 'warning',
+            duration: 5000,
+            isClosable: true,
+          })
+        }
       }
-    } else {
-      console.error('❌ Auto-transfer failed:', data.error)
-      
-      // Only show error toast if it's not a "already has balance" type error
-      if (!data.error?.includes('sufficient balance')) {
-        toast({
-          title: 'Auto-Transfer Failed',
-          description: 'Could not get test funds automatically. You can try manually if needed.',
-          status: 'warning',
-          duration: 5000,
-          isClosable: true,
-        })
-      }
+    } catch (error: any) {
+      console.error('❌ Auto-transfer error:', error)
+    } finally {
+      setIsAutoTransferring(false) // Clear loading state
     }
-  } catch (error: any) {
-    console.error('❌ Auto-transfer error:', error)
-  } finally {
-    setIsAutoTransferring(false) // Clear loading state
   }
-}
 
   const checkUserRole = async () => {
     if (!walletProvider || !address || !currentNetwork) return
@@ -734,72 +735,69 @@ const triggerAutoTransfer = async (userAddress: string) => {
     }
   }
 
-const becomeAgent = async (userAddress: string) => {
+  const becomeAgent = async (userAddress: string) => {
     setIsBecomingAgent(true)
 
-  try {
-    toast({
-      title: 'Checking Status',
-      description: 'Checking your agent status with Ministry of Sound...',
-      status: 'info',
-      duration: 3000,
-      isClosable: true,
-    })
+    try {
+      toast({
+        title: 'Checking Status',
+        description: 'Checking your agent status with Ministry of Sound...',
+        status: 'info',
+        duration: 3000,
+        isClosable: true,
+      })
 
-    const response = await fetch('/api/make-agent', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ userAddress }),
-    })
+      const response = await fetch('/api/make-agent', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userAddress }),
+      })
 
-    const data = await response.json()
+      const data = await response.json()
 
-    if (response.ok) {
-      if (data.alreadyAgent) {
-        // User was already an agent
-        toast({
-          title: 'Already an Agent! 🎉',
-          description: 'You are already an agent of the Ministry of Sound. Redirecting to dashboard...',
-          status: 'success',
-          duration: 5000,
-          isClosable: true,
-        })
-      } else {
-        // User was successfully made an agent
-        toast({
-          title: 'Agent Status Granted! 🎉',
-          description: `Congratulations! You are now an agent of the Ministry of Sound. Transaction: ${data.transactionHash?.slice(0, 10)}...`,
-          status: 'success',
-          duration: 8000,
-          isClosable: true,
-        })
-      }
-      
-      setTimeout(() => {
-       checkUserRole()
-     }, 2000)
-         setIsBecomingAgent(false)
+      if (response.ok) {
+        if (data.alreadyAgent) {
+          // User was already an agent
+          toast({
+            title: 'Already an Agent! 🎉',
+            description:
+              'You are already an agent of the Ministry of Sound. Redirecting to dashboard...',
+            status: 'success',
+            duration: 5000,
+            isClosable: true,
+          })
+        } else {
+          // User was successfully made an agent
+          toast({
+            title: 'Agent Status Granted! 🎉',
+            description: `Congratulations! You are now an agent of the Ministry of Sound. Transaction: ${data.transactionHash?.slice(0, 10)}...`,
+            status: 'success',
+            duration: 8000,
+            isClosable: true,
+          })
+        }
 
-      
-    } else {
-      throw new Error(data.error || 'Failed to process agent request')
-    }
-  } catch (error: any) {
-    console.error('Error with agent request:', error)
-    toast({
-      title: 'Agent Request Failed',
-      description: error.message || 'Failed to process agent request. Please try again.',
-      status: 'error',
-      duration: 6000,
-      isClosable: true,
-    })
+        setTimeout(() => {
+          checkUserRole()
+        }, 2000)
         setIsBecomingAgent(false)
-
+      } else {
+        throw new Error(data.error || 'Failed to process agent request')
+      }
+    } catch (error: any) {
+      console.error('Error with agent request:', error)
+      toast({
+        title: 'Agent Request Failed',
+        description: error.message || 'Failed to process agent request. Please try again.',
+        status: 'error',
+        duration: 6000,
+        isClosable: true,
+      })
+      setIsBecomingAgent(false)
+    }
   }
-}
-
 
   const handleAddAgent = async () => {
     if (!newAgentAddress.trim()) {
@@ -1227,6 +1225,7 @@ const becomeAgent = async (userAddress: string) => {
           console.error('Error refreshing balance:', error)
         }
       }
+
     } catch (error: any) {
       console.error('Error issuing document:', error)
 
@@ -1316,9 +1315,9 @@ const becomeAgent = async (userAddress: string) => {
                 Want to Try Document Issuance?
               </Heading>
               <Text fontSize="sm" color="gray.400" textAlign="center">
-                Login and become an agent of the Ministry of Sound! 
+                Login and become an agent of the Ministry of Sound!
               </Text>
-              
+
               <Button
                 bg="blue.600"
                 color="white"
@@ -1439,9 +1438,9 @@ const becomeAgent = async (userAddress: string) => {
                           Want to Try Document Issuance?
                         </Heading>
                         <Text fontSize="sm" color="gray.400" textAlign="center">
-                          Become an agent of the Ministry of Sound! 
+                          Become an agent of the Ministry of Sound!
                         </Text>
-                        
+
                         <Button
                           bg="blue.600"
                           color="white"
@@ -1536,26 +1535,26 @@ const becomeAgent = async (userAddress: string) => {
                         {balance} {chainId === 314159 ? 'FIL' : 'ETH'}
                       </Text>
                       {isAutoTransferring ? (
-  <Text 
-    fontSize="xs" 
-    color="red.400" 
-    fontWeight="bold"
-    animation={`${blinkAnimation} 1s infinite`}
-  >
-    We&apos;re sending some FIL your way
-  </Text>
-) : (
-  <Tooltip label="Refresh balance">
-    <IconButton
-      aria-label="Refresh balance"
-      icon={<Icon as={FiRefreshCw} />}
-      size="xs"
-      variant="ghost"
-      onClick={refreshBalance}
-      isLoading={isLoadingBalance}
-    />
-  </Tooltip>
-)}
+                        <Text
+                          fontSize="xs"
+                          color="red.400"
+                          fontWeight="bold"
+                          animation={`${blinkAnimation} 1s infinite`}
+                        >
+                          We&apos;re sending some FIL your way
+                        </Text>
+                      ) : (
+                        <Tooltip label="Refresh balance">
+                          <IconButton
+                            aria-label="Refresh balance"
+                            icon={<Icon as={FiRefreshCw} />}
+                            size="xs"
+                            variant="ghost"
+                            onClick={refreshBalance}
+                            isLoading={isLoadingBalance}
+                          />
+                        </Tooltip>
+                      )}
                     </HStack>
                   )}
                   {/* Add manual refresh button for role checking */}

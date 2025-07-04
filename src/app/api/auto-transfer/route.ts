@@ -8,36 +8,27 @@ export async function POST(request: NextRequest) {
     console.log('👤 User address:', userAddress)
 
     if (!userAddress) {
-      return NextResponse.json(
-        { error: 'User address is required' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'User address is required' }, { status: 400 })
     }
 
     // Validate Ethereum address format
     if (!ethers.isAddress(userAddress)) {
       console.log('❌ Invalid address format:', userAddress)
-      return NextResponse.json(
-        { error: 'Invalid Ethereum address' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Invalid Ethereum address' }, { status: 400 })
     }
 
     // Get admin private key from environment
     const adminPrivateKey = process.env.ADMIN_PRIVATE_KEY
     if (!adminPrivateKey) {
       console.error('❌ ADMIN_PRIVATE_KEY not found in environment variables')
-      return NextResponse.json(
-        { error: 'Server configuration error' },
-        { status: 500 }
-      )
+      return NextResponse.json({ error: 'Server configuration error' }, { status: 500 })
     }
     console.log('✅ Admin private key found')
 
     // Connect to Filecoin Calibration network
     const provider = new ethers.JsonRpcProvider('https://api.calibration.node.glif.io/rpc/v1')
     console.log('🌐 Connected to provider')
-    
+
     const adminWallet = new ethers.Wallet(adminPrivateKey, provider)
     console.log('👑 Admin wallet address:', adminWallet.address)
 
@@ -70,7 +61,7 @@ export async function POST(request: NextRequest) {
         success: true,
         message: 'User already has sufficient balance',
         userBalance: userBalanceEth,
-        transferSkipped: true
+        transferSkipped: true,
       })
     }
 
@@ -97,25 +88,27 @@ export async function POST(request: NextRequest) {
     const tx = await adminWallet.sendTransaction({
       to: userAddress,
       value: transferAmount,
-    //   gasLimit: 10000000, // Higher gas limit for Filecoin Calibration (1M gas)
-    //   gasPrice: gasPrice.gasPrice, // Use network's current gas price
+      //   gasLimit: 10000000, // Higher gas limit for Filecoin Calibration (1M gas)
+      //   gasPrice: gasPrice.gasPrice, // Use network's current gas price
     })
 
     console.log('⏳ Transaction sent:', tx.hash)
-    
+
     // Wait for confirmation
     const receipt = await tx.wait()
     console.log('✅ Transaction confirmed:', receipt?.hash)
-    
+
     // Check if transaction was successful (status = 1)
     if (receipt?.status === 0) {
-      throw new Error('Transaction was mined but failed (reverted). The recipient address may not be able to receive funds.')
+      throw new Error(
+        'Transaction was mined but failed (reverted). The recipient address may not be able to receive funds.'
+      )
     }
 
     // Get updated balances
     const newAdminBalance = await provider.getBalance(adminWallet.address)
     const newUserBalance = await provider.getBalance(userAddress)
-    
+
     console.log('💰 New admin balance:', ethers.formatEther(newAdminBalance), 'FIL')
     console.log('👤 New user balance:', ethers.formatEther(newUserBalance), 'FIL')
 
@@ -126,12 +119,11 @@ export async function POST(request: NextRequest) {
       newUserBalance: ethers.formatEther(newUserBalance),
       newAdminBalance: ethers.formatEther(newAdminBalance),
       blockNumber: receipt?.blockNumber,
-      message: 'Successfully transferred 0.001 tFIL to user'
+      message: 'Successfully transferred 0.001 tFIL to user',
     })
-
   } catch (error: any) {
     console.error('❌ Error in auto-transfer:', error)
-    
+
     // Handle specific error cases
     if (error.code === 'INSUFFICIENT_FUNDS') {
       return NextResponse.json(
@@ -139,12 +131,9 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       )
     }
-    
+
     if (error.code === 'NETWORK_ERROR') {
-      return NextResponse.json(
-        { error: 'Network connection error' },
-        { status: 503 }
-      )
+      return NextResponse.json({ error: 'Network connection error' }, { status: 503 })
     }
 
     // Check for nonce errors
@@ -163,9 +152,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    return NextResponse.json(
-      { error: `Transfer failed: ${error.message}` },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: `Transfer failed: ${error.message}` }, { status: 500 })
   }
 }
