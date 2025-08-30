@@ -172,6 +172,10 @@ export default function Home() {
           >
             AFFIX
           </Heading>
+          <br />
+          <br />
+          <br />
+          <br />
 
           <Heading
             as="h1"
@@ -206,8 +210,8 @@ export default function Home() {
           </Heading>
 
           <Text fontSize="xl" color="gray.300" maxW="600px" lineHeight="1.6">
-            Authenticate your documents using Filecoin while keeping your existing workflows intact.
-            Anyone can then instantly verify that documents are genuine and unaltered.
+            Authenticate your documents onchain while keeping your existing workflows intact. Anyone
+            can then instantly verify that documents are genuine and unaltered.
           </Text>
 
           <Flex
@@ -418,7 +422,7 @@ export default function Home() {
             <TrustCard
               icon={FiUserCheck}
               title="Guarantee Authorship"
-              description="Cryptographically prove a statement was made by you at a specific time. That's the magic of IPFS + Filecoin."
+              description="Cryptographically prove a statement was made by you at a specific time. That's the magic of Web3."
               iconColor="green.400"
             />
           </SimpleGrid>
