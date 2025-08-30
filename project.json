@@ -1,7 +1,7 @@
 {
     "name": "Affix",
     "tagline": "Affix your onchain seal and let the world verify it.",
-    "description": "Organisations, businesses and individuals can authenticate their documents using Filecoin while keeping their existing workflows intact. Anyone can then instantly verify that documents are genuine and unaltered.",
+    "description": "Organisations, businesses and individuals can authenticate their documents onchain while keeping their existing workflows intact. Anyone can then instantly verify that documents are genuine and unaltered.",
     "team": [
         {
             "name": "Julien Béranger",
@@ -15,7 +15,6 @@
         "Ethers.js",
         "Next.js",
         "Reown",
-        "Filecoin",
         "Solidity",
         "Foundry",
         "IPFS",
