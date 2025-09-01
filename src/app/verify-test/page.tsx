@@ -19,9 +19,15 @@ import {
   Textarea,
   Divider,
   Progress,
+  SimpleGrid,
+  Accordion,
+  AccordionItem,
+  AccordionButton,
+  AccordionPanel,
+  AccordionIcon,
 } from '@chakra-ui/react'
-import { useAppKitAccount, useAppKitProvider } from '@reown/appkit/react'
-import { useState, useRef } from 'react'
+import { useAppKitAccount, useAppKitProvider, useAppKitNetwork } from '@reown/appkit/react'
+import { useState, useRef, useEffect } from 'react'
 import { useTranslation } from '@/hooks/useTranslation'
 import {
   FiSearch,
@@ -33,56 +39,125 @@ import {
   FiCalendar,
   FiUser,
   FiUpload,
+  FiDatabase,
+  FiShield,
 } from 'react-icons/fi'
 import { BrowserProvider, Contract, JsonRpcProvider } from 'ethers'
 import { getDocumentCID } from '../lib/documentHash'
 
-// Contract configuration - Your registry address
-const AFFIX_REGISTRY_ADDRESS = '0x02b77E551a1779f3f091a1523A08e61cd2620f82'
+// Network configuration
+const NETWORK_CONFIGS = {
+  11155111: {
+    name: 'Sepolia Testnet',
+    factoryAddress: '0x02b77E551a1779f3f091a1523A08e61cd2620f82', // Replace with actual Sepolia factory address
+    rpcUrl: 'https://sepolia.infura.io/v3/YOUR_INFURA_KEY', // Replace with actual Sepolia RPC
+    blockExplorer: 'https://sepolia.etherscan.io',
+  },
+  10: {
+    name: 'OP Mainnet',
+    factoryAddress: '0x4aB7CC55122b0a2f07812240405cd47ecA999c0a',
+    rpcUrl: 'https://mainnet.optimism.io',
+    blockExplorer: 'https://optimistic.etherscan.io',
+    explorerName: 'Optimistic Etherscan',
+  },
+}
 
-// Registry contract ABI - read functions
+// Factory contract ABI - from actual Etherscan contract
+const AFFIX_FACTORY_ABI = [
+  'function getAllEntities() external view returns (address[] memory)',
+  'function getEntityCount() external view returns (uint256)',
+  'function getEntityByIndex(uint256 index) external view returns (address)',
+  'function getEntityDetails(address registryAddress) external view returns (address admin, string memory entityName, bool isRegistered)',
+  'function isEntityRegistered(address registryAddress) external view returns (bool)',
+  'function getFactoryStats() external view returns (uint256 totalEntities, address factoryOwner)',
+  'function owner() external view returns (address)',
+]
+
+// Registry contract ABI
 const AFFIX_REGISTRY_ABI = [
-  'function verifyDocument(string memory cid) external view returns (bool exists, uint256 timestamp, string memory institutionName)',
-  'function getDocumentDetails(string memory cid) external view returns (bool exists, uint256 timestamp, string memory institutionName, string memory metadata, address issuedBy)',
-  'function institutionName() external view returns (string memory)',
+  'function verifyDocument(string memory cid) external view returns (bool exists, uint256 timestamp, string memory entityName_, string memory entityUrl_)',
+  'function getDocumentDetails(string memory cid) external view returns (bool exists, uint256 timestamp, string memory entityName_, string memory entityUrl_, string memory metadata, address issuedBy)',
+  'function entityName() external view returns (string memory)',
+  'function entityUrl() external view returns (string memory)',
   'function getDocumentCount() external view returns (uint256)',
   'function admin() external view returns (address)',
+  'function getAgentCount() external view returns (uint256)',
+  'function getActiveAgents() external view returns (address[] memory)',
+  'function getAllDocumentCids() external view returns (string[] memory)',
+  'function getRegistryInfo() external view returns (address admin_, string memory entityName_, string memory entityUrl_, uint256 documentCount, uint256 agentCount)',
+  'function isValidRegistry() external view returns (bool)',
+  'function isAgent(address agent) external view returns (bool)',
+  'function canIssueDocuments(address issuer) external view returns (bool)',
 ]
+
+interface RegistryInfo {
+  address: string
+  entityName: string
+  documentCount: bigint
+  admin: string
+  agentCount: bigint
+  isValid: boolean
+  activeAgents: string[]
+}
+
+interface VerificationResult {
+  registryAddress: string
+  entityName: string
+  exists: boolean
+  timestamp: bigint
+  metadata?: string
+  issuedBy?: string
+  entityUrl?: string
+}
 
 interface DocumentDetails {
   exists: boolean
   timestamp: bigint
-  institutionName: string
+  entityName: string
+  entityUrl: string
   metadata: string
   issuedBy: string
 }
 
-interface VerificationResult {
-  exists: boolean
-  timestamp: bigint
-  institutionName: string
-}
-
-export default function VerifyTestPage() {
+export default function VerifyPage() {
   const { address, isConnected } = useAppKitAccount()
   const { walletProvider } = useAppKitProvider('eip155')
+  const { chainId, caipNetwork } = useAppKitNetwork()
   const [cidInput, setCidInput] = useState('')
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [isVerifying, setIsVerifying] = useState(false)
-  const [isLoadingDetails, setIsLoadingDetails] = useState(false)
+  const [isLoadingRegistries, setIsLoadingRegistries] = useState(false)
   const [documentCID, setDocumentCID] = useState<string | null>(null)
   const [progress, setProgress] = useState(0)
   const [progressStatus, setProgressStatus] = useState('')
-  const [verificationResult, setVerificationResult] = useState<VerificationResult | null>(null)
-  const [documentDetails, setDocumentDetails] = useState<DocumentDetails | null>(null)
-  const [registryInfo, setRegistryInfo] = useState<{
-    institutionName: string
-    documentCount: bigint
-    admin: string
-  } | null>(null)
+  const [verificationResults, setVerificationResults] = useState<VerificationResult[]>([])
+  const [registries, setRegistries] = useState<RegistryInfo[]>([])
+  const [totalRegistries, setTotalRegistries] = useState(0)
+  const [urlVerified, setUrlVerified] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const toast = useToast()
   const t = useTranslation()
+
+  // Get current network configuration
+  const currentNetwork = NETWORK_CONFIGS[chainId as keyof typeof NETWORK_CONFIGS]
+
+  // Debug network detection
+  useEffect(() => {
+    console.log('🌐 Current Network Info:')
+    console.log('Chain ID:', chainId)
+    console.log('CAIP Network:', caipNetwork)
+    console.log('Network Name:', caipNetwork?.name)
+    console.log('Current Network Config:', currentNetwork)
+    console.log('Is OP Mainnet', chainId === 10)
+    console.log('Is Sepolia?', chainId === 11155111)
+  }, [chainId, caipNetwork, currentNetwork])
+
+  // Load all registries on component mount and when network changes
+  useEffect(() => {
+    if (currentNetwork) {
+      loadAllRegistries()
+    }
+  }, [currentNetwork])
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -100,8 +175,7 @@ export default function VerifyTestPage() {
       }
 
       setSelectedFile(file)
-      setVerificationResult(null)
-      setDocumentDetails(null)
+      setVerificationResults([])
       setDocumentCID(null)
       setCidInput('')
     }
@@ -109,8 +183,7 @@ export default function VerifyTestPage() {
 
   const handleFileRemove = () => {
     setSelectedFile(null)
-    setVerificationResult(null)
-    setDocumentDetails(null)
+    setVerificationResults([])
     setDocumentCID(null)
     setCidInput('')
     setProgress(0)
@@ -128,84 +201,211 @@ export default function VerifyTestPage() {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
   }
 
-  const loadRegistryInfo = async () => {
-    if (!walletProvider) {
-      console.log('❌ Wallet not connected for registry info loading')
+  const loadAllRegistries = async () => {
+    if (!currentNetwork) {
+      console.error('❌ No network configuration found for chain ID:', chainId)
       toast({
-        title: 'Wallet not connected',
-        description: 'Please connect your wallet to load registry information',
-        status: 'warning',
+        title: 'Unsupported Network',
+        description: 'Please switch to Sepolia or OP Mainnet network',
+        status: 'error',
         duration: 5000,
         isClosable: true,
       })
       return
     }
 
-    console.log('🔄 Loading registry information...')
-    console.log('📍 Registry Address:', AFFIX_REGISTRY_ADDRESS)
+    console.log('🔄 Loading all registries from factory...')
+    console.log('📍 Factory Address:', currentNetwork.factoryAddress)
+    console.log('🌐 Current Network:', currentNetwork.name)
+    console.log('🌐 RPC URL:', currentNetwork.rpcUrl)
+
+    setIsLoadingRegistries(true)
 
     try {
-      // const ethersProvider = new BrowserProvider(walletProvider as any)
-      const ethersProvider = new JsonRpcProvider('https://ethereum-sepolia-rpc.publicnode.com')
-      const registryContract = new Contract(
-        AFFIX_REGISTRY_ADDRESS,
-        AFFIX_REGISTRY_ABI,
+      const ethersProvider = new JsonRpcProvider(currentNetwork.rpcUrl)
+      const factoryContract = new Contract(
+        currentNetwork.factoryAddress,
+        AFFIX_FACTORY_ABI,
         ethersProvider
       )
 
-      console.log('📞 Calling registry contract functions...')
+      console.log('📞 Getting entity count and addresses...')
 
-      // Get registry information
-      const [institutionName, documentCount, admin] = await Promise.all([
-        registryContract.institutionName().catch(e => {
-          console.log('⚠️ Failed to get institution name:', e.message)
-          return 'Unknown Institution'
-        }),
-        registryContract.getDocumentCount().catch(e => {
-          console.log('⚠️ Failed to get document count:', e.message)
-          return BigInt(0)
-        }),
-        registryContract.admin().catch(e => {
-          console.log('⚠️ Failed to get admin address:', e.message)
-          return 'Unknown Admin'
-        }),
+      // Get total number of entities and their addresses
+      const [entityCount, registryAddresses] = await Promise.all([
+        factoryContract.getEntityCount(),
+        factoryContract.getAllEntities(),
       ])
 
-      setRegistryInfo({
-        institutionName,
-        documentCount,
-        admin,
+      console.log('📊 Raw entity count from contract:', entityCount)
+      console.log('📊 Entity count as number:', Number(entityCount))
+      console.log('📋 Raw registry addresses from contract:', registryAddresses)
+      console.log('📋 Registry addresses length:', registryAddresses.length)
+
+      setTotalRegistries(Number(entityCount))
+
+      console.log('📊 Total entities found:', entityCount.toString())
+      console.log('📋 Registry addresses:', registryAddresses)
+
+      // Get detailed info for each registry
+      const registryInfoPromises = registryAddresses.map(async (registryAddress: string) => {
+        try {
+          console.log(`📍 Loading info for registry: ${registryAddress}`)
+
+          // Check if registry is valid and get basic details from factory
+          const [admin, entityName, isRegistered] =
+            await factoryContract.getEntityDetails(registryAddress)
+
+          console.log(`📊 Factory details for ${registryAddress}:`, {
+            admin,
+            entityName,
+            isRegistered,
+          })
+
+          if (!isRegistered) {
+            console.log(`⚠️ Registry ${registryAddress} is not registered with factory`)
+            return {
+              address: registryAddress,
+              entityName: 'Unregistered Registry',
+              documentCount: BigInt(0),
+              admin: 'Unknown',
+              agentCount: BigInt(0),
+              isValid: false,
+              activeAgents: [],
+            }
+          }
+
+          // Load comprehensive registry details - FIX: Use individual calls instead of getRegistryInfo
+          const registryContract = new Contract(registryAddress, AFFIX_REGISTRY_ABI, ethersProvider)
+
+          // GET DATA USING INDIVIDUAL CONTRACT CALLS (more reliable)
+          const [
+            registryAdmin,
+            registryEntityName,
+            documentCount,
+            agentCount,
+            isValid,
+            activeAgents,
+          ] = await Promise.all([
+            registryContract.admin().catch(() => admin), // Fallback to factory admin
+            registryContract.entityName().catch(() => entityName), // Fallback to factory name
+            registryContract.getDocumentCount().catch(() => BigInt(0)), // Use individual call - THIS IS THE FIX!
+            registryContract.getAgentCount().catch(() => BigInt(0)),
+            registryContract.isValidRegistry().catch(() => false),
+            registryContract.getActiveAgents().catch(() => []),
+          ])
+
+          // DEBUG: Compare getRegistryInfo vs individual calls
+          try {
+            const [regInfoAdmin, regInfoName, regInfoUrl, regInfoDocCount, regInfoAgentCount] =
+              await registryContract.getRegistryInfo()
+            console.log('🔍 COMPARISON - getRegistryInfo() vs individual calls:')
+            console.log('  getRegistryInfo documentCount:', regInfoDocCount.toString())
+            console.log('  getDocumentCount():', documentCount.toString())
+            console.log(
+              '  ⚠️ VALUES MATCH?',
+              regInfoDocCount.toString() === documentCount.toString()
+            )
+          } catch (e) {
+            console.log('⚠️ getRegistryInfo comparison failed:', e)
+          }
+
+          console.log(`✅ Loaded registry info for ${entityName} (FIXED):`, {
+            address: registryAddress,
+            entityName: registryEntityName,
+
+            // USING CORRECT INDIVIDUAL CALLS
+            documentCount_CORRECT: documentCount,
+            documentCount_toString: documentCount.toString(),
+            documentCount_Number: Number(documentCount.toString()),
+
+            agentCount: agentCount,
+            agentCount_toString: agentCount.toString(),
+            agentCount_Number: Number(agentCount.toString()),
+
+            admin: registryAdmin,
+            isValid,
+            activeAgents: activeAgents.length,
+          })
+
+          return {
+            address: registryAddress,
+            entityName: registryEntityName,
+            documentCount,
+            admin: registryAdmin,
+            agentCount,
+            isValid,
+            activeAgents,
+          }
+        } catch (error) {
+          console.error(`❌ Failed to load registry info for ${registryAddress}:`, error)
+          return {
+            address: registryAddress,
+            entityName: 'Failed to Load',
+            documentCount: BigInt(0),
+            admin: 'Failed to Load',
+            agentCount: BigInt(0),
+            isValid: false,
+            activeAgents: [],
+          }
+        }
       })
 
-      console.log('✅ Registry Info loaded successfully:')
-      console.log('🏛️ Institution:', institutionName)
-      console.log('📄 Document Count:', documentCount.toString())
-      console.log('👤 Admin:', admin)
+      const registryInfos = await Promise.all(registryInfoPromises)
+
+      // Debug registry info
+      console.log('📊 All registry info loaded:')
+      registryInfos.forEach((registry, index) => {
+        console.log(`Registry ${index + 1}:`, {
+          name: registry.entityName,
+          documentCount: registry.documentCount.toString(),
+          documentCountAsNumber: Number(registry.documentCount.toString()),
+          agentCount: registry.agentCount.toString(),
+          agentCountAsNumber: Number(registry.agentCount.toString()),
+        })
+      })
+
+      // Filter out invalid registries if needed
+      const validRegistries = registryInfos.filter(
+        registry => registry.entityName !== 'Failed to Load'
+      )
+
+      setRegistries(validRegistries)
+
+      // Calculate totals with proper BigInt handling
+      const totalDocs = validRegistries.reduce(
+        (sum, r) => sum + Number(r.documentCount.toString()),
+        0
+      )
+      const totalAgents = validRegistries.reduce(
+        (sum, r) => sum + Number(r.agentCount.toString()),
+        0
+      )
+
+      console.log('📊 Calculated totals:', { totalDocs, totalAgents })
+      console.log('✅ Valid registries loaded successfully:', validRegistries.length)
+      console.log('📋 Registry details:', validRegistries)
     } catch (error) {
-      console.error('❌ Error loading registry info:', error)
+      console.error('❌ Error loading registries:', error)
+      console.error('❌ Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        chainId: chainId,
+        factoryAddress: currentNetwork?.factoryAddress,
+        networkName: currentNetwork?.name,
+      })
       toast({
-        title: 'Failed to load registry info',
-        description: 'Could not connect to the registry contract',
+        title: 'Failed to load registries',
+        description: `Could not connect to the factory contract on ${currentNetwork?.name}`,
         status: 'error',
         duration: 5000,
         isClosable: true,
       })
+    } finally {
+      setIsLoadingRegistries(false)
     }
   }
 
   const handleVerifyDocument = async () => {
-    // if (!walletProvider) {
-    //   console.log('❌ Wallet not connected for verification')
-    //   toast({
-    //     title: 'Wallet not connected',
-    //     description: 'Please connect your wallet to verify documents',
-    //     status: 'error',
-    //     duration: 5000,
-    //     isClosable: true,
-    //   })
-    //   return
-    // }
-
     // Check if we have either a file or a CID input
     if (!selectedFile && !cidInput.trim()) {
       toast({
@@ -218,11 +418,32 @@ export default function VerifyTestPage() {
       return
     }
 
-    console.log('🔍 Starting combined CID calculation and verification...')
+    if (registries.length === 0) {
+      toast({
+        title: 'No registries available',
+        description: 'Please wait for registries to load or refresh the page',
+        status: 'warning',
+        duration: 5000,
+        isClosable: true,
+      })
+      return
+    }
+
+    if (!currentNetwork) {
+      toast({
+        title: 'Unsupported Network',
+        description: 'Please switch to a supported network',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      })
+      return
+    }
+
+    console.log('🔍 === STARTING VERIFICATION ===')
 
     setIsVerifying(true)
-    setVerificationResult(null)
-    setDocumentDetails(null)
+    setVerificationResults([])
     setProgress(0)
     setProgressStatus('')
 
@@ -233,7 +454,7 @@ export default function VerifyTestPage() {
       if (selectedFile) {
         console.log('📄 File selected:', selectedFile.name, '| Size:', selectedFile.size, 'bytes')
 
-        setProgress(20)
+        setProgress(10)
         setProgressStatus('Computing document hash (CID)...')
 
         console.log('🔢 Computing IPFS hash using getDocumentCID...')
@@ -246,89 +467,137 @@ export default function VerifyTestPage() {
         console.log('🆔 Generated CID:', finalCID)
       }
 
-      // Now verify the document on-chain
-      setProgress(60)
-      setProgressStatus('Verifying document on blockchain...')
+      // Now verify the document across all registries
+      setProgress(30)
+      setProgressStatus(`Verifying document across ${registries.length} registries...`)
 
       console.log('📄 CID to verify:', finalCID)
-      console.log('📍 Registry Address:', AFFIX_REGISTRY_ADDRESS)
+      console.log('🏛️ Checking across', registries.length, 'registries')
 
-      // const ethersProvider = new BrowserProvider(walletProvider as any)
-      const ethersProvider = new JsonRpcProvider('https://ethereum-sepolia-rpc.publicnode.com')
+      const ethersProvider = new JsonRpcProvider(currentNetwork.rpcUrl)
+      const results: VerificationResult[] = []
 
-      const network = await ethersProvider.getNetwork()
-      console.log('🌐 Connected to network:', network.name, 'Chain ID:', network.chainId.toString())
+      // Check each registry
+      for (let i = 0; i < registries.length; i++) {
+        const registry = registries[i]
+        const progressValue = 30 + ((i + 1) / registries.length) * 60
 
-      const registryContract = new Contract(
-        AFFIX_REGISTRY_ADDRESS,
-        AFFIX_REGISTRY_ABI,
-        ethersProvider
-      )
+        setProgress(progressValue)
+        setProgressStatus(`Checking ${registry.entityName}... (${i + 1}/${registries.length})`)
 
-      console.log('📞 Calling verifyDocument function...')
-      console.log('🔧 Function signature: verifyDocument(string)')
+        try {
+          console.log(`🔍 Checking registry ${i + 1}/${registries.length}:`, registry.entityName)
 
-      // Call verifyDocument function
-      const [exists, timestamp, institutionName] = await registryContract.verifyDocument(finalCID)
+          const registryContract = new Contract(
+            registry.address,
+            AFFIX_REGISTRY_ABI,
+            ethersProvider
+          )
 
-      const result: VerificationResult = {
-        exists,
-        timestamp,
-        institutionName,
+          console.log('📋 Calling getDocumentDetails for CID:', finalCID)
+          const documentDetails = await registryContract.getDocumentDetails(finalCID)
+
+          console.log('📊 Raw document details result:', documentDetails)
+          console.log('📊 Document details breakdown:')
+          console.log('  [0] exists:', documentDetails[0])
+          console.log('  [1] timestamp:', documentDetails[1])
+          console.log('  [2] entityName:', documentDetails[2])
+          console.log('  [3] entityUrl:', documentDetails[3])
+          console.log('  [4] metadata:', documentDetails[4])
+          console.log('  [5] issuedBy:', documentDetails[5])
+
+          const exists = documentDetails[0]
+          const timestamp = documentDetails[1]
+          const entityName = documentDetails[2]
+          const entityUrl = documentDetails[3] // This was missing before!
+          const metadata = documentDetails[4] || '' // Handle potential undefined
+          const issuedBy = documentDetails[5]
+
+          console.log(`✅ Registry ${entityName} result:`, {
+            exists,
+            timestamp: timestamp.toString(),
+            metadata: metadata === '' ? '(empty)' : metadata,
+            issuedBy,
+            entityUrl,
+          })
+
+          const result: VerificationResult = {
+            registryAddress: registry.address,
+            entityName,
+            exists,
+            timestamp,
+            metadata,
+            issuedBy,
+            entityUrl,
+          }
+
+          results.push(result)
+        } catch (error) {
+          console.error(`❌ Error checking registry ${registry.entityName}:`, error)
+          // Add error result
+          results.push({
+            registryAddress: registry.address,
+            entityName: registry.entityName,
+            exists: false,
+            timestamp: BigInt(0),
+            metadata: '',
+            issuedBy: '',
+            entityUrl: '',
+          })
+        }
       }
-
-      console.log('✅ Verification result received:')
-      console.log('📋 Exists:', exists)
-      console.log('⏰ Timestamp:', timestamp.toString())
-      console.log('🏛️ Institution:', institutionName)
-      console.log(
-        '📅 Formatted Date:',
-        exists ? new Date(Number(timestamp) * 1000).toLocaleString() : 'N/A'
-      )
 
       setProgress(100)
+      const foundInRegistries = results.filter(r => r.exists).length
       setProgressStatus(
-        exists ? 'Document verified successfully! ✅' : 'Document not found in registry ❌'
+        foundInRegistries > 0
+          ? `Document found in ${foundInRegistries} registry(ies)! ✅`
+          : 'Document not found in any registry ❌'
       )
-      setVerificationResult(result)
 
-      if (exists) {
-        console.log('🎉 Document verification SUCCESS!')
-        // Reset progress after success
-        setTimeout(() => {
-          setProgress(0)
-          setProgressStatus('')
-        }, 3000)
+      setVerificationResults(results)
+
+      if (foundInRegistries > 0) {
+        console.log('🎉 Document verification SUCCESS in', foundInRegistries, 'registries!')
+
+        // Simple: just verify URL for the first registry that found the document
+        try {
+          const firstFoundResult = results.find(r => r.exists)
+          if (firstFoundResult) {
+            console.log('🔍 Verifying URL with registry address:', firstFoundResult.registryAddress)
+            const verifyResponse = await fetch(
+              `/api/verify-url?address=${encodeURIComponent(firstFoundResult.registryAddress)}`
+            )
+            const verifyData = await verifyResponse.json()
+
+            if (verifyResponse.ok && verifyData.success) {
+              console.log('✅ URL verification successful:', verifyData)
+              setUrlVerified(verifyData.verified)
+            } else {
+              console.warn('⚠️ URL verification failed:', verifyData.error)
+              setUrlVerified(false)
+            }
+          }
+        } catch (error) {
+          console.error('Error verifying URL:', error)
+          setUrlVerified(false)
+        }
       } else {
-        console.log('⚠️ Document NOT FOUND in registry')
-        // Reset progress after delay for not found
-        setTimeout(() => {
-          setProgress(0)
-          setProgressStatus('')
-        }, 3000)
+        console.log('⚠️ Document NOT FOUND in any registry')
+        setUrlVerified(false)
       }
+
+      setProgress(0)
+      setProgressStatus('')
     } catch (error: any) {
       console.error('❌ Error during verification process:', error)
-      console.log('🔍 Error details:', {
-        message: error.message,
-        code: error.code,
-        reason: error.reason,
-        data: error.data,
-      })
 
       // Reset progress on error
       setProgress(0)
       setProgressStatus('')
 
       let errorMessage = 'An error occurred during verification'
-
-      if (error.message?.includes('execution reverted')) {
-        errorMessage = 'Contract call failed - check if contract address is correct'
-        console.log('💡 Hint: Contract may not be deployed or function may not exist')
-      } else if (error.code === 'CALL_EXCEPTION') {
-        errorMessage = 'Contract call failed - verify contract address and network'
-        console.log('💡 Hint: Check contract address and network connection')
-      } else if (error.message) {
+      if (error.message) {
         errorMessage = error.message
       }
 
@@ -341,77 +610,6 @@ export default function VerifyTestPage() {
       })
     } finally {
       setIsVerifying(false)
-    }
-  }
-
-  const loadDocumentDetails = async () => {
-    if (!cidInput.trim() || !walletProvider) {
-      console.log('❌ Cannot load details - missing CID or wallet')
-      return
-    }
-
-    console.log('📋 Loading detailed document information...')
-    console.log('📄 CID:', cidInput)
-
-    setIsLoadingDetails(true)
-
-    try {
-      const ethersProvider = new BrowserProvider(walletProvider as any)
-      const registryContract = new Contract(
-        AFFIX_REGISTRY_ADDRESS,
-        AFFIX_REGISTRY_ABI,
-        ethersProvider
-      )
-
-      console.log('📞 Calling getDocumentDetails function...')
-      console.log('🔧 Function signature: getDocumentDetails(string)')
-
-      // Call getDocumentDetails function
-      const [exists, timestamp, institutionName, metadata, issuedBy] =
-        await registryContract.getDocumentDetails(cidInput)
-
-      const details: DocumentDetails = {
-        exists,
-        timestamp,
-        institutionName,
-        metadata,
-        issuedBy,
-      }
-
-      console.log('✅ Document details received:')
-      console.log('📋 Exists:', exists)
-      console.log('⏰ Timestamp:', timestamp.toString())
-      console.log('🏛️ Institution:', institutionName)
-      console.log('📝 Metadata:', metadata)
-      console.log('👤 Issued By:', issuedBy)
-      console.log(
-        '📅 Formatted Date:',
-        exists ? new Date(Number(timestamp) * 1000).toLocaleString() : 'N/A'
-      )
-
-      setDocumentDetails(details)
-
-      if (exists) {
-        console.log('🎉 Document details loaded successfully!')
-      } else {
-        console.log('⚠️ Document details indicate document does not exist')
-      }
-    } catch (error: any) {
-      console.error('❌ Error loading document details:', error)
-      console.log('🔍 Error details:', {
-        message: error.message,
-        code: error.code,
-        reason: error.reason,
-      })
-      toast({
-        title: 'Failed to load details',
-        description: 'Could not retrieve detailed document information',
-        status: 'error',
-        duration: 5000,
-        isClosable: true,
-      })
-    } finally {
-      setIsLoadingDetails(false)
     }
   }
 
@@ -430,18 +628,250 @@ export default function VerifyTestPage() {
     })
   }
 
+  const foundResults = verificationResults.filter(r => r.exists)
+  const notFoundResults = verificationResults.filter(r => !r.exists)
+
+  // Show error if unsupported network
+  if (!currentNetwork) {
+    return (
+      <main>
+        <Container maxW="container.lg" py={20}>
+          <VStack spacing={8}>
+            <Box textAlign="center">
+              <Heading as="h1" size="xl" mb={4} color="red.400">
+                Unsupported Network
+              </Heading>
+              <Text fontSize="lg" color="gray.400" mb={6}>
+                Please switch to one of the supported networks:
+              </Text>
+              <VStack spacing={2}>
+                <Text color="blue.300">• Sepolia Testnet (Chain ID: 11155111)</Text>
+                <Text color="green.300">• OP Mainnet (Chain ID: 10)</Text>
+              </VStack>
+              <Text fontSize="sm" color="gray.500" mt={4}>
+                Current Chain ID: {chainId || 'Unknown'}
+              </Text>
+            </Box>
+          </VStack>
+        </Container>
+      </main>
+    )
+  }
+
   return (
     <main>
-      <Container maxW="container.md" py={20}>
+      <Container maxW="container.lg" py={20}>
         <VStack spacing={8} align="stretch">
           <header>
             <Heading as="h1" size="xl" mb={2}>
-              Verify
+              Verify Documents
             </Heading>
             <Text fontSize="lg" color="gray.400">
-              Verify document authenticity right here right now.
+              Verify document authenticity across all registered instances
             </Text>
+            <Badge colorScheme="blue" mt={2}>
+              Network: {currentNetwork.name}
+            </Badge>
           </header>
+
+          {/* Registry Status */}
+          <section aria-label="Registry Status">
+            <Box
+              bg="whiteAlpha.100"
+              p={4}
+              borderRadius="md"
+              border="1px solid"
+              borderColor="gray.600"
+            >
+              <HStack justify="space-between" mb={4}>
+                <HStack>
+                  <Icon as={FiDatabase} color="blue.300" />
+                  <Text fontSize="md" fontWeight="medium">
+                    Registry Status
+                  </Text>
+                </HStack>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={loadAllRegistries}
+                  isLoading={isLoadingRegistries}
+                  loadingText="Loading..."
+                >
+                  Refresh
+                </Button>
+              </HStack>
+
+              {isLoadingRegistries ? (
+                <HStack>
+                  <Spinner size="sm" />
+                  <Text fontSize="sm" color="gray.400">
+                    Loading registries...
+                  </Text>
+                </HStack>
+              ) : (
+                <SimpleGrid columns={{ base: 1, md: 3 }} spacing={4}>
+                  <Box textAlign="center">
+                    <Text fontSize="2xl" fontWeight="bold" color="blue.300">
+                      {totalRegistries}
+                    </Text>
+                    <Text fontSize="sm" color="gray.400">
+                      Total Registries
+                    </Text>
+                  </Box>
+                  <Box textAlign="center">
+                    <Text fontSize="2xl" fontWeight="bold" color="green.300">
+                      {registries.reduce((sum, r) => {
+                        console.log(`📊 Processing Registry: ${r.entityName}`)
+                        console.log(`  - Raw documentCount:`, r.documentCount)
+                        console.log(`  - Type:`, typeof r.documentCount)
+                        console.log(`  - toString():`, r.documentCount.toString())
+                        console.log(`  - As hex:`, '0x' + r.documentCount.toString(16))
+                        console.log(`  - Number(toString()):`, Number(r.documentCount.toString()))
+                        console.log(`  - Direct Number():`, Number(r.documentCount))
+
+                        // SAFER CONVERSION METHOD
+                        let docCount = 0
+                        try {
+                          const strValue = r.documentCount.toString()
+                          console.log(`  - String value: "${strValue}"`)
+
+                          if (strValue === '0' || strValue === '') {
+                            docCount = 0
+                          } else {
+                            // Try parsing as integer
+                            const parsed = parseInt(strValue, 10)
+                            docCount = isNaN(parsed) ? 0 : Math.min(parsed, 1000) // Cap at 1000 for safety
+                          }
+
+                          console.log(`  - Final docCount used:`, docCount)
+                          console.log(`  - Running sum before:`, sum)
+                          console.log(`  - Running sum after:`, sum + docCount)
+                          console.log(`  -------------------------`)
+                        } catch (error) {
+                          console.error(
+                            `❌ Error converting documentCount for ${r.entityName}:`,
+                            error
+                          )
+                          docCount = 0
+                        }
+
+                        return sum + docCount
+                      }, 0)}
+                    </Text>
+                    <Text fontSize="sm" color="gray.400">
+                      Total Documents
+                    </Text>
+                  </Box>
+                  <Box textAlign="center">
+                    <Text fontSize="2xl" fontWeight="bold" color="purple.300">
+                      {registries.reduce((sum, r) => {
+                        let agentCount = 0
+                        try {
+                          const strValue = r.agentCount.toString()
+                          agentCount = strValue === '0' ? 0 : parseInt(strValue, 10)
+                          if (isNaN(agentCount)) agentCount = 0
+                        } catch (error) {
+                          console.error(
+                            `❌ Error converting agentCount for ${r.entityName}:`,
+                            error
+                          )
+                          agentCount = 0
+                        }
+                        return sum + agentCount
+                      }, 0)}
+                    </Text>
+                    <Text fontSize="sm" color="gray.400">
+                      Total Agents
+                    </Text>
+                  </Box>
+                </SimpleGrid>
+              )}
+
+              {registries.length > 0 && (
+                <Accordion allowMultiple mt={4}>
+                  <AccordionItem border="none">
+                    <AccordionButton
+                      bg="whiteAlpha.100"
+                      borderRadius="md"
+                      _hover={{ bg: 'whiteAlpha.200' }}
+                    >
+                      <Box flex="1" textAlign="left">
+                        <Text fontSize="sm" fontWeight="medium">
+                          View Registry Details ({registries.length} registries)
+                        </Text>
+                      </Box>
+                      <AccordionIcon />
+                    </AccordionButton>
+                    <AccordionPanel pb={4} pt={4}>
+                      <VStack spacing={3} align="stretch">
+                        {registries.map((registry, index) => (
+                          <Box
+                            key={registry.address}
+                            bg="whiteAlpha.50"
+                            p={3}
+                            borderRadius="md"
+                            border="1px solid"
+                            borderColor="gray.700"
+                          >
+                            <HStack justify="space-between" mb={2}>
+                              <Text fontSize="sm" fontWeight="medium" color="blue.300">
+                                {registry.entityName}
+                              </Text>
+                              <HStack spacing={2}>
+                                <Badge colorScheme={registry.isValid ? 'green' : 'red'} size="sm">
+                                  {(() => {
+                                    try {
+                                      const strValue = registry.documentCount.toString()
+                                      const parsed = parseInt(strValue, 10)
+                                      return isNaN(parsed) ? 0 : parsed
+                                    } catch (e) {
+                                      return 0
+                                    }
+                                  })()}{' '}
+                                  docs
+                                </Badge>
+                                <Badge colorScheme="purple" size="sm">
+                                  {(() => {
+                                    try {
+                                      const strValue = registry.agentCount.toString()
+                                      const parsed = parseInt(strValue, 10)
+                                      return isNaN(parsed) ? 0 : parsed
+                                    } catch (e) {
+                                      return 0
+                                    }
+                                  })()}{' '}
+                                  agents
+                                </Badge>
+                              </HStack>
+                            </HStack>
+                            <Text
+                              fontSize="xs"
+                              fontFamily="mono"
+                              color="gray.400"
+                              cursor="pointer"
+                              onClick={() => copyToClipboard(registry.address)}
+                              _hover={{ color: 'gray.300' }}
+                              mb={1}
+                            >
+                              {registry.address}
+                            </Text>
+                            <HStack justify="space-between">
+                              <Text fontSize="xs" color="gray.500">
+                                Admin: {registry.admin}
+                              </Text>
+                              <Badge colorScheme={registry.isValid ? 'green' : 'gray'} size="xs">
+                                {registry.isValid ? 'Valid' : 'Invalid'}
+                              </Badge>
+                            </HStack>
+                          </Box>
+                        ))}
+                      </VStack>
+                    </AccordionPanel>
+                  </AccordionItem>
+                </Accordion>
+              )}
+            </Box>
+          </section>
 
           {/* Document Upload & CID Generation */}
           <section aria-label="Document Upload">
@@ -473,7 +903,7 @@ export default function VerifyTestPage() {
                           </Text>
                         </Text>
                         <Text fontSize="sm" color="gray.500">
-                          Supports PDF, DOC, DOCX, TXT (Max 10MB)
+                          Supports any file format (Max 10MB)
                         </Text>
                       </Box>
                     </VStack>
@@ -481,7 +911,7 @@ export default function VerifyTestPage() {
                       ref={fileInputRef}
                       type="file"
                       hidden
-                      accept=".pdf,.doc,.docx,.txt"
+                      accept="*/*"
                       onChange={handleFileSelect}
                     />
                   </Box>
@@ -559,8 +989,60 @@ export default function VerifyTestPage() {
                     )}
                   </VStack>
                 )}
-              </VStack>
-              <HStack spacing={4} mt={10}>
+
+                {/* Alternative CID Input */}
+                <Box>
+                  <FormControl>
+                    <FormLabel fontSize="sm" fontWeight="semibold" mb={3}>
+                      Or enter document CID/hash directly
+                    </FormLabel>
+                    <Input
+                      value={cidInput}
+                      onChange={e => setCidInput(e.target.value)}
+                      placeholder="Enter IPFS CID or hash here"
+                      size="lg"
+                      bg="whiteAlpha.200"
+                      border="1px solid"
+                      borderColor="gray.600"
+                      _focus={{
+                        borderColor: '#45a2f8',
+                        boxShadow: '0 0 0 1px #45a2f8',
+                      }}
+                    />
+                    <Text fontSize="xs" color="gray.500" mt={2}>
+                      {selectedFile
+                        ? 'CID will be calculated from uploaded file during verification'
+                        : 'Enter the IPFS hash manually or upload a document above'}
+                    </Text>
+                  </FormControl>
+                </Box>
+
+                {/* Progress Status Bar */}
+                {progress > 0 && (
+                  <Box
+                    bg="whiteAlpha.200"
+                    borderRadius="md"
+                    p={4}
+                    border="1px solid"
+                    borderColor="whiteAlpha.300"
+                  >
+                    <VStack spacing={3}>
+                      <Text fontSize="sm" fontWeight="medium" color="blue.300">
+                        {progressStatus}
+                      </Text>
+                      <Progress
+                        value={progress}
+                        size="sm"
+                        colorScheme="blue"
+                        w="100%"
+                        bg="whiteAlpha.200"
+                        borderRadius="full"
+                      />
+                    </VStack>
+                  </Box>
+                )}
+
+                {/* Verify Button */}
                 <Button
                   onClick={handleVerifyDocument}
                   bg="#45a2f8"
@@ -571,253 +1053,444 @@ export default function VerifyTestPage() {
                     color: 'gray.400',
                     cursor: 'not-allowed',
                   }}
-                  isDisabled={!selectedFile && !cidInput.trim()}
+                  isDisabled={(!selectedFile && !cidInput.trim()) || registries.length === 0}
                   isLoading={isVerifying}
                   loadingText="Verifying..."
                   size="lg"
-                  leftIcon={<Icon as={FiSearch} />}
-                  flex={1}
+                  leftIcon={<Icon as={FiShield} />}
+                  w="100%"
                 >
-                  Verify
+                  Verify Across All Registries
                 </Button>
 
-                {/* <Button
-                  onClick={loadDocumentDetails}
-                  variant="outline"
-                  borderColor="gray.600"
-                  _hover={{ bg: 'whiteAlpha.200' }}
-                  isDisabled={!selectedFile && !cidInput.trim()}
-                  isLoading={isLoadingDetails}
-                  loadingText="Loading..."
-                  size="lg"
-                  leftIcon={<Icon as={FiFile} />}
-                >
-                  Get Details
-                </Button> */}
-              </HStack>
+                {!selectedFile && !cidInput.trim() && (
+                  <Text fontSize="sm" color="gray.500" textAlign="center">
+                    Upload a document or enter a CID to verify
+                  </Text>
+                )}
+              </VStack>
             </Box>
           </section>
 
-          {/* <Divider /> */}
-
-          {/* Document Verification */}
-          <section aria-label="Document Verification">
-            {/* <Box bg="whiteAlpha.100" p={6} borderRadius="md"> */}
-            <VStack spacing={6} align="stretch">
-              {/* <Heading size="md">Verify Document</Heading>
-
-                <FormControl>
-                  <FormLabel fontSize="sm" fontWeight="semibold" mb={3}>
-                    Document CID/Hash (Optional if file uploaded above)
-                  </FormLabel>
-                  <Input
-                    value={cidInput}
-                    onChange={e => setCidInput(e.target.value)}
-                    placeholder="Enter IPFS CID or hash here (or upload file above)"
-                    size="lg"
-                    bg="whiteAlpha.200"
-                    border="1px solid"
-                    borderColor="gray.600"
-                    _focus={{
-                      borderColor: '#45a2f8',
-                      boxShadow: '0 0 0 1px #45a2f8',
-                    }}
-                  />
-                  <Text fontSize="xs" color="gray.500" mt={2}>
-                    {selectedFile
-                      ? 'CID will be calculated from uploaded file during verification'
-                      : 'Enter the IPFS hash manually or upload a document above'}
-                  </Text>
-                </FormControl> */}
-
-              {/* Progress Status Bar */}
-              {progress > 0 && (
-                <Box
-                  bg="whiteAlpha.200"
-                  borderRadius="md"
-                  p={4}
-                  border="1px solid"
-                  borderColor="whiteAlpha.300"
-                >
-                  <VStack spacing={3}>
-                    <Text fontSize="sm" fontWeight="medium" color="blue.300">
-                      {progressStatus}
-                    </Text>
-                    <Progress
-                      value={progress}
-                      size="sm"
-                      colorScheme="blue"
-                      w="100%"
-                      bg="whiteAlpha.200"
-                      borderRadius="full"
-                    />
-                  </VStack>
-                </Box>
-              )}
-
-              {/* {!isConnected && (
-                  <Text fontSize="sm" color="orange.400" textAlign="center">
-                    Please connect your wallet to verify documents
-                  </Text>
-                )} */}
-
-              {!selectedFile && !cidInput.trim() && (
-                <Text fontSize="sm" color="gray.500" textAlign="center">
-                  Upload a document to verify
-                </Text>
-              )}
-            </VStack>
-            {/* </Box> */}
-          </section>
-
           {/* Verification Results */}
-          {verificationResult && (
+          {verificationResults.length > 0 && (
             <section aria-label="Verification Results">
-              <Box
-                bg={verificationResult.exists ? 'green.900' : 'orange.900'}
-                border="1px solid"
-                borderColor={verificationResult.exists ? 'green.500' : 'orange.500'}
-                borderRadius="md"
-                p={6}
-              >
-                <VStack spacing={4} align="stretch">
-                  <HStack spacing={3}>
+              <VStack spacing={6} align="stretch">
+                {/* Summary */}
+                <Box
+                  bg={foundResults.length > 0 ? 'green.900' : 'orange.900'}
+                  border="1px solid"
+                  borderColor={foundResults.length > 0 ? 'green.500' : 'orange.500'}
+                  borderRadius="md"
+                  p={6}
+                >
+                  <HStack spacing={3} mb={4}>
                     <Icon
-                      as={verificationResult.exists ? FiCheck : FiX}
-                      color={verificationResult.exists ? 'green.300' : 'orange.300'}
+                      as={foundResults.length > 0 ? FiCheck : FiX}
+                      color={foundResults.length > 0 ? 'green.300' : 'orange.300'}
                       boxSize={6}
                     />
-                    <Heading
-                      size="md"
-                      color={verificationResult.exists ? 'green.300' : 'orange.300'}
-                    >
-                      {verificationResult.exists ? 'Document Verified ✅' : 'Document Not Found ❌'}
+                    <Heading size="md" color={foundResults.length > 0 ? 'green.300' : 'orange.300'}>
+                      {foundResults.length > 0 ? `Document Verified ✅` : 'Document Not Found ❌'}
                     </Heading>
                   </HStack>
 
-                  {verificationResult.exists && (
-                    <VStack spacing={3} align="stretch">
-                      <HStack justify="space-between">
-                        <Text fontSize="sm" fontWeight="medium" color="green.300">
-                          Institution:
-                        </Text>
-                        <Badge colorScheme="green">{verificationResult.institutionName}</Badge>
-                      </HStack>
-                      <HStack justify="space-between">
-                        <Text fontSize="sm" fontWeight="medium" color="green.300">
-                          Issued At:
-                        </Text>
-                        <Text fontSize="sm" color="green.200">
-                          {formatTimestamp(verificationResult.timestamp)}
-                        </Text>
-                      </HStack>
-                      {documentCID && (
-                        <HStack justify="space-between">
-                          <Text fontSize="sm" fontWeight="medium" color="green.300">
-                            Document CID:
-                          </Text>
-                          <Text
-                            fontSize="xs"
-                            fontFamily="mono"
-                            color="green.200"
-                            cursor="pointer"
-                            onClick={() => copyToClipboard(documentCID)}
-                            _hover={{ color: 'green.100' }}
-                          >
-                            {documentCID}
-                          </Text>
-                        </HStack>
-                      )}
-                    </VStack>
-                  )}
+                  <SimpleGrid columns={{ base: 1, md: 3 }} spacing={4}>
+                    <Box textAlign="center">
+                      <Text fontSize="2xl" fontWeight="bold" color="white">
+                        {verificationResults.length}
+                      </Text>
+                      <Text fontSize="sm" color="gray.300">
+                        Registries Checked
+                      </Text>
+                    </Box>
+                    <Box textAlign="center">
+                      <Text
+                        fontSize="2xl"
+                        fontWeight="bold"
+                        color={foundResults.length > 0 ? 'green.300' : 'orange.300'}
+                      >
+                        {foundResults.length}
+                      </Text>
+                      <Text fontSize="sm" color="gray.300">
+                        Document Found In
+                      </Text>
+                    </Box>
+                    <Box textAlign="center">
+                      <Text fontSize="2xl" fontWeight="bold" color="gray.300">
+                        {notFoundResults.length}
+                      </Text>
+                      <Text fontSize="sm" color="gray.300">
+                        Not Found In
+                      </Text>
+                    </Box>
+                  </SimpleGrid>
+                </Box>
 
-                  {!verificationResult.exists && (
-                    <Text fontSize="sm" color="orange.200">
-                      This document hash was not found in the{' '}
-                      {registryInfo?.institutionName || 'registry'} database.
-                    </Text>
-                  )}
-                </VStack>
-              </Box>
+                {/* Found Results */}
+                {foundResults.length > 0 && (
+                  <Box>
+                    <Heading size="md" mb={4} color="green.300">
+                      ✅ Verified Entities ({foundResults.length})
+                    </Heading>
+                    <VStack spacing={4} align="stretch">
+                      {foundResults.map((result, index) => (
+                        <Box
+                          key={`found-${index}`}
+                          bg="green.900"
+                          border="1px solid"
+                          borderColor="green.500"
+                          borderRadius="md"
+                          p={4}
+                        >
+                          <VStack spacing={3} align="stretch">
+                            <HStack justify="space-between">
+                              <Text fontSize="lg" fontWeight="medium" color="green.300">
+                                {result.entityName}
+                              </Text>
+                              <Badge colorScheme="green">Verified</Badge>
+                            </HStack>
+
+                            <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
+                              <VStack align="stretch" spacing={2}>
+                                <HStack justify="space-between">
+                                  <Text fontSize="sm" color="green.300">
+                                    Issued At:
+                                  </Text>
+                                  <Text fontSize="sm" color="green.200">
+                                    {formatTimestamp(result.timestamp)}
+                                  </Text>
+                                </HStack>
+
+                                <HStack justify="space-between">
+                                  <Text fontSize="sm" color="green.300">
+                                    Registry:
+                                  </Text>
+                                  <Text
+                                    fontSize="xs"
+                                    fontFamily="mono"
+                                    color="green.200"
+                                    cursor="pointer"
+                                    onClick={() => copyToClipboard(result.registryAddress)}
+                                    _hover={{ color: 'green.100' }}
+                                  >
+                                    {result.registryAddress}
+                                  </Text>
+                                </HStack>
+                              </VStack>
+
+                              <VStack align="stretch" spacing={2}>
+                                {result.issuedBy && (
+                                  <HStack justify="space-between">
+                                    <Text fontSize="sm" color="green.300">
+                                      Issued By:
+                                    </Text>
+                                    <Text
+                                      fontSize="xs"
+                                      fontFamily="mono"
+                                      color="green.200"
+                                      cursor="pointer"
+                                      onClick={() => copyToClipboard(result.issuedBy!)}
+                                      _hover={{ color: 'green.100' }}
+                                    >
+                                      {result.issuedBy!}
+                                    </Text>
+                                  </HStack>
+                                )}
+
+                                {result.entityUrl && (
+                                  <HStack justify="space-between">
+                                    <Text fontSize="sm" color="green.300">
+                                      ✅ Verified URL:
+                                    </Text>
+                                    <Text
+                                      fontSize="xs"
+                                      color="green.200"
+                                      cursor="pointer"
+                                      textDecoration="underline"
+                                      onClick={() => window.open(result.entityUrl, '_blank')}
+                                      _hover={{ color: 'green.100' }}
+                                    >
+                                      {result.entityUrl}
+                                    </Text>
+                                  </HStack>
+                                )}
+                              </VStack>
+                            </SimpleGrid>
+
+                            {/* Only show metadata if it exists and is not empty */}
+                            {result.metadata && result.metadata.trim() && (
+                              <Box>
+                                <Text fontSize="sm" fontWeight="medium" color="green.300" mb={2}>
+                                  Metadata:
+                                </Text>
+                                <Box
+                                  bg="whiteAlpha.100"
+                                  p={2}
+                                  borderRadius="sm"
+                                  maxH="100px"
+                                  overflowY="auto"
+                                >
+                                  <Text fontSize="xs" color="green.200" fontFamily="mono">
+                                    {result.metadata}
+                                  </Text>
+                                </Box>
+                              </Box>
+                            )}
+                          </VStack>
+                        </Box>
+                      ))}
+                    </VStack>
+                  </Box>
+                )}
+
+                {/* Not Found Results */}
+                {notFoundResults.length > 0 && (
+                  <Accordion allowMultiple>
+                    <AccordionItem border="none">
+                      <AccordionButton
+                        bg="orange.900"
+                        borderRadius="md"
+                        _hover={{ bg: 'orange.800' }}
+                        border="1px solid"
+                        borderColor="orange.500"
+                      >
+                        <Box flex="1" textAlign="left">
+                          <HStack>
+                            <Icon as={FiX} color="orange.300" />
+                            <Text fontSize="md" fontWeight="medium" color="orange.300">
+                              Document Not Found In ({notFoundResults.length} registries)
+                            </Text>
+                          </HStack>
+                        </Box>
+                        <AccordionIcon color="orange.300" />
+                      </AccordionButton>
+                      <AccordionPanel pb={4} pt={4}>
+                        <SimpleGrid columns={{ base: 1, md: 2 }} spacing={3}>
+                          {notFoundResults.map((result, index) => (
+                            <Box
+                              key={`not-found-${index}`}
+                              bg="whiteAlpha.100"
+                              border="1px solid"
+                              borderColor="gray.600"
+                              borderRadius="md"
+                              p={3}
+                            >
+                              <VStack spacing={2} align="stretch">
+                                <HStack justify="space-between">
+                                  <Text fontSize="sm" fontWeight="medium" color="gray.300">
+                                    {result.entityName}
+                                  </Text>
+                                  <Badge colorScheme="gray" size="sm">
+                                    Not Found
+                                  </Badge>
+                                </HStack>
+                                <Text
+                                  fontSize="xs"
+                                  fontFamily="mono"
+                                  color="gray.500"
+                                  cursor="pointer"
+                                  onClick={() => copyToClipboard(result.registryAddress)}
+                                  _hover={{ color: 'gray.400' }}
+                                >
+                                  {result.registryAddress}
+                                </Text>
+                              </VStack>
+                            </Box>
+                          ))}
+                        </SimpleGrid>
+                      </AccordionPanel>
+                    </AccordionItem>
+                  </Accordion>
+                )}
+
+                {/* Additional Document Info */}
+                {documentCID && (
+                  <Box
+                    bg="blue.900"
+                    border="1px solid"
+                    borderColor="blue.500"
+                    borderRadius="md"
+                    p={4}
+                  >
+                    <VStack spacing={3} align="stretch">
+                      <HStack spacing={3}>
+                        <Icon as={FiHash} color="blue.300" />
+                        <Text fontSize="sm" color="blue.300" fontWeight="medium">
+                          Document Information
+                        </Text>
+                      </HStack>
+
+                      <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
+                        <VStack align="stretch" spacing={2}>
+                          <HStack justify="space-between">
+                            <Text fontSize="sm" color="blue.300">
+                              CID:
+                            </Text>
+                            <Text
+                              fontSize="xs"
+                              fontFamily="mono"
+                              color="blue.200"
+                              cursor="pointer"
+                              onClick={() => copyToClipboard(documentCID)}
+                              _hover={{ color: 'blue.100' }}
+                            >
+                              {documentCID}
+                            </Text>
+                          </HStack>
+
+                          {selectedFile && (
+                            <>
+                              <HStack justify="space-between">
+                                <Text fontSize="sm" color="blue.300">
+                                  File Name:
+                                </Text>
+                                <Text fontSize="sm" color="blue.200" noOfLines={1}>
+                                  {selectedFile.name}
+                                </Text>
+                              </HStack>
+
+                              <HStack justify="space-between">
+                                <Text fontSize="sm" color="blue.300">
+                                  File Size:
+                                </Text>
+                                <Text fontSize="sm" color="blue.200">
+                                  {formatFileSize(selectedFile.size)}
+                                </Text>
+                              </HStack>
+                            </>
+                          )}
+                        </VStack>
+
+                        <VStack align="stretch" spacing={2}>
+                          <HStack justify="space-between">
+                            <Text fontSize="sm" color="blue.300">
+                              Verification Time:
+                            </Text>
+                            <Text fontSize="sm" color="blue.200">
+                              {new Date().toLocaleString()}
+                            </Text>
+                          </HStack>
+
+                          <HStack justify="space-between">
+                            <Text fontSize="sm" color="blue.300">
+                              Network:
+                            </Text>
+                            <Badge
+                              colorScheme={
+                                chainId === 314159
+                                  ? 'green'
+                                  : chainId === 11155111
+                                    ? 'blue'
+                                    : 'orange'
+                              }
+                              size="sm"
+                            >
+                              {currentNetwork?.name || `Chain ${chainId}` || 'Unknown Network'}
+                            </Badge>
+                          </HStack>
+
+                          <HStack justify="space-between">
+                            <Text fontSize="sm" color="blue.300">
+                              Status:
+                            </Text>
+                            <Badge
+                              colorScheme={foundResults.length > 0 ? 'green' : 'orange'}
+                              size="sm"
+                            >
+                              {foundResults.length > 0 ? 'Verified' : 'Unverified'}
+                            </Badge>
+                          </HStack>
+                        </VStack>
+                      </SimpleGrid>
+
+                      <Text fontSize="xs" color="gray.400" textAlign="center" mt={2}>
+                        Click addresses to copy • All data retrieved from blockchain
+                      </Text>
+                    </VStack>
+                  </Box>
+                )}
+              </VStack>
             </section>
           )}
 
-          {/* Document Details */}
-          {documentDetails && documentDetails.exists && (
-            <section aria-label="Document Details">
-              <Box bg="blue.900" border="1px solid" borderColor="blue.500" borderRadius="md" p={6}>
-                <VStack spacing={4} align="stretch">
-                  <Heading size="md" color="blue.300">
-                    Document Details
-                  </Heading>
+          {/* Help Section */}
+          <section aria-label="Help Information">
+            <Box
+              bg="whiteAlpha.50"
+              p={6}
+              borderRadius="md"
+              border="1px solid"
+              borderColor="gray.700"
+            >
+              <VStack spacing={4} align="stretch">
+                <Heading size="sm" color="gray.300">
+                  How Document Verification Works
+                </Heading>
 
-                  <VStack spacing={3} align="stretch">
-                    <HStack justify="space-between">
-                      <HStack>
-                        <Icon as={FiUser} color="blue.300" />
-                        <Text fontSize="sm" fontWeight="medium" color="blue.300">
-                          Issued By:
-                        </Text>
-                      </HStack>
-                      <Text
-                        fontSize="xs"
-                        fontFamily="mono"
-                        color="blue.200"
-                        cursor="pointer"
-                        onClick={() => copyToClipboard(documentDetails.issuedBy)}
-                        _hover={{ color: 'blue.100' }}
-                      >
-                        {documentDetails.issuedBy}
-                      </Text>
-                    </HStack>
+                <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
+                  <VStack align="stretch" spacing={3}>
+                    <Text fontSize="sm" fontWeight="medium" color="blue.300">
+                      1. Upload or Enter CID
+                    </Text>
+                    <Text fontSize="xs" color="gray.400">
+                      Upload your document file or enter an IPFS CID directly. We&apos;ll compute
+                      the unique hash for verification.
+                    </Text>
 
-                    <HStack justify="space-between">
-                      <HStack>
-                        <Icon as={FiCalendar} color="blue.300" />
-                        <Text fontSize="sm" fontWeight="medium" color="blue.300">
-                          Timestamp:
-                        </Text>
-                      </HStack>
-                      <Text fontSize="sm" color="blue.200">
-                        {formatTimestamp(documentDetails.timestamp)}
-                      </Text>
-                    </HStack>
-
-                    <HStack justify="space-between">
-                      <HStack>
-                        <Icon as={FiHash} color="blue.300" />
-                        <Text fontSize="sm" fontWeight="medium" color="blue.300">
-                          Institution:
-                        </Text>
-                      </HStack>
-                      <Badge colorScheme="blue">{documentDetails.institutionName}</Badge>
-                    </HStack>
-
-                    {documentDetails.metadata && (
-                      <Box>
-                        <Text fontSize="sm" fontWeight="medium" color="blue.300" mb={2}>
-                          Metadata:
-                        </Text>
-                        <Textarea
-                          value={documentDetails.metadata}
-                          isReadOnly
-                          bg="whiteAlpha.100"
-                          color="blue.200"
-                          fontSize="xs"
-                          fontFamily="mono"
-                          minH="80px"
-                        />
-                      </Box>
-                    )}
+                    <Text fontSize="sm" fontWeight="medium" color="blue.300">
+                      2. Multi-Registry Check
+                    </Text>
+                    <Text fontSize="xs" color="gray.400">
+                      We automatically check your document against all registered entity databases
+                      on the blockchain.
+                    </Text>
                   </VStack>
 
-                  <Text fontSize="xs" color="gray.400" textAlign="center">
-                    Click addresses to copy • All data is retrieved from the blockchain
-                  </Text>
-                </VStack>
-              </Box>
-            </section>
-          )}
+                  <VStack align="stretch" spacing={3}>
+                    <Text fontSize="sm" fontWeight="medium" color="blue.300">
+                      3. Instant Results
+                    </Text>
+                    <Text fontSize="xs" color="gray.400">
+                      Get immediate verification results showing which institutions, businesses or
+                      individuals have issued this document and when.
+                    </Text>
+
+                    <Text fontSize="sm" fontWeight="medium" color="blue.300">
+                      4. Blockchain Security
+                    </Text>
+                    <Text fontSize="xs" color="gray.400">
+                      All verification data is stored immutably on the blockchain, ensuring
+                      tamper-proof records.
+                    </Text>
+                  </VStack>
+                </SimpleGrid>
+
+                <Divider />
+
+                <HStack justify="center" spacing={6}>
+                  <HStack>
+                    <Icon as={FiShield} color="green.400" />
+                    <Text fontSize="xs" color="gray.400">
+                      Secure & Private
+                    </Text>
+                  </HStack>
+                  <HStack>
+                    <Icon as={FiDatabase} color="blue.400" />
+                    <Text fontSize="xs" color="gray.400">
+                      Blockchain Verified
+                    </Text>
+                  </HStack>
+                  <HStack>
+                    <Icon as={FiCheck} color="purple.400" />
+                    <Text fontSize="xs" color="gray.400">
+                      Instant Results
+                    </Text>
+                  </HStack>
+                </HStack>
+              </VStack>
+            </Box>
+          </section>
         </VStack>
       </Container>
     </main>

@@ -6,7 +6,7 @@ Affix your onchain seal and let the world verify it.
 - Live demo: https://affix-ui.vercel.app/
 - Demo video: https://youtu.be/XoquF4TzP54
 
-Organisations, businesses and individuals can authenticate their documents using Filecoin while keeping their existing workflows intact. Anyone can then instantly verify that documents are genuine and unaltered.
+Organisations, businesses and individuals can authenticate their documents onchain while keeping their existing workflows intact. Anyone can then instantly verify that documents are genuine and unaltered.
 
 ## Install
 
