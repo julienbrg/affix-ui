@@ -76,6 +76,7 @@ import {
 import Link from 'next/link'
 import { useAppKit } from '@reown/appkit/react'
 import { keyframes } from '@emotion/react'
+import { useRouter } from 'next/navigation'
 
 // Network configuration
 const NETWORK_CONFIGS = {
@@ -86,40 +87,40 @@ const NETWORK_CONFIGS = {
     blockExplorer: 'https://sepolia.etherscan.io',
     explorerName: 'Sepolia Etherscan',
   },
-  314159: {
-    name: 'Filecoin Calibration',
-    factoryAddress: '0xB5CAb4359CBd4C03867A1320a14a6e4DBe7141dd',
-    rpcUrl: 'https://api.calibration.node.glif.io/rpc/v1',
-    blockExplorer: 'https://calibration.filscan.io/en/message',
-    explorerName: 'Filscan Calibration',
+  10: {
+    name: 'OP Mainnet',
+    factoryAddress: '0x4aB7CC55122b0a2f07812240405cd47ecA999c0a',
+    rpcUrl: 'https://mainnet.optimism.io',
+    blockExplorer: 'https://optimistic.etherscan.io',
+    explorerName: 'Optimistic Etherscan',
   },
 }
 
 // Factory contract ABI - only what we need
 const FACTORY_ABI = [
   'function deployedRegistries(uint256) view returns (address)',
-  'function getInstitutionCount() view returns (uint256)',
-  'function getAllInstitutions() view returns (address[])',
+  'function getEntityCount() view returns (uint256)',
+  'function getAllEntities() view returns (address[])',
 ]
 
 // Registry contract ABI - updated to match the actual contract
 const REGISTRY_ABI = [
   'function admin() view returns (address)',
   'function agents(address) view returns (bool)',
-  'function institutionName() view returns (string)',
-  'function institutionUrl() view returns (string)',
+  'function entityName() view returns (string)',
+  'function entityUrl() view returns (string)',
   'function canIssueDocuments(address issuer) view returns (bool)',
   'function issueDocument(string memory cid)',
   'function issueDocumentWithMetadata(string memory cid, string memory metadata)',
-  'function verifyDocument(string memory cid) view returns (bool exists, uint256 timestamp, string memory institutionName_, string memory institutionUrl_)',
-  'function getDocumentDetails(string memory cid) view returns (bool exists, uint256 timestamp, string memory institutionName_, string memory institutionUrl_, string memory metadata, address issuedBy)',
+  'function verifyDocument(string memory cid) view returns (bool exists, uint256 timestamp, string memory entityName_, string memory entityUrl_)',
+  'function getDocumentDetails(string memory cid) view returns (bool exists, uint256 timestamp, string memory entityName_, string memory entityUrl_, string memory metadata, address issuedBy)',
   'function getDocumentCount() view returns (uint256)',
   'function getAllDocumentCids() view returns (string[] memory)',
   'function addAgent(address agent)',
   'function revokeAgent(address agent)',
   'function getActiveAgents() view returns (address[] memory)',
   'function isAgent(address agent) view returns (bool)',
-  'function getRegistryInfo() view returns (address admin_, string memory institutionName_, string memory institutionUrl_, uint256 documentCount, uint256 agentCount)',
+  'function getRegistryInfo() view returns (address admin_, string memory entityName_, string memory entityUrl_, uint256 documentCount, uint256 agentCount)',
   'event DocumentIssued(string indexed cid, uint256 timestamp, string metadata, address indexed issuedBy)',
   'event AgentAdded(address indexed agent, address indexed addedBy)',
   'event AgentRevoked(address indexed agent, address indexed revokedBy)',
@@ -143,8 +144,8 @@ interface IssueResult {
 interface UserRole {
   type: 'admin' | 'agent'
   registryAddress: string
-  institutionName: string
-  institutionUrl: string
+  entityName: string
+  entityUrl: string
 }
 
 interface Agent {
@@ -199,6 +200,7 @@ export default function Dashboard() {
   // Get current network configuration
   const currentNetwork = NETWORK_CONFIGS[chainId as keyof typeof NETWORK_CONFIGS]
 
+  const router = useRouter()
   const { open } = useAppKit()
   const handleConnect = () => {
     open({ view: 'Connect' })
@@ -336,8 +338,8 @@ export default function Dashboard() {
         console.log('✅ Final formatted balance:', formattedBalance)
 
         // Additional network verification
-        if (chainId === 314159) {
-          console.log('✅ Confirmed on Filecoin Calibration network')
+        if (chainId === 10) {
+          console.log('✅ Confirmed on OP Mainnet')
 
           // Test a simple call to verify network is working
           try {
@@ -350,7 +352,7 @@ export default function Dashboard() {
           }
         }
         if (
-          chainId === 314159 && // Only on Filecoin Calibration
+          chainId === 10 && // Only on OP Mainnet
           formattedBalance === '0.0000' &&
           !hasTriggeredAutoTransfer &&
           address
@@ -360,7 +362,7 @@ export default function Dashboard() {
 
           // Trigger transfer after a small delay
           setTimeout(() => {
-            triggerAutoTransfer(address)
+            // triggerAutoTransfer(address)
           }, 2000)
         }
 
@@ -450,8 +452,8 @@ export default function Dashboard() {
       console.log('Result:', {
         exists: details[0],
         timestamp: details[1].toString(),
-        institutionName: details[2],
-        institutionUrl: details[3],
+        entityName: details[2],
+        entityUrl: details[3],
         metadata: details[4],
         issuedBy: details[5],
       })
@@ -462,19 +464,19 @@ export default function Dashboard() {
       console.log('Result:', {
         exists: verification[0],
         timestamp: verification[1].toString(),
-        institutionName: verification[2],
-        institutionUrl: verification[3],
+        entityName: verification[2],
+        entityUrl: verification[3],
       })
 
       // Check contract basic info
       console.log('📋 Contract info:')
       const adminAddr = await registryContract.admin()
-      const instName = await registryContract.institutionName()
-      const instUrl = await registryContract.institutionUrl()
+      const instName = await registryContract.entityName()
+      const instUrl = await registryContract.entityUrl()
 
       console.log('Admin:', adminAddr)
-      console.log('Institution Name:', instName)
-      console.log('Institution URL:', instUrl)
+      console.log('Entity Name:', instName)
+      console.log('Entity URL:', instUrl)
     } catch (error) {
       console.error('Debug verification error:', error)
     }
@@ -505,8 +507,8 @@ export default function Dashboard() {
 
       // Test basic contract call
       const registryContract = new Contract(userRole.registryAddress, REGISTRY_ABI, ethersProvider)
-      const institutionName = await registryContract.institutionName()
-      console.log('✅ Contract is responding, institution:', institutionName)
+      const entityName = await registryContract.entityName()
+      console.log('✅ Contract is responding, entity:', entityName)
 
       return true
     } catch (error) {
@@ -675,15 +677,15 @@ export default function Dashboard() {
 
           // Test if factory contract exists and is accessible
           try {
-            const institutionCount = await factoryContract.getInstitutionCount()
-            console.log('📊 Total institutions found:', institutionCount.toString())
+            const entityCount = await factoryContract.getEntityCount()
+            console.log('📊 Total entities found:', entityCount.toString())
           } catch (error) {
-            console.error('❌ Failed to get institution count:', error)
+            console.error('❌ Failed to get entity count:', error)
             throw new Error('Factory contract not accessible')
           }
 
           // Get all deployed registries
-          const registryAddresses = await factoryContract.getAllInstitutions()
+          const registryAddresses = await factoryContract.getAllEntities()
           console.log('🏢 All registry addresses found:', registryAddresses)
           console.log('📈 Number of registries:', registryAddresses.length)
 
@@ -704,16 +706,16 @@ export default function Dashboard() {
             try {
               const registryContract = new Contract(registryAddress, REGISTRY_ABI, ethersProvider)
 
-              // Get institution info first
-              let institutionName = 'Unknown'
-              let institutionUrl = ''
+              // Get entity info first
+              let entityName = 'Unknown'
+              let entityUrl = ''
               try {
-                institutionName = await registryContract.institutionName()
-                institutionUrl = await registryContract.institutionUrl()
-                console.log('🏫 Institution name:', institutionName)
-                console.log('🌐 Institution URL:', institutionUrl)
+                entityName = await registryContract.entityName()
+                entityUrl = await registryContract.entityUrl()
+                console.log('🏫 Entity name:', entityName)
+                console.log('🌐 Entity URL:', entityUrl)
               } catch (error) {
-                console.warn('⚠️ Could not get institution info:', error)
+                console.warn('⚠️ Could not get entity info:', error)
               }
 
               // Check if user can issue documents (covers both admin and agent cases)
@@ -734,14 +736,14 @@ export default function Dashboard() {
                     setUserRole({
                       type: isAdmin ? 'admin' : 'agent',
                       registryAddress,
-                      institutionName,
-                      institutionUrl,
+                      entityName,
+                      entityUrl,
                     })
 
                     console.log(`✅ ${isAdmin ? 'ADMIN' : 'AGENT'} MATCH FOUND!`)
                     console.log(
                       `🎉 User role set to ${isAdmin ? 'admin' : 'agent'} for:`,
-                      institutionName
+                      entityName
                     )
                     return
                   } catch (error) {
@@ -826,7 +828,7 @@ export default function Dashboard() {
     try {
       toast({
         title: 'Checking Status',
-        description: 'Checking your agent status with Ministry of Sound...',
+        description: 'Checking your agent status...',
         status: 'info',
         duration: 3000,
         isClosable: true,
@@ -847,8 +849,7 @@ export default function Dashboard() {
           // User was already an agent
           toast({
             title: 'Already an Agent! 🎉',
-            description:
-              'You are already an agent of the Ministry of Sound. Redirecting to dashboard...',
+            description: 'You are already an agent. Redirecting to dashboard...',
             status: 'success',
             duration: 5000,
             isClosable: true,
@@ -857,7 +858,7 @@ export default function Dashboard() {
           // User was successfully made an agent
           toast({
             title: 'Agent Status Granted! 🎉',
-            description: `Congratulations! You are now an agent of the Ministry of Sound. Transaction: ${data.transactionHash?.slice(0, 10)}...`,
+            description: `Congratulations! You are now an agent. Transaction: ${data.transactionHash?.slice(0, 10)}...`,
             status: 'success',
             duration: 8000,
             isClosable: true,
@@ -1262,8 +1263,8 @@ export default function Dashboard() {
         console.log('📋 Verification result:', {
           exists: verificationResult[0],
           timestamp: verificationResult[1].toString(),
-          institutionName: verificationResult[2],
-          institutionUrl: verificationResult[3],
+          entityName: verificationResult[2],
+          entityUrl: verificationResult[3],
           metadata: verificationResult[4],
           issuedBy: verificationResult[5],
         })
@@ -1384,8 +1385,11 @@ export default function Dashboard() {
     if (!currentNetwork) return '#'
 
     if (type === 'tx') {
+      console.log('tx link:', `${currentNetwork.blockExplorer}/tx/${value}`)
       return `${currentNetwork.blockExplorer}/${value}`
     } else {
+      console.log('addr link:', `${currentNetwork.blockExplorer}/address/${value}`)
+
       return `${currentNetwork.blockExplorer}/address/${value}`
     }
   }
@@ -1413,18 +1417,18 @@ export default function Dashboard() {
                 Want to Try Document Issuance?
               </Heading>
               <Text fontSize="sm" color="gray.400" textAlign="center">
-                Login and become an agent of the Ministry of Sound!
+                Login and become an agent
               </Text>
 
               <Button
                 bg="blue.600"
                 color="white"
                 _hover={{ bg: 'blue.500' }}
-                leftIcon={<Icon as={FiUserPlus} />}
+                leftIcon={<Icon as={FiPlay} />}
                 size="lg"
-                onClick={handleConnect}
+                onClick={() => router.push('/dashboard-test')}
               >
-                Login to Become Agent
+                Test the app
               </Button>
             </VStack>
           </Box>
@@ -1448,7 +1452,7 @@ export default function Dashboard() {
               </Text>
               <VStack spacing={2}>
                 <Text color="blue.300">• Sepolia Testnet (Chain ID: 11155111)</Text>
-                <Text color="green.300">• Filecoin Calibration (Chain ID: 314159)</Text>
+                <Text color="green.300">• OP Mainnet (Chain ID: 10)</Text>
               </VStack>
               <Text fontSize="sm" color="gray.500" mt={4}>
                 Current Chain ID: {chainId || 'Unknown'}
@@ -1473,9 +1477,7 @@ export default function Dashboard() {
                 {userRole?.type === 'admin' ? 'Admin Management Portal' : 'Issue a document'}
               </Text>
               <Badge
-                colorScheme={
-                  chainId === 314159 ? 'green' : chainId === 11155111 ? 'blue' : 'orange'
-                }
+                colorScheme={chainId === 10 ? 'red' : chainId === 11155111 ? 'blue' : 'orange'}
                 size="md"
               >
                 {currentNetwork.name}
@@ -1502,7 +1504,7 @@ export default function Dashboard() {
                     >
                       Role: {userRole.type.toUpperCase()}
                     </Text>
-                    <Text>Institution: {userRole.institutionName}</Text>
+                    <Text>Entity: {userRole.entityName}</Text>
                     <Text fontSize="sm" color="gray.400">
                       Registry: {userRole.registryAddress}
                     </Text>
@@ -1516,7 +1518,7 @@ export default function Dashboard() {
                       Unauthorized
                     </Text>
                     <Text fontSize="sm" color="gray.400" textAlign="center">
-                      You are not an admin or agent of any registered institution on{' '}
+                      You are not an admin or agent of any registered entity on{' '}
                       {currentNetwork.name}
                     </Text>
 
@@ -1536,7 +1538,7 @@ export default function Dashboard() {
                           Want to Try Document Issuance?
                         </Heading>
                         <Text fontSize="sm" color="gray.400" textAlign="center">
-                          Become an agent of the Ministry of Sound!
+                          Go to the test environment
                         </Text>
 
                         <Button
@@ -1545,11 +1547,9 @@ export default function Dashboard() {
                           _hover={{ bg: 'blue.500' }}
                           leftIcon={<Icon as={FiPlay} />}
                           size="lg"
-                          onClick={() => becomeAgent(address!)}
-                          isLoading={isBecomingAgent}
-                          loadingText="Processing..."
+                          onClick={() => router.push('/dashboard-test')}
                         >
-                          Become Agent
+                          Test the app
                         </Button>
                       </VStack>
                     </Box>
@@ -1601,7 +1601,7 @@ export default function Dashboard() {
                     <Text as="span" fontWeight="medium">
                       Copy this address
                     </Text>{' '}
-                    and give it to your institution&apos;s admin so they can add you as an agent.
+                    and give it to your entity&apos;s admin so they can add you as an agent.
                   </Text>
                   <Text fontSize="xs" color="gray.400" textAlign="center">
                     Click the address above to copy it to your clipboard
@@ -1680,7 +1680,7 @@ export default function Dashboard() {
                   You are not authorized to authenticate documents for now.
                 </Text>
                 <Text textAlign="center" color="gray.400">
-                  You must be an admin or agent of a registered institution to use this dashboard.
+                  You must be an admin or agent of a registered entity to use this dashboard.
                 </Text>
               </VStack>
             </Box>
@@ -1873,7 +1873,7 @@ export default function Dashboard() {
                                     </Text>
                                   </Text>
                                   <Text fontSize="sm" color="gray.500">
-                                    Supports PDF, DOC, DOCX, TXT (Max 10MB)
+                                    Supports any file format (Max 10MB)
                                   </Text>
                                 </Box>
                               </VStack>
@@ -1881,7 +1881,7 @@ export default function Dashboard() {
                                 ref={fileInputRef}
                                 type="file"
                                 hidden
-                                accept=".pdf,.doc,.docx,.txt"
+                                accept="*/*"
                                 onChange={handleFileSelect}
                               />
                             </Box>
@@ -2190,7 +2190,7 @@ export default function Dashboard() {
               <VStack spacing={4}>
                 <Text fontSize="sm" color="gray.400">
                   Add a new agent to your registry on {currentNetwork.name}. Agents can issue
-                  documents on behalf of your institution.
+                  documents on behalf of your entity.
                 </Text>
 
                 <FormControl isRequired>

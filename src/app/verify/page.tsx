@@ -53,37 +53,38 @@ const NETWORK_CONFIGS = {
     rpcUrl: 'https://sepolia.infura.io/v3/YOUR_INFURA_KEY', // Replace with actual Sepolia RPC
     blockExplorer: 'https://sepolia.etherscan.io',
   },
-  314159: {
-    name: 'Filecoin Calibration',
-    factoryAddress: '0xB5CAb4359CBd4C03867A1320a14a6e4DBe7141dd',
-    rpcUrl: 'https://api.calibration.node.glif.io/rpc/v1',
-    blockExplorer: 'https://calibration.filscan.io/en/message',
+  10: {
+    name: 'OP Mainnet',
+    factoryAddress: '0x4aB7CC55122b0a2f07812240405cd47ecA999c0a',
+    rpcUrl: 'https://mainnet.optimism.io',
+    blockExplorer: 'https://optimistic.etherscan.io',
+    explorerName: 'Optimistic Etherscan',
   },
 }
 
 // Factory contract ABI - from actual Etherscan contract
 const AFFIX_FACTORY_ABI = [
-  'function getAllInstitutions() external view returns (address[] memory)',
-  'function getInstitutionCount() external view returns (uint256)',
-  'function getInstitutionByIndex(uint256 index) external view returns (address)',
-  'function getInstitutionDetails(address registryAddress) external view returns (address admin, string memory institutionName, bool isRegistered)',
-  'function isInstitutionRegistered(address registryAddress) external view returns (bool)',
-  'function getFactoryStats() external view returns (uint256 totalInstitutions, address factoryOwner)',
+  'function getAllEntities() external view returns (address[] memory)',
+  'function getEntityCount() external view returns (uint256)',
+  'function getEntityByIndex(uint256 index) external view returns (address)',
+  'function getEntityDetails(address registryAddress) external view returns (address admin, string memory entityName, bool isRegistered)',
+  'function isEntityRegistered(address registryAddress) external view returns (bool)',
+  'function getFactoryStats() external view returns (uint256 totalEntities, address factoryOwner)',
   'function owner() external view returns (address)',
 ]
 
 // Registry contract ABI
 const AFFIX_REGISTRY_ABI = [
-  'function verifyDocument(string memory cid) external view returns (bool exists, uint256 timestamp, string memory institutionName_, string memory institutionUrl_)',
-  'function getDocumentDetails(string memory cid) external view returns (bool exists, uint256 timestamp, string memory institutionName_, string memory institutionUrl_, string memory metadata, address issuedBy)',
-  'function institutionName() external view returns (string memory)',
-  'function institutionUrl() external view returns (string memory)',
+  'function verifyDocument(string memory cid) external view returns (bool exists, uint256 timestamp, string memory entityName_, string memory entityUrl_)',
+  'function getDocumentDetails(string memory cid) external view returns (bool exists, uint256 timestamp, string memory entityName_, string memory entityUrl_, string memory metadata, address issuedBy)',
+  'function entityName() external view returns (string memory)',
+  'function entityUrl() external view returns (string memory)',
   'function getDocumentCount() external view returns (uint256)',
   'function admin() external view returns (address)',
   'function getAgentCount() external view returns (uint256)',
   'function getActiveAgents() external view returns (address[] memory)',
   'function getAllDocumentCids() external view returns (string[] memory)',
-  'function getRegistryInfo() external view returns (address admin_, string memory institutionName_, string memory institutionUrl_, uint256 documentCount, uint256 agentCount)',
+  'function getRegistryInfo() external view returns (address admin_, string memory entityName_, string memory entityUrl_, uint256 documentCount, uint256 agentCount)',
   'function isValidRegistry() external view returns (bool)',
   'function isAgent(address agent) external view returns (bool)',
   'function canIssueDocuments(address issuer) external view returns (bool)',
@@ -91,7 +92,7 @@ const AFFIX_REGISTRY_ABI = [
 
 interface RegistryInfo {
   address: string
-  institutionName: string
+  entityName: string
   documentCount: bigint
   admin: string
   agentCount: bigint
@@ -101,19 +102,19 @@ interface RegistryInfo {
 
 interface VerificationResult {
   registryAddress: string
-  institutionName: string
+  entityName: string
   exists: boolean
   timestamp: bigint
   metadata?: string
   issuedBy?: string
-  institutionUrl?: string
+  entityUrl?: string
 }
 
 interface DocumentDetails {
   exists: boolean
   timestamp: bigint
-  institutionName: string
-  institutionUrl: string
+  entityName: string
+  entityUrl: string
   metadata: string
   issuedBy: string
 }
@@ -147,7 +148,7 @@ export default function VerifyPage() {
     console.log('CAIP Network:', caipNetwork)
     console.log('Network Name:', caipNetwork?.name)
     console.log('Current Network Config:', currentNetwork)
-    console.log('Is Filecoin Calibration?', chainId === 314159)
+    console.log('Is OP Mainnet', chainId === 10)
     console.log('Is Sepolia?', chainId === 11155111)
   }, [chainId, caipNetwork, currentNetwork])
 
@@ -205,7 +206,7 @@ export default function VerifyPage() {
       console.error('❌ No network configuration found for chain ID:', chainId)
       toast({
         title: 'Unsupported Network',
-        description: 'Please switch to Sepolia or Filecoin Calibration network',
+        description: 'Please switch to Sepolia or OP Mainnet network',
         status: 'error',
         duration: 5000,
         isClosable: true,
@@ -228,22 +229,22 @@ export default function VerifyPage() {
         ethersProvider
       )
 
-      console.log('📞 Getting institution count and addresses...')
+      console.log('📞 Getting entity count and addresses...')
 
-      // Get total number of institutions and their addresses
-      const [institutionCount, registryAddresses] = await Promise.all([
-        factoryContract.getInstitutionCount(),
-        factoryContract.getAllInstitutions(),
+      // Get total number of entities and their addresses
+      const [entityCount, registryAddresses] = await Promise.all([
+        factoryContract.getEntityCount(),
+        factoryContract.getAllEntities(),
       ])
 
-      console.log('📊 Raw institution count from contract:', institutionCount)
-      console.log('📊 Institution count as number:', Number(institutionCount))
+      console.log('📊 Raw entity count from contract:', entityCount)
+      console.log('📊 Entity count as number:', Number(entityCount))
       console.log('📋 Raw registry addresses from contract:', registryAddresses)
       console.log('📋 Registry addresses length:', registryAddresses.length)
 
-      setTotalRegistries(Number(institutionCount))
+      setTotalRegistries(Number(entityCount))
 
-      console.log('📊 Total institutions found:', institutionCount.toString())
+      console.log('📊 Total entities found:', entityCount.toString())
       console.log('📋 Registry addresses:', registryAddresses)
 
       // Get detailed info for each registry
@@ -252,12 +253,12 @@ export default function VerifyPage() {
           console.log(`📍 Loading info for registry: ${registryAddress}`)
 
           // Check if registry is valid and get basic details from factory
-          const [admin, institutionName, isRegistered] =
-            await factoryContract.getInstitutionDetails(registryAddress)
+          const [admin, entityName, isRegistered] =
+            await factoryContract.getEntityDetails(registryAddress)
 
           console.log(`📊 Factory details for ${registryAddress}:`, {
             admin,
-            institutionName,
+            entityName,
             isRegistered,
           })
 
@@ -265,7 +266,7 @@ export default function VerifyPage() {
             console.log(`⚠️ Registry ${registryAddress} is not registered with factory`)
             return {
               address: registryAddress,
-              institutionName: 'Unregistered Registry',
+              entityName: 'Unregistered Registry',
               documentCount: BigInt(0),
               admin: 'Unknown',
               agentCount: BigInt(0),
@@ -280,14 +281,14 @@ export default function VerifyPage() {
           // GET DATA USING INDIVIDUAL CONTRACT CALLS (more reliable)
           const [
             registryAdmin,
-            registryInstitutionName,
+            registryEntityName,
             documentCount,
             agentCount,
             isValid,
             activeAgents,
           ] = await Promise.all([
             registryContract.admin().catch(() => admin), // Fallback to factory admin
-            registryContract.institutionName().catch(() => institutionName), // Fallback to factory name
+            registryContract.entityName().catch(() => entityName), // Fallback to factory name
             registryContract.getDocumentCount().catch(() => BigInt(0)), // Use individual call - THIS IS THE FIX!
             registryContract.getAgentCount().catch(() => BigInt(0)),
             registryContract.isValidRegistry().catch(() => false),
@@ -309,9 +310,9 @@ export default function VerifyPage() {
             console.log('⚠️ getRegistryInfo comparison failed:', e)
           }
 
-          console.log(`✅ Loaded registry info for ${institutionName} (FIXED):`, {
+          console.log(`✅ Loaded registry info for ${entityName} (FIXED):`, {
             address: registryAddress,
-            institutionName: registryInstitutionName,
+            entityName: registryEntityName,
 
             // USING CORRECT INDIVIDUAL CALLS
             documentCount_CORRECT: documentCount,
@@ -329,7 +330,7 @@ export default function VerifyPage() {
 
           return {
             address: registryAddress,
-            institutionName: registryInstitutionName,
+            entityName: registryEntityName,
             documentCount,
             admin: registryAdmin,
             agentCount,
@@ -340,7 +341,7 @@ export default function VerifyPage() {
           console.error(`❌ Failed to load registry info for ${registryAddress}:`, error)
           return {
             address: registryAddress,
-            institutionName: 'Failed to Load',
+            entityName: 'Failed to Load',
             documentCount: BigInt(0),
             admin: 'Failed to Load',
             agentCount: BigInt(0),
@@ -356,7 +357,7 @@ export default function VerifyPage() {
       console.log('📊 All registry info loaded:')
       registryInfos.forEach((registry, index) => {
         console.log(`Registry ${index + 1}:`, {
-          name: registry.institutionName,
+          name: registry.entityName,
           documentCount: registry.documentCount.toString(),
           documentCountAsNumber: Number(registry.documentCount.toString()),
           agentCount: registry.agentCount.toString(),
@@ -366,7 +367,7 @@ export default function VerifyPage() {
 
       // Filter out invalid registries if needed
       const validRegistries = registryInfos.filter(
-        registry => registry.institutionName !== 'Failed to Load'
+        registry => registry.entityName !== 'Failed to Load'
       )
 
       setRegistries(validRegistries)
@@ -482,13 +483,10 @@ export default function VerifyPage() {
         const progressValue = 30 + ((i + 1) / registries.length) * 60
 
         setProgress(progressValue)
-        setProgressStatus(`Checking ${registry.institutionName}... (${i + 1}/${registries.length})`)
+        setProgressStatus(`Checking ${registry.entityName}... (${i + 1}/${registries.length})`)
 
         try {
-          console.log(
-            `🔍 Checking registry ${i + 1}/${registries.length}:`,
-            registry.institutionName
-          )
+          console.log(`🔍 Checking registry ${i + 1}/${registries.length}:`, registry.entityName)
 
           const registryContract = new Contract(
             registry.address,
@@ -503,48 +501,48 @@ export default function VerifyPage() {
           console.log('📊 Document details breakdown:')
           console.log('  [0] exists:', documentDetails[0])
           console.log('  [1] timestamp:', documentDetails[1])
-          console.log('  [2] institutionName:', documentDetails[2])
-          console.log('  [3] institutionUrl:', documentDetails[3])
+          console.log('  [2] entityName:', documentDetails[2])
+          console.log('  [3] entityUrl:', documentDetails[3])
           console.log('  [4] metadata:', documentDetails[4])
           console.log('  [5] issuedBy:', documentDetails[5])
 
           const exists = documentDetails[0]
           const timestamp = documentDetails[1]
-          const institutionName = documentDetails[2]
-          const institutionUrl = documentDetails[3] // This was missing before!
+          const entityName = documentDetails[2]
+          const entityUrl = documentDetails[3] // This was missing before!
           const metadata = documentDetails[4] || '' // Handle potential undefined
           const issuedBy = documentDetails[5]
 
-          console.log(`✅ Registry ${institutionName} result:`, {
+          console.log(`✅ Registry ${entityName} result:`, {
             exists,
             timestamp: timestamp.toString(),
             metadata: metadata === '' ? '(empty)' : metadata,
             issuedBy,
-            institutionUrl,
+            entityUrl,
           })
 
           const result: VerificationResult = {
             registryAddress: registry.address,
-            institutionName,
+            entityName,
             exists,
             timestamp,
             metadata,
             issuedBy,
-            institutionUrl,
+            entityUrl,
           }
 
           results.push(result)
         } catch (error) {
-          console.error(`❌ Error checking registry ${registry.institutionName}:`, error)
+          console.error(`❌ Error checking registry ${registry.entityName}:`, error)
           // Add error result
           results.push({
             registryAddress: registry.address,
-            institutionName: registry.institutionName,
+            entityName: registry.entityName,
             exists: false,
             timestamp: BigInt(0),
             metadata: '',
             issuedBy: '',
-            institutionUrl: '',
+            entityUrl: '',
           })
         }
       }
@@ -648,7 +646,7 @@ export default function VerifyPage() {
               </Text>
               <VStack spacing={2}>
                 <Text color="blue.300">• Sepolia Testnet (Chain ID: 11155111)</Text>
-                <Text color="green.300">• Filecoin Calibration (Chain ID: 314159)</Text>
+                <Text color="green.300">• OP Mainnet (Chain ID: 10)</Text>
               </VStack>
               <Text fontSize="sm" color="gray.500" mt={4}>
                 Current Chain ID: {chainId || 'Unknown'}
@@ -723,7 +721,7 @@ export default function VerifyPage() {
                   <Box textAlign="center">
                     <Text fontSize="2xl" fontWeight="bold" color="green.300">
                       {registries.reduce((sum, r) => {
-                        console.log(`📊 Processing Registry: ${r.institutionName}`)
+                        console.log(`📊 Processing Registry: ${r.entityName}`)
                         console.log(`  - Raw documentCount:`, r.documentCount)
                         console.log(`  - Type:`, typeof r.documentCount)
                         console.log(`  - toString():`, r.documentCount.toString())
@@ -751,7 +749,7 @@ export default function VerifyPage() {
                           console.log(`  -------------------------`)
                         } catch (error) {
                           console.error(
-                            `❌ Error converting documentCount for ${r.institutionName}:`,
+                            `❌ Error converting documentCount for ${r.entityName}:`,
                             error
                           )
                           docCount = 0
@@ -774,7 +772,7 @@ export default function VerifyPage() {
                           if (isNaN(agentCount)) agentCount = 0
                         } catch (error) {
                           console.error(
-                            `❌ Error converting agentCount for ${r.institutionName}:`,
+                            `❌ Error converting agentCount for ${r.entityName}:`,
                             error
                           )
                           agentCount = 0
@@ -817,7 +815,7 @@ export default function VerifyPage() {
                           >
                             <HStack justify="space-between" mb={2}>
                               <Text fontSize="sm" fontWeight="medium" color="blue.300">
-                                {registry.institutionName}
+                                {registry.entityName}
                               </Text>
                               <HStack spacing={2}>
                                 <Badge colorScheme={registry.isValid ? 'green' : 'red'} size="sm">
@@ -905,7 +903,7 @@ export default function VerifyPage() {
                           </Text>
                         </Text>
                         <Text fontSize="sm" color="gray.500">
-                          Supports PDF, DOC, DOCX, TXT (Max 10MB)
+                          Supports any file format (Max 10MB)
                         </Text>
                       </Box>
                     </VStack>
@@ -913,7 +911,7 @@ export default function VerifyPage() {
                       ref={fileInputRef}
                       type="file"
                       hidden
-                      accept=".pdf,.doc,.docx,.txt"
+                      accept="*/*"
                       onChange={handleFileSelect}
                     />
                   </Box>
@@ -1133,7 +1131,7 @@ export default function VerifyPage() {
                 {foundResults.length > 0 && (
                   <Box>
                     <Heading size="md" mb={4} color="green.300">
-                      ✅ Verified Institutions ({foundResults.length})
+                      ✅ Verified Entities ({foundResults.length})
                     </Heading>
                     <VStack spacing={4} align="stretch">
                       {foundResults.map((result, index) => (
@@ -1148,7 +1146,7 @@ export default function VerifyPage() {
                           <VStack spacing={3} align="stretch">
                             <HStack justify="space-between">
                               <Text fontSize="lg" fontWeight="medium" color="green.300">
-                                {result.institutionName}
+                                {result.entityName}
                               </Text>
                               <Badge colorScheme="green">Verified</Badge>
                             </HStack>
@@ -1200,7 +1198,7 @@ export default function VerifyPage() {
                                   </HStack>
                                 )}
 
-                                {result.institutionUrl && (
+                                {result.entityUrl && (
                                   <HStack justify="space-between">
                                     <Text fontSize="sm" color="green.300">
                                       ✅ Verified URL:
@@ -1210,10 +1208,10 @@ export default function VerifyPage() {
                                       color="green.200"
                                       cursor="pointer"
                                       textDecoration="underline"
-                                      onClick={() => window.open(result.institutionUrl, '_blank')}
+                                      onClick={() => window.open(result.entityUrl, '_blank')}
                                       _hover={{ color: 'green.100' }}
                                     >
-                                      {result.institutionUrl}
+                                      {result.entityUrl}
                                     </Text>
                                   </HStack>
                                 )}
@@ -1281,7 +1279,7 @@ export default function VerifyPage() {
                               <VStack spacing={2} align="stretch">
                                 <HStack justify="space-between">
                                   <Text fontSize="sm" fontWeight="medium" color="gray.300">
-                                    {result.institutionName}
+                                    {result.entityName}
                                   </Text>
                                   <Badge colorScheme="gray" size="sm">
                                     Not Found
@@ -1444,8 +1442,8 @@ export default function VerifyPage() {
                       2. Multi-Registry Check
                     </Text>
                     <Text fontSize="xs" color="gray.400">
-                      We automatically check your document against all registered institution
-                      databases on the blockchain.
+                      We automatically check your document against all registered entity databases
+                      on the blockchain.
                     </Text>
                   </VStack>
 
@@ -1454,8 +1452,8 @@ export default function VerifyPage() {
                       3. Instant Results
                     </Text>
                     <Text fontSize="xs" color="gray.400">
-                      Get immediate verification results showing which institutions have issued this
-                      document and when.
+                      Get immediate verification results showing which institutions, businesses or
+                      individuals have issued this document and when.
                     </Text>
 
                     <Text fontSize="sm" fontWeight="medium" color="blue.300">

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { ethers } from 'ethers'
 
-const AFFIX_REGISTRY_ADDRESS = '0xE2b7f08d9879594e69784a86c5ca07cCae86A76a'
+const AFFIX_REGISTRY_ADDRESS = '0xa0d98DCaDab6e6FF45cd7087F8192d65aa954256'
 
 // Registry ABI for agent functions
 const REGISTRY_ABI = [

@@ -498,8 +498,8 @@ export default function Home() {
           </Heading>
 
           <Text fontSize="lg" color="gray.300" maxW="500px">
-            Join organizations, businesses, and individuals in the fight against document fraud. Get
-            started today or reach out to learn more.
+            Join us in the fight against document fraud. Get started today or reach out to learn
+            more.
           </Text>
 
           <Button

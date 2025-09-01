@@ -2,13 +2,11 @@ import { NextRequest, NextResponse } from 'next/server'
 import { ethers } from 'ethers'
 
 // Registry ABI to get the URL
-const REGISTRY_ABI = [
-  'function institutionUrl() external view returns (string)',
-]
+const REGISTRY_ABI = ['function entityUrl() external view returns (string)']
 
 async function verifyUrl(address: string) {
   console.log('🔧 Starting verification process for address:', address)
-  
+
   // Validate Ethereum address format
   if (!ethers.isAddress(address)) {
     console.log('❌ Invalid address format:', address)
@@ -19,7 +17,7 @@ async function verifyUrl(address: string) {
   // Connect to Filecoin Calibration network
   console.log('🌐 Connecting to Filecoin Calibration network...')
   const provider = new ethers.JsonRpcProvider('https://api.calibration.node.glif.io/rpc/v1')
-  
+
   // Create contract instance
   const contract = new ethers.Contract(address, REGISTRY_ABI, provider)
   console.log('📄 Contract instance created successfully')
@@ -30,11 +28,13 @@ async function verifyUrl(address: string) {
   let registryUrl: string
   try {
     console.log('📖 Reading URL from registry contract...')
-    registryUrl = await contract.institutionUrl()
+    registryUrl = await contract.entityUrl()
     console.log('🌐 URL from registry:', registryUrl)
   } catch (error: any) {
     console.error('❌ Failed to get URL from registry contract:', error.message)
-    throw new Error('Failed to read URL from registry contract. Contract may not have institutionUrl() function.')
+    throw new Error(
+      'Failed to read URL from registry contract. Contract may not have entityUrl() function.'
+    )
   }
 
   if (!registryUrl || registryUrl.trim() === '') {
@@ -43,7 +43,6 @@ async function verifyUrl(address: string) {
   }
   console.log('✅ URL successfully retrieved from contract')
 
-
   // Call the Rukh API to fetch the webpage content
   const rukhApiUrl = `https://rukh.w3hc.org/web-reader?url=${encodeURIComponent(registryUrl)}`
   console.log('📞 Calling Rukh API with URL:', rukhApiUrl)
@@ -51,8 +50,8 @@ async function verifyUrl(address: string) {
   const response = await fetch(rukhApiUrl, {
     method: 'GET',
     headers: {
-      'accept': 'application/json'
-    }
+      accept: 'application/json',
+    },
   })
 
   console.log('📡 Rukh API response status:', response.status, response.statusText)
@@ -75,19 +74,23 @@ async function verifyUrl(address: string) {
   // Search for the registry address in the content (case-insensitive)
   const content = data.content.toLowerCase()
   const searchAddress = address.toLowerCase()
-  
+
   console.log('🔍 Searching for address in content...')
   console.log('🔍 Search address:', searchAddress)
   console.log('🔍 Content preview (first 200 chars):', content.substring(0, 200))
-  
+
   const found = content.includes(searchAddress)
-  console.log(`🔍 Registry address ${address} ${found ? '✅ FOUND' : '❌ NOT FOUND'} in webpage content`)
+  console.log(
+    `🔍 Registry address ${address} ${found ? '✅ FOUND' : '❌ NOT FOUND'} in webpage content`
+  )
 
   return {
     verified: found,
     registryAddress: address,
     registryUrl: registryUrl,
-    message: found ? 'Registry address found in webpage content' : 'Registry address not found in webpage content'
+    message: found
+      ? 'Registry address found in webpage content'
+      : 'Registry address not found in webpage content',
   }
 }
 
@@ -104,13 +107,12 @@ export async function GET(request: NextRequest) {
     }
 
     const result = await verifyUrl(address)
-    
+
     console.log('✅ Verification completed successfully')
     return NextResponse.json({
       success: true,
-      ...result
+      ...result,
     })
-
   } catch (error: any) {
     console.error('❌ Error in verify-url (GET):', error.message)
     return NextResponse.json({ error: `Verification failed: ${error.message}` }, { status: 500 })
