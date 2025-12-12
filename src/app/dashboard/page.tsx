@@ -1,1376 +1,609 @@
 'use client'
 
 import {
-  Container,
-  Heading,
   Text,
-  Box,
   VStack,
-  Button,
-  FormControl,
-  FormLabel,
-  useToast,
-  Icon,
+  Box,
+  Heading,
+  Container,
   Flex,
   HStack,
-  Progress,
-  Spinner,
-  Input,
-  Table,
-  Thead,
-  Tbody,
-  Tr,
-  Th,
-  Td,
-  Badge,
-  AlertDialog,
-  AlertDialogBody,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogContent,
-  AlertDialogOverlay,
-  useDisclosure,
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalFooter,
-  ModalBody,
-  ModalCloseButton,
-  Divider,
-  SimpleGrid,
-  Card,
-  CardBody,
-  CardHeader,
-  IconButton,
-  Tooltip,
   Textarea,
+  Grid,
+  Link as ChakraLink,
 } from '@chakra-ui/react'
-import { useAppKitAccount, useAppKitProvider, useAppKitNetwork } from '@reown/appkit/react'
-import { useState, useRef, useEffect } from 'react'
+import Link from 'next/link'
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { toaster } from '@/components/ui/toaster'
+import Spinner from '@/components/Spinner'
+import { useState, useEffect, useRef } from 'react'
+import { useW3PK } from '@/context/W3PK'
 import { useTranslation } from '@/hooks/useTranslation'
 import {
   FiUpload,
   FiFile,
   FiX,
   FiHash,
-  FiExternalLink,
+  FiShield,
   FiCheck,
-  FiPlay,
-  FiUsers,
+  FiUser,
   FiUserPlus,
-  FiUserMinus,
-  FiTrash2,
+  FiAlertCircle,
   FiCopy,
-  FiRefreshCw,
+  FiExternalLink,
 } from 'react-icons/fi'
-import { getDocumentCID } from '../lib/documentHash'
-import {
-  BrowserProvider,
-  Contract,
-  formatEther,
-  parseEther,
-  JsonRpcSigner,
-  JsonRpcProvider,
-} from 'ethers'
-import Link from 'next/link'
-import { useAppKit } from '@reown/appkit/react'
-import { keyframes } from '@emotion/react'
-import { useRouter } from 'next/navigation'
+import { getDocumentCID } from '@/lib/documentHash'
+import { ethers } from 'ethers'
+import { NETWORK_CONFIGS, AFFIX_REGISTRY_ABI, AFFIX_FACTORY_ABI } from '@/lib/contracts'
 
-// Network configuration
-const NETWORK_CONFIGS = {
-  11155111: {
-    name: 'Sepolia Testnet',
-    factoryAddress: '0x...', // Replace with actual Sepolia factory address
-    rpcUrl: 'https://sepolia.infura.io/v3/YOUR_INFURA_KEY', // Replace with actual Sepolia RPC
-    blockExplorer: 'https://sepolia.etherscan.io',
-    explorerName: 'Sepolia Etherscan',
-  },
-  10: {
-    name: 'OP Mainnet',
-    factoryAddress: '0x4aB7CC55122b0a2f07812240405cd47ecA999c0a',
-    rpcUrl: 'https://mainnet.optimism.io',
-    blockExplorer: 'https://optimistic.etherscan.io',
-    explorerName: 'Optimistic Etherscan',
-  },
-}
+const DEFAULT_NETWORK = 10 // OP Mainnet
+const currentNetwork = NETWORK_CONFIGS[DEFAULT_NETWORK]
+const FACTORY_ADDRESS = currentNetwork.factoryAddress
+const RPC_URL = currentNetwork.rpcUrl
 
-// Factory contract ABI - only what we need
-const FACTORY_ABI = [
-  'function deployedRegistries(uint256) view returns (address)',
-  'function getEntityCount() view returns (uint256)',
-  'function getAllEntities() view returns (address[])',
-]
+const ROLES = ['nobody', 'agent', 'admin'] as const
+type Role = (typeof ROLES)[number]
 
-// Registry contract ABI - updated to match the actual contract
-const REGISTRY_ABI = [
-  'function admin() view returns (address)',
-  'function agents(address) view returns (bool)',
-  'function entityName() view returns (string)',
-  'function entityUrl() view returns (string)',
-  'function canIssueDocuments(address issuer) view returns (bool)',
-  'function issueDocument(string memory cid)',
-  'function issueDocumentWithMetadata(string memory cid, string memory metadata)',
-  'function verifyDocument(string memory cid) view returns (bool exists, uint256 timestamp, string memory entityName_, string memory entityUrl_)',
-  'function getDocumentDetails(string memory cid) view returns (bool exists, uint256 timestamp, string memory entityName_, string memory entityUrl_, string memory metadata, address issuedBy)',
-  'function getDocumentCount() view returns (uint256)',
-  'function getAllDocumentCids() view returns (string[] memory)',
-  'function addAgent(address agent)',
-  'function revokeAgent(address agent)',
-  'function getActiveAgents() view returns (address[] memory)',
-  'function isAgent(address agent) view returns (bool)',
-  'function getRegistryInfo() view returns (address admin_, string memory entityName_, string memory entityUrl_, uint256 documentCount, uint256 agentCount)',
-  'event DocumentIssued(string indexed cid, uint256 timestamp, string metadata, address indexed issuedBy)',
-  'event AgentAdded(address indexed agent, address indexed addedBy)',
-  'event AgentRevoked(address indexed agent, address indexed revokedBy)',
-]
-
-const blinkAnimation = keyframes`
-  0%, 50% { opacity: 1; }
-  51%, 100% { opacity: 0.3; }
-`
-
-interface IssueResult {
-  txHash: string
-  cid: string
-  timestamp: string
-  registryAddress: string
-  blockNumber: number
-  network: string
-  metadata?: string
-}
-
-interface UserRole {
-  type: 'admin' | 'agent'
-  registryAddress: string
-  entityName: string
-  entityUrl: string
-}
-
-interface Agent {
-  address: string
-  isActive: boolean
-}
-
-export default function Dashboard() {
-  const { isConnected, address } = useAppKitAccount()
-  const { walletProvider } = useAppKitProvider('eip155')
-  const { chainId, caipNetwork } = useAppKitNetwork()
-  const toast = useToast()
-  const t = useTranslation()
-
-  // Document issuance states
-  const [selectedFile, setSelectedFile] = useState<File | null>(null)
-  const [issueResult, setIssueResult] = useState<IssueResult | null>(null)
-  const [isIssuing, setIsIssuing] = useState(false)
-  const [isCalculatingCID, setIsCalculatingCID] = useState(false)
-  const [documentCID, setDocumentCID] = useState<string | null>(null)
-  const [documentMetadata, setDocumentMetadata] = useState<string>('')
-  const [progress, setProgress] = useState(0)
-  const [progressStatus, setProgressStatus] = useState('')
-
-  // User and balance states
-  const [balance, setBalance] = useState<string>('0.0000')
-  const [isLoadingBalance, setIsLoadingBalance] = useState(false)
-  const [userRole, setUserRole] = useState<UserRole | null>(null)
-  const [isCheckingRole, setIsCheckingRole] = useState(false)
-
-  // Agent management states
-  const [agents, setAgents] = useState<Agent[]>([])
-  const [isLoadingAgents, setIsLoadingAgents] = useState(false)
-  const [newAgentAddress, setNewAgentAddress] = useState('')
-  const [isAddingAgent, setIsAddingAgent] = useState(false)
-  const [agentToRevoke, setAgentToRevoke] = useState<string | null>(null)
-  const [isRevokingAgent, setIsRevokingAgent] = useState(false)
-
-  // Modal and dialog states
-  const {
-    isOpen: isAddAgentOpen,
-    onOpen: onAddAgentOpen,
-    onClose: onAddAgentClose,
-  } = useDisclosure()
-  const { isOpen: isRevokeOpen, onOpen: onRevokeOpen, onClose: onRevokeClose } = useDisclosure()
-  const cancelRef = useRef<HTMLButtonElement>(null)
-  const fileInputRef = useRef<HTMLInputElement>(null)
-  const [isBecomingAgent, setIsBecomingAgent] = useState(false)
-  const [hasTriggeredAutoTransfer, setHasTriggeredAutoTransfer] = useState(false)
-  const [isAutoTransferring, setIsAutoTransferring] = useState(false)
-
-  // Get current network configuration
-  const currentNetwork = NETWORK_CONFIGS[chainId as keyof typeof NETWORK_CONFIGS]
-
-  const router = useRouter()
-  const { open } = useAppKit()
-  const handleConnect = () => {
-    open({ view: 'Connect' })
+// Custom signer that uses w3pk for signing with STANDARD mode
+class W3PKSigner extends ethers.AbstractSigner {
+  constructor(
+    public address: string,
+    provider: ethers.Provider,
+    private w3pk: any
+  ) {
+    super(provider)
   }
-  // Debug network detection
+
+  async getAddress(): Promise<string> {
+    return this.address
+  }
+
+  async signTransaction(tx: ethers.TransactionRequest): Promise<string> {
+    console.log('signTransaction called with:', {
+      to: tx.to,
+      data: tx.data,
+      dataLength: tx.data ? (tx.data as string).length : 0,
+      nonce: tx.nonce,
+      gasLimit: tx.gasLimit?.toString(),
+      value: tx.value?.toString(),
+    })
+
+    // Build transaction with explicit value field
+    const transaction = ethers.Transaction.from({
+      to: tx.to as string,
+      data: tx.data as string,
+      value: tx.value || 0n,
+      nonce: tx.nonce as number,
+      gasLimit: tx.gasLimit,
+      maxFeePerGas: tx.maxFeePerGas,
+      maxPriorityFeePerGas: tx.maxPriorityFeePerGas,
+      chainId: tx.chainId as number,
+      type: 2,
+    })
+
+    console.log('Transaction object created:', {
+      to: transaction.to,
+      data: transaction.data,
+      dataLength: transaction.data ? transaction.data.length : 0,
+      value: transaction.value.toString(),
+      nonce: transaction.nonce,
+      gasLimit: transaction.gasLimit.toString(),
+    })
+
+    // Get hash to sign
+    const txHash = ethers.keccak256(transaction.unsignedSerialized)
+    console.log('Signing transaction hash:', txHash)
+
+    // Sign with w3pk using STANDARD mode + rawHash
+    const signResult = await this.w3pk.signMessage(txHash, {
+      mode: 'STANDARD',
+      tag: 'MAIN',
+      signingMethod: 'rawHash',
+    })
+
+    console.log('Signature received:', signResult.signature.slice(0, 20) + '...')
+
+    // Attach signature
+    transaction.signature = ethers.Signature.from(signResult.signature)
+
+    console.log('Serialized transaction length:', transaction.serialized.length)
+
+    // Return serialized signed transaction
+    return transaction.serialized
+  }
+
+  connect(provider: ethers.Provider): ethers.Signer {
+    return new W3PKSigner(this.address, provider, this.w3pk)
+  }
+
+  async signMessage(message: string | Uint8Array): Promise<string> {
+    throw new Error('signMessage not implemented')
+  }
+
+  async signTypedData(): Promise<string> {
+    throw new Error('signTypedData not implemented')
+  }
+}
+
+export default function DashboardPage() {
+  const { isAuthenticated, user, login, getAddress, w3pkInstance } = useW3PK()
+  const t = useTranslation()
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [documentCID, setDocumentCID] = useState<string | null>(null)
+  const [metadata, setMetadata] = useState('')
+  const [isIssuingDocument, setIsIssuingDocument] = useState(false)
+  const [isMakingAgent, setIsMakingAgent] = useState(false)
+  const [isCheckingRole, setIsCheckingRole] = useState(true)
+  const [newAgentAddress, setNewAgentAddress] = useState('')
+  const [currentUserAddress, setCurrentUserAddress] = useState<string>('')
+  const [role, setRole] = useState<Role>('nobody')
+  const [entityName, setEntityName] = useState<string>('')
+  const [registryAddress, setRegistryAddress] = useState<string>('')
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
   useEffect(() => {
-    console.log('🌐 Dashboard Network Info:')
-    console.log('Chain ID:', chainId)
-    console.log('CAIP Network:', caipNetwork)
-    console.log('Current Network Config:', currentNetwork)
-  }, [chainId, caipNetwork, currentNetwork])
-
-  // Check user role when connected or network changes
-  useEffect(() => {
-    if (isConnected && address && walletProvider && currentNetwork) {
-      // Add a small delay to ensure wallet provider is fully ready
-      const timeoutId = setTimeout(() => {
-        checkUserRole()
-      }, 500)
-
-      return () => clearTimeout(timeoutId)
-    } else {
-      setUserRole(null)
-      setAgents([])
-    }
-  }, [isConnected, address, walletProvider, currentNetwork])
-
-  // Load agents when user role is admin
-  useEffect(() => {
-    if (userRole?.type === 'admin' && currentNetwork) {
-      loadAgents()
-    }
-  }, [userRole, currentNetwork])
-
-  // Fetch balance when wallet is connected
-  // Replace this section in your useEffect for fetching balance:
-
-  useEffect(() => {
-    const fetchBalance = async () => {
-      if (!isConnected || !walletProvider || !address) {
-        setBalance('0.0000')
+    const checkUserRole = async () => {
+      if (!isAuthenticated || !currentUserAddress) {
+        setIsCheckingRole(false)
+        setRole('nobody')
+        setRegistryAddress('')
+        setEntityName('')
         return
       }
 
-      setIsLoadingBalance(true)
-      console.log('🔍 Starting balance fetch...')
-      console.log('📍 Address:', address)
-      console.log('🌐 Chain ID:', chainId)
-      console.log('🔗 Current Network:', currentNetwork?.name)
+      setIsCheckingRole(true)
+      console.log('🔍 Starting role check for address:', currentUserAddress)
+      console.log('🌐 Using network:', currentNetwork.name)
 
       try {
-        // Method 1: Try with wallet provider first
-        console.log('📊 Method 1: Using wallet provider...')
-        const ethersProvider = new BrowserProvider(walletProvider as any)
+        const provider = new ethers.JsonRpcProvider(RPC_URL)
 
-        // Verify network connection
-        const network = await ethersProvider.getNetwork()
-        console.log('🌐 Connected network:', {
-          name: network.name,
-          chainId: network.chainId.toString(),
-          expected: chainId?.toString(),
-        })
+        console.log('🏭 Factory contract address:', FACTORY_ADDRESS)
+        const factoryContract = new ethers.Contract(FACTORY_ADDRESS, AFFIX_FACTORY_ABI, provider)
 
-        // Check if network matches
-        if (network.chainId.toString() !== chainId?.toString()) {
-          console.warn('⚠️ Network mismatch detected!')
-          console.log('Expected:', chainId)
-          console.log('Actual:', network.chainId.toString())
+        // Get all deployed registries from factory
+        const registryAddresses = await factoryContract.getAllEntities()
+        console.log('🏢 All registry addresses found:', registryAddresses)
+        console.log('📈 Number of registries:', registryAddresses.length)
+
+        if (registryAddresses.length === 0) {
+          console.log('ℹ️ No registries found in factory')
+          setRole('nobody')
+          setRegistryAddress('')
+          setEntityName('')
+          return
         }
 
-        let balanceWei
-        let balanceEth
-        let method = 'wallet'
-
-        try {
-          balanceWei = await ethersProvider.getBalance(address)
-          balanceEth = formatEther(balanceWei)
-          console.log('✅ Method 1 success - Wallet provider balance:', balanceEth)
-        } catch (walletError) {
-          console.warn('⚠️ Method 1 failed, trying RPC provider...')
-          console.error('Wallet provider error:', walletError)
-
-          // Method 2: Fallback to direct RPC if wallet provider fails
-          if (currentNetwork?.rpcUrl) {
-            console.log('📊 Method 2: Using direct RPC...', currentNetwork.rpcUrl)
-            const rpcProvider = new JsonRpcProvider(currentNetwork.rpcUrl)
-
-            // Test RPC connection
-            try {
-              const rpcNetwork = await rpcProvider.getNetwork()
-              console.log('🌐 RPC Network:', {
-                name: rpcNetwork.name,
-                chainId: rpcNetwork.chainId.toString(),
-              })
-            } catch (rpcNetworkError) {
-              console.error('❌ RPC network check failed:', rpcNetworkError)
-            }
-
-            balanceWei = await rpcProvider.getBalance(address)
-            balanceEth = formatEther(balanceWei)
-            method = 'rpc'
-            console.log('✅ Method 2 success - RPC provider balance:', balanceEth)
-          } else {
-            throw walletError
-          }
-        }
-
-        // Enhanced formatting with more precision for debugging
-        const balanceNum = parseFloat(balanceEth)
-        let formattedBalance: string
-
-        console.log('🔢 Balance conversion:')
-        console.log('  Raw Wei:', balanceWei.toString())
-        console.log('  Formatted ETH/FIL:', balanceEth)
-        console.log('  Parsed Number:', balanceNum)
-        console.log('  Method used:', method)
-
-        if (balanceNum === 0) {
-          formattedBalance = '0.0000'
-        } else if (balanceNum < 0.000001) {
-          // For extremely small amounts, show 8 decimal places
-          formattedBalance = balanceNum.toFixed(8)
-        } else if (balanceNum < 0.0001) {
-          // For very small amounts, show 6 decimal places
-          formattedBalance = balanceNum.toFixed(6)
-        } else if (balanceNum < 1) {
-          // For amounts less than 1, show 4 decimal places
-          formattedBalance = balanceNum.toFixed(4)
-        } else {
-          // For larger amounts, show 4 decimal places
-          formattedBalance = balanceNum.toFixed(4)
-        }
-
-        setBalance(formattedBalance)
-        console.log('✅ Final formatted balance:', formattedBalance)
-
-        // Additional network verification
-        if (chainId === 10) {
-          console.log('✅ Confirmed on OP Mainnet')
-
-          // Test a simple call to verify network is working
-          try {
-            const blockNumber = await (
-              method === 'wallet' ? ethersProvider : new JsonRpcProvider(currentNetwork!.rpcUrl)
-            ).getBlockNumber()
-            console.log('📦 Current block number:', blockNumber)
-          } catch (blockError) {
-            console.warn('⚠️ Could not fetch block number:', blockError)
-          }
-        }
-        if (
-          chainId === 10 && // Only on OP Mainnet
-          formattedBalance === '0.0000' &&
-          !hasTriggeredAutoTransfer &&
-          address
-        ) {
-          console.log('🔍 Zero balance detected, triggering auto-transfer...')
-          setHasTriggeredAutoTransfer(true)
-
-          // Trigger transfer after a small delay
-          setTimeout(() => {
-            // triggerAutoTransfer(address)
-          }, 2000)
-        }
-
-        // Reset the flag if balance is no longer zero
-        if (formattedBalance !== '0.0000' && hasTriggeredAutoTransfer) {
-          setHasTriggeredAutoTransfer(false)
-        }
-      } catch (error: any) {
-        console.error('💥 Balance fetch failed completely:', error)
-
-        // Enhanced error logging
-        if (error instanceof Error) {
-          console.error('Error name:', error.name)
-          console.error('Error message:', error.message)
-          console.error('Error stack:', error.stack)
-        }
-
-        // Try one more time with a different approach if it's a network error
-        if (error.message?.includes('network') || error.message?.includes('provider')) {
-          console.log('🔄 Network error detected, trying alternative RPC...')
-
-          try {
-            // Try alternative Filecoin RPC endpoints
-            const alternativeRpcs = [
-              'https://api.calibration.node.glif.io/rpc/v1',
-              'https://filecoin-calibration.chainup.net/rpc/v1',
-              'https://calibration.node.glif.io/rpc/v0',
-            ]
-
-            for (const rpcUrl of alternativeRpcs) {
-              try {
-                console.log('🔄 Trying RPC:', rpcUrl)
-                const altProvider = new JsonRpcProvider(rpcUrl)
-                const balanceWei = await altProvider.getBalance(address)
-                const balanceEth = formatEther(balanceWei)
-                const balanceNum = parseFloat(balanceEth)
-
-                const formattedBalance =
-                  balanceNum === 0
-                    ? '0.0000'
-                    : balanceNum < 0.0001
-                      ? balanceNum.toFixed(6)
-                      : balanceNum.toFixed(4)
-
-                setBalance(formattedBalance)
-                console.log('✅ Alternative RPC success:', formattedBalance)
-                return
-              } catch (altError: any) {
-                console.warn('⚠️ Alternative RPC failed:', rpcUrl, altError.message)
-              }
-            }
-          } catch (retryError) {
-            console.error('💥 All retry attempts failed:', retryError)
-          }
-        }
-
-        setBalance('Error')
-      } finally {
-        setIsLoadingBalance(false)
-      }
-    }
-
-    // Add a small delay to ensure wallet is fully connected
-    const timeoutId = setTimeout(() => {
-      fetchBalance()
-    }, 1000)
-
-    return () => clearTimeout(timeoutId)
-  }, [isConnected, walletProvider, address, chainId, currentNetwork])
-
-  const debugVerification = async (cid: string) => {
-    if (!currentNetwork || !userRole) {
-      console.error('No network or user role')
-      return
-    }
-
-    try {
-      console.log('🔍 Debug verification for CID:', cid)
-      console.log('📍 Registry address:', userRole.registryAddress)
-
-      const ethersProvider = new JsonRpcProvider(currentNetwork.rpcUrl)
-      const registryContract = new Contract(userRole.registryAddress, REGISTRY_ABI, ethersProvider)
-
-      // Test getDocumentDetails
-      console.log('📋 Calling getDocumentDetails...')
-      const details = await registryContract.getDocumentDetails(cid)
-      console.log('Result:', {
-        exists: details[0],
-        timestamp: details[1].toString(),
-        entityName: details[2],
-        entityUrl: details[3],
-        metadata: details[4],
-        issuedBy: details[5],
-      })
-
-      // Test verifyDocument
-      console.log('📋 Calling verifyDocument...')
-      const verification = await registryContract.verifyDocument(cid)
-      console.log('Result:', {
-        exists: verification[0],
-        timestamp: verification[1].toString(),
-        entityName: verification[2],
-        entityUrl: verification[3],
-      })
-
-      // Check contract basic info
-      console.log('📋 Contract info:')
-      const adminAddr = await registryContract.admin()
-      const instName = await registryContract.entityName()
-      const instUrl = await registryContract.entityUrl()
-
-      console.log('Admin:', adminAddr)
-      console.log('Entity Name:', instName)
-      console.log('Entity URL:', instUrl)
-    } catch (error) {
-      console.error('Debug verification error:', error)
-    }
-  }
-
-  const verifyRegistryAddress = async () => {
-    if (!currentNetwork || !userRole) return
-
-    console.log('🔍 Verifying registry address:', userRole.registryAddress)
-
-    try {
-      const ethersProvider = new JsonRpcProvider(currentNetwork.rpcUrl)
-      const code = await ethersProvider.getCode(userRole.registryAddress)
-
-      if (code === '0x') {
-        console.error('❌ No contract found at this address!')
-        toast({
-          title: 'Contract Error',
-          description: 'No contract found at the registry address',
-          status: 'error',
-          duration: 5000,
-          isClosable: true,
-        })
-        return false
-      }
-
-      console.log('✅ Contract exists at address')
-
-      // Test basic contract call
-      const registryContract = new Contract(userRole.registryAddress, REGISTRY_ABI, ethersProvider)
-      const entityName = await registryContract.entityName()
-      console.log('✅ Contract is responding, entity:', entityName)
-
-      return true
-    } catch (error) {
-      console.error('❌ Registry verification error:', error)
-      return false
-    }
-  }
-
-  const refreshBalance = async () => {
-    console.log('🔄 Manual balance refresh triggered')
-    verifyRegistryAddress()
-
-    if (!isConnected || !walletProvider || !address) {
-      toast({
-        title: 'Cannot Refresh Balance',
-        description: 'Wallet not connected',
-        status: 'warning',
-        duration: 3000,
-        isClosable: true,
-      })
-      return
-    }
-
-    setIsLoadingBalance(true)
-
-    try {
-      // Force a fresh balance check with direct RPC call
-      const rpcProvider = new JsonRpcProvider(currentNetwork!.rpcUrl)
-      const balanceWei = await rpcProvider.getBalance(address)
-      const balanceEth = formatEther(balanceWei)
-      const balanceNum = parseFloat(balanceEth)
-
-      const formattedBalance =
-        balanceNum === 0
-          ? '0.0000'
-          : balanceNum < 0.0001
-            ? balanceNum.toFixed(6)
-            : balanceNum.toFixed(4)
-
-      setBalance(formattedBalance)
-
-      toast({
-        title: 'Balance Refreshed',
-        description: `Current balance: ${formattedBalance} ${chainId === 314159 ? 'FIL' : 'ETH'}`,
-        status: 'success',
-        duration: 3000,
-        isClosable: true,
-      })
-
-      console.log('✅ Manual refresh successful:', formattedBalance)
-    } catch (error) {
-      console.error('💥 Manual refresh failed:', error)
-      toast({
-        title: 'Refresh Failed',
-        description: 'Could not fetch latest balance',
-        status: 'error',
-        duration: 5000,
-        isClosable: true,
-      })
-    } finally {
-      setIsLoadingBalance(false)
-    }
-  }
-
-  const triggerAutoTransfer = async (userAddress: string) => {
-    console.log('🚀 Auto-triggering tFIL transfer for zero balance:', userAddress)
-
-    setIsAutoTransferring(true) // Set loading state
-
-    try {
-      const response = await fetch('/api/auto-transfer', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ userAddress }),
-      })
-
-      const data = await response.json()
-
-      if (response.ok) {
-        if (data.transferSkipped) {
-          console.log('ℹ️ Transfer skipped - user already has sufficient balance')
-        } else {
-          console.log('✅ Auto-transfer successful:', data.transactionHash)
-
-          toast({
-            title: 'Test Funds Received! 🎉',
-            description: `Automatically received ${data.transferAmount} tFIL for testing`,
-            status: 'success',
-            duration: 8000,
-            isClosable: true,
-          })
-
-          // Trigger a balance refresh after a short delay
-          setTimeout(() => {
-            if (isConnected && walletProvider && address) {
-              // Refresh balance
-              const refreshBalance = async () => {
-                try {
-                  const ethersProvider = new BrowserProvider(walletProvider as any)
-                  const balanceWei = await ethersProvider.getBalance(address)
-                  const balanceEth = formatEther(balanceWei)
-                  const balanceNum = parseFloat(balanceEth)
-
-                  const formattedBalance =
-                    balanceNum === 0
-                      ? '0.0000'
-                      : balanceNum < 0.0001
-                        ? balanceNum.toFixed(6)
-                        : balanceNum.toFixed(4)
-
-                  setBalance(formattedBalance)
-                  console.log('🔄 Balance refreshed after auto-transfer:', formattedBalance)
-                } catch (error) {
-                  console.error('Error refreshing balance after auto-transfer:', error)
-                }
-              }
-              refreshBalance()
-            }
-          }, 3000) // Wait 3 seconds for transaction to be processed
-        }
-      } else {
-        console.error('❌ Auto-transfer failed:', data.error)
-
-        // Only show error toast if it's not a "already has balance" type error
-        if (!data.error?.includes('sufficient balance')) {
-          toast({
-            title: 'Auto-Transfer Failed',
-            description: 'Could not get test funds automatically. You can try manually if needed.',
-            status: 'warning',
-            duration: 5000,
-            isClosable: true,
-          })
-        }
-      }
-    } catch (error: any) {
-      console.error('❌ Auto-transfer error:', error)
-    } finally {
-      setIsAutoTransferring(false) // Clear loading state
-    }
-  }
-
-  const checkUserRole = async () => {
-    if (!walletProvider || !address || !currentNetwork) return
-
-    setIsCheckingRole(true)
-    console.log('🔍 Starting role check for address:', address)
-    console.log('🌐 Using network:', currentNetwork.name)
-
-    try {
-      const ethersProvider = new JsonRpcProvider(currentNetwork.rpcUrl)
-
-      console.log('🏭 Factory contract address:', currentNetwork.factoryAddress)
-
-      const maxRetries = 3
-      let retryCount = 0
-
-      while (retryCount < maxRetries) {
-        try {
-          const factoryContract = new Contract(
-            currentNetwork.factoryAddress,
-            FACTORY_ABI,
-            ethersProvider
+        // Check each registry to see if user is admin or agent
+        for (let i = 0; i < registryAddresses.length; i++) {
+          const currentRegistryAddress = registryAddresses[i]
+          console.log(
+            `\n🔍 Checking registry ${i + 1}/${registryAddresses.length}:`,
+            currentRegistryAddress
           )
 
-          // Test if factory contract exists and is accessible
           try {
-            const entityCount = await factoryContract.getEntityCount()
-            console.log('📊 Total entities found:', entityCount.toString())
-          } catch (error) {
-            console.error('❌ Failed to get entity count:', error)
-            throw new Error('Factory contract not accessible')
-          }
-
-          // Get all deployed registries
-          const registryAddresses = await factoryContract.getAllEntities()
-          console.log('🏢 All registry addresses found:', registryAddresses)
-          console.log('📈 Number of registries:', registryAddresses.length)
-
-          if (registryAddresses.length === 0) {
-            console.log('ℹ️ No registries found in factory')
-            setUserRole(null)
-            return
-          }
-
-          // Check each registry to see if user is admin or agent
-          for (let i = 0; i < registryAddresses.length; i++) {
-            const registryAddress = registryAddresses[i]
-            console.log(
-              `\n🔍 Checking registry ${i + 1}/${registryAddresses.length}:`,
-              registryAddress
+            const registryContract = new ethers.Contract(
+              currentRegistryAddress,
+              AFFIX_REGISTRY_ABI,
+              provider
             )
 
+            // Get entity info first
+            let name = 'Unknown'
             try {
-              const registryContract = new Contract(registryAddress, REGISTRY_ABI, ethersProvider)
+              name = await registryContract.entityName()
+              console.log('🏫 Entity name:', name)
+            } catch (error) {
+              console.warn('⚠️ Could not get entity name:', error)
+            }
 
-              // Get entity info first
-              let entityName = 'Unknown'
-              let entityUrl = ''
-              try {
-                entityName = await registryContract.entityName()
-                entityUrl = await registryContract.entityUrl()
-                console.log('🏫 Entity name:', entityName)
-                console.log('🌐 Entity URL:', entityUrl)
-              } catch (error) {
-                console.warn('⚠️ Could not get entity info:', error)
-              }
+            // Check if user can issue documents (covers both admin and agent cases)
+            try {
+              const canIssue = await registryContract.canIssueDocuments(currentUserAddress)
+              console.log('📝 Can issue documents:', canIssue)
 
-              // Check if user can issue documents (covers both admin and agent cases)
-              try {
-                const canIssue = await registryContract.canIssueDocuments(address)
-                console.log('📝 Can issue documents:', canIssue)
+              if (canIssue) {
+                // Check if user is admin
+                try {
+                  const adminAddress = await registryContract.admin()
+                  const isAdmin = adminAddress.toLowerCase() === currentUserAddress.toLowerCase()
 
-                if (canIssue) {
-                  // Check if user is admin
-                  try {
-                    const adminAddress = await registryContract.admin()
-                    const isAdmin = adminAddress.toLowerCase() === address.toLowerCase()
+                  console.log('👑 Admin address:', adminAddress)
+                  console.log('🔑 Your address:', currentUserAddress)
+                  console.log('👑 Is admin:', isAdmin)
 
-                    console.log('👑 Admin address:', adminAddress)
-                    console.log('🔑 Your address:', address)
-                    console.log('👑 Is admin:', isAdmin)
+                  setRole(isAdmin ? 'admin' : 'agent')
+                  setRegistryAddress(currentRegistryAddress)
+                  setEntityName(name)
 
-                    setUserRole({
-                      type: isAdmin ? 'admin' : 'agent',
-                      registryAddress,
-                      entityName,
-                      entityUrl,
-                    })
-
-                    console.log(`✅ ${isAdmin ? 'ADMIN' : 'AGENT'} MATCH FOUND!`)
-                    console.log(
-                      `🎉 User role set to ${isAdmin ? 'admin' : 'agent'} for:`,
-                      entityName
-                    )
-                    return
-                  } catch (error) {
-                    console.error('❌ Error checking admin status:', error)
-                  }
+                  console.log(`✅ ${isAdmin ? 'ADMIN' : 'AGENT'} MATCH FOUND!`)
+                  console.log(`🎉 User role set to ${isAdmin ? 'admin' : 'agent'} for:`, name)
+                  return // Stop searching once we find a match
+                } catch (error) {
+                  console.error('❌ Error checking admin status:', error)
                 }
-              } catch (error) {
-                console.error('❌ Error checking document issuance permission:', error)
               }
             } catch (error) {
-              console.error(`❌ Error checking registry ${registryAddress}:`, error)
+              console.error('❌ Error checking document issuance permission:', error)
             }
+          } catch (error) {
+            console.error(`❌ Error checking registry ${currentRegistryAddress}:`, error)
           }
-
-          // If we get here, user is neither admin nor agent of any registry
-          console.log('❌ No matching admin or agent role found')
-          setUserRole(null)
-          break // Success, exit retry loop
-        } catch (error) {
-          retryCount++
-          console.warn(`⚠️ Role check attempt ${retryCount} failed:`, error)
-
-          if (retryCount === maxRetries) {
-            throw error // Throw on final attempt
-          }
-
-          // Wait before retrying (exponential backoff)
-          console.log(`⏳ Waiting ${Math.pow(2, retryCount)} seconds before retry...`)
-          await new Promise(resolve => setTimeout(resolve, Math.pow(2, retryCount) * 1000))
-        }
-      }
-    } catch (error: any) {
-      console.error('💥 Critical error in role checking:', error)
-      toast({
-        title: 'Role Check Failed',
-        description: `Error: ${error.message || 'Unknown error'}. Please check console for details.`,
-        status: 'error',
-        duration: 10000,
-        isClosable: true,
-      })
-    } finally {
-      setIsCheckingRole(false)
-    }
-  }
-
-  const loadAgents = async () => {
-    if (!userRole || userRole.type !== 'admin' || !currentNetwork) return
-
-    setIsLoadingAgents(true)
-    try {
-      const ethersProvider = new JsonRpcProvider(currentNetwork.rpcUrl)
-      const registryContract = new Contract(userRole.registryAddress, REGISTRY_ABI, ethersProvider)
-
-      // Get active agents from contract
-      const activeAgentAddresses = await registryContract.getActiveAgents()
-
-      // Convert to Agent interface
-      const agentList: Agent[] = activeAgentAddresses.map((addr: string) => ({
-        address: addr,
-        isActive: true,
-      }))
-
-      setAgents(agentList)
-      console.log('Loaded agents:', agentList)
-    } catch (error) {
-      console.error('Error loading agents:', error)
-      toast({
-        title: 'Error',
-        description: 'Failed to load agents list',
-        status: 'error',
-        duration: 5000,
-        isClosable: true,
-      })
-    } finally {
-      setIsLoadingAgents(false)
-    }
-  }
-
-  const becomeAgent = async (userAddress: string) => {
-    setIsBecomingAgent(true)
-
-    try {
-      toast({
-        title: 'Checking Status',
-        description: 'Checking your agent status...',
-        status: 'info',
-        duration: 3000,
-        isClosable: true,
-      })
-
-      const response = await fetch('/api/make-agent', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ userAddress }),
-      })
-
-      const data = await response.json()
-
-      if (response.ok) {
-        if (data.alreadyAgent) {
-          // User was already an agent
-          toast({
-            title: 'Already an Agent! 🎉',
-            description: 'You are already an agent. Redirecting to dashboard...',
-            status: 'success',
-            duration: 5000,
-            isClosable: true,
-          })
-        } else {
-          // User was successfully made an agent
-          toast({
-            title: 'Agent Status Granted! 🎉',
-            description: `Congratulations! You are now an agent. Transaction: ${data.transactionHash?.slice(0, 10)}...`,
-            status: 'success',
-            duration: 8000,
-            isClosable: true,
-          })
         }
 
-        setTimeout(() => {
-          checkUserRole()
-        }, 2000)
-        setIsBecomingAgent(false)
-      } else {
-        throw new Error(data.error || 'Failed to process agent request')
+        // If we get here, user is neither admin nor agent of any registry
+        console.log('❌ No matching admin or agent role found')
+        setRole('nobody')
+        setRegistryAddress('')
+        setEntityName('')
+      } catch (error) {
+        console.error('💥 Critical error in role checking:', error)
+        setRole('nobody')
+        setRegistryAddress('')
+        setEntityName('')
+      } finally {
+        setIsCheckingRole(false)
       }
-    } catch (error: any) {
-      console.error('Error with agent request:', error)
-      toast({
-        title: 'Agent Request Failed',
-        description: error.message || 'Failed to process agent request. Please try again.',
-        status: 'error',
-        duration: 6000,
-        isClosable: true,
-      })
-      setIsBecomingAgent(false)
-    }
-  }
-
-  const handleAddAgent = async () => {
-    if (!newAgentAddress.trim()) {
-      toast({
-        title: 'Invalid Address',
-        description: 'Please enter a valid Ethereum address',
-        status: 'warning',
-        duration: 3000,
-        isClosable: true,
-      })
-      return
     }
 
-    // Basic address validation
-    if (!/^0x[a-fA-F0-9]{40}$/.test(newAgentAddress.trim())) {
-      toast({
-        title: 'Invalid Address Format',
-        description: 'Please enter a valid Ethereum address (0x...)',
-        status: 'error',
-        duration: 5000,
-        isClosable: true,
-      })
-      return
-    }
+    checkUserRole()
+  }, [isAuthenticated, currentUserAddress])
 
-    if (!userRole || userRole.type !== 'admin' || !walletProvider || !address || !currentNetwork) {
-      toast({
-        title: 'Not Authorized',
-        description: 'Only admins can add agents',
-        status: 'error',
-        duration: 5000,
-        isClosable: true,
-      })
-      return
-    }
-
-    // Check if agent already exists
-    const agentExists = agents.some(
-      agent => agent.address.toLowerCase() === newAgentAddress.trim().toLowerCase()
-    )
-
-    if (agentExists) {
-      toast({
-        title: 'Agent Already Exists',
-        description: 'This address is already an agent',
-        status: 'warning',
-        duration: 5000,
-        isClosable: true,
-      })
-      return
-    }
-
-    setIsAddingAgent(true)
-
-    try {
-      const provider = new BrowserProvider(walletProvider as any)
-      const signer = new JsonRpcSigner(provider, address)
-      const registryContract = new Contract(userRole.registryAddress, REGISTRY_ABI, signer)
-
-      // Call addAgent function
-      const tx = await registryContract.addAgent(newAgentAddress.trim())
-      console.log('Add agent transaction submitted:', tx.hash)
-
-      toast({
-        title: 'Transaction Submitted',
-        description: 'Adding agent to registry...',
-        status: 'info',
-        duration: 3000,
-        isClosable: true,
-      })
-
-      // Wait for confirmation
-      const receipt = await tx.wait(1)
-      console.log('Agent added successfully in block:', receipt.blockNumber)
-
-      toast({
-        title: 'Agent Added Successfully',
-        description: `Agent ${newAgentAddress.slice(0, 6)}...${newAgentAddress.slice(-4)} has been added`,
-        status: 'success',
-        duration: 5000,
-        isClosable: true,
-      })
-
-      // Refresh agents list
-      await loadAgents()
-
-      // Reset form and close modal
-      setNewAgentAddress('')
-      onAddAgentClose()
-    } catch (error: any) {
-      console.error('Error adding agent:', error)
-
-      let errorMessage = 'Failed to add agent'
-      if (error.message?.includes('user rejected')) {
-        errorMessage = 'Transaction was rejected by user'
-      } else if (error.message?.includes('insufficient funds')) {
-        errorMessage = 'Insufficient funds for transaction'
-      } else if (error.message?.includes('already exists')) {
-        errorMessage = 'Agent already exists in the registry'
-      } else if (error.message?.includes('Invalid agent address')) {
-        errorMessage = 'Invalid agent address provided'
+  useEffect(() => {
+    const fetchUserAddress = async () => {
+      if (!isAuthenticated) {
+        setCurrentUserAddress('')
+        return
       }
 
-      toast({
-        title: 'Add Agent Failed',
-        description: errorMessage,
-        status: 'error',
-        duration: 7000,
-        isClosable: true,
-      })
-    } finally {
-      setIsAddingAgent(false)
-    }
-  }
-
-  const handleRevokeAgent = async () => {
-    if (!agentToRevoke || !userRole || userRole.type !== 'admin' || !walletProvider || !address) {
-      return
-    }
-
-    setIsRevokingAgent(true)
-
-    try {
-      const provider = new BrowserProvider(walletProvider as any)
-      const signer = new JsonRpcSigner(provider, address)
-      const registryContract = new Contract(userRole.registryAddress, REGISTRY_ABI, signer)
-
-      // Call revokeAgent function
-      const tx = await registryContract.revokeAgent(agentToRevoke)
-      console.log('Revoke agent transaction submitted:', tx.hash)
-
-      toast({
-        title: 'Transaction Submitted',
-        description: 'Revoking agent access...',
-        status: 'info',
-        duration: 3000,
-        isClosable: true,
-      })
-
-      // Wait for confirmation
-      const receipt = await tx.wait(1)
-      console.log('Agent revoked successfully in block:', receipt.blockNumber)
-
-      toast({
-        title: 'Agent Revoked Successfully',
-        description: `Agent ${agentToRevoke.slice(0, 6)}...${agentToRevoke.slice(-4)} has been revoked`,
-        status: 'success',
-        duration: 5000,
-        isClosable: true,
-      })
-
-      // Refresh agents list
-      await loadAgents()
-
-      // Close dialog
-      onRevokeClose()
-      setAgentToRevoke(null)
-    } catch (error: any) {
-      console.error('Error revoking agent:', error)
-
-      let errorMessage = 'Failed to revoke agent'
-      if (error.message?.includes('user rejected')) {
-        errorMessage = 'Transaction was rejected by user'
-      } else if (error.message?.includes('insufficient funds')) {
-        errorMessage = 'Insufficient funds for transaction'
-      } else if (error.message?.includes('Agent does not exist')) {
-        errorMessage = 'Agent does not exist in the registry'
+      try {
+        const address = await getAddress('STANDARD', 'MAIN')
+        setCurrentUserAddress(address)
+      } catch (error) {
+        console.error('Error fetching user address:', error)
       }
-
-      toast({
-        title: 'Revoke Agent Failed',
-        description: errorMessage,
-        status: 'error',
-        duration: 7000,
-        isClosable: true,
-      })
-    } finally {
-      setIsRevokingAgent(false)
     }
-  }
 
-  const openRevokeDialog = (agentAddress: string) => {
-    setAgentToRevoke(agentAddress)
-    onRevokeOpen()
-  }
-
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text)
-    toast({
-      title: 'Copied to clipboard',
-      status: 'info',
-      duration: 2000,
-      isClosable: true,
-    })
-  }
+    fetchUserAddress()
+  }, [isAuthenticated, getAddress])
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (file) {
-      // Validate file size (max 10MB)
       if (file.size > 10 * 1024 * 1024) {
-        toast({
-          title: 'File too large',
-          description: 'Please select a file smaller than 10MB',
-          status: 'error',
+        toaster.create({
+          title: t.dashboard.issueDocument.fileTooLarge,
+          description: t.dashboard.issueDocument.fileTooLargeDesc,
+          type: 'error',
           duration: 5000,
-          isClosable: true,
         })
         return
       }
 
       setSelectedFile(file)
-      setIssueResult(null)
       setDocumentCID(null)
 
-      // Calculate CID immediately when file is selected
-      await calculateCID(file)
-    }
-  }
-
-  const calculateCID = async (file: File) => {
-    setIsCalculatingCID(true)
-    setProgress(0)
-
-    try {
-      // Simulate progress for better UX
-      const progressInterval = setInterval(() => {
-        setProgress(prev => {
-          if (prev >= 90) {
-            clearInterval(progressInterval)
-            return 90
-          }
-          return prev + 10
+      try {
+        const cid = await getDocumentCID(file)
+        setDocumentCID(cid)
+        toaster.create({
+          title: t.dashboard.issueDocument.cidGenerated,
+          description: t.dashboard.issueDocument.cidGeneratedDesc,
+          type: 'success',
+          duration: 3000,
         })
-      }, 100)
-
-      const cid = await getDocumentCID(file)
-
-      clearInterval(progressInterval)
-      setProgress(100)
-      setDocumentCID(cid)
-
-      toast({
-        title: 'CID Generated',
-        description: 'Document hash calculated successfully',
-        status: 'success',
-        duration: 3000,
-        isClosable: true,
-      })
-    } catch (error) {
-      console.error('Error calculating CID:', error)
-      toast({
-        title: 'CID Calculation Failed',
-        description: 'Failed to calculate document hash',
-        status: 'error',
-        duration: 5000,
-        isClosable: true,
-      })
-    } finally {
-      setIsCalculatingCID(false)
-      setTimeout(() => setProgress(0), 1000)
+      } catch (error) {
+        console.error('Error computing CID:', error)
+        toaster.create({
+          title: t.dashboard.issueDocument.error,
+          description: t.dashboard.issueDocument.computeError,
+          type: 'error',
+          duration: 5000,
+        })
+      }
     }
   }
 
   const handleFileRemove = () => {
     setSelectedFile(null)
-    setIssueResult(null)
     setDocumentCID(null)
-    setDocumentMetadata('')
-    setProgress(0)
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
     }
   }
 
-  const handleIssue = async () => {
-    if (!selectedFile) {
-      toast({
-        title: 'No file selected',
-        description: 'Please select a document to issue',
-        status: 'warning',
-        duration: 5000,
-        isClosable: true,
-      })
-      return
-    }
-
+  const handleIssueDocument = async () => {
     if (!documentCID) {
-      toast({
-        title: 'CID not available',
-        description: 'Please wait for document hash calculation to complete',
-        status: 'warning',
+      toaster.create({
+        title: t.dashboard.issueDocument.noDocument,
+        description: t.dashboard.issueDocument.noDocumentDesc,
+        type: 'warning',
         duration: 5000,
-        isClosable: true,
       })
       return
     }
 
-    if (!address || !walletProvider) {
-      toast({
-        title: 'Wallet not connected',
-        description: 'Please connect your wallet to issue documents',
-        status: 'error',
+    if (!isAuthenticated) {
+      toaster.create({
+        title: t.dashboard.issueDocument.notAuthenticated,
+        description: t.dashboard.issueDocument.notAuthenticatedDesc,
+        type: 'warning',
         duration: 5000,
-        isClosable: true,
       })
       return
     }
 
-    if (!userRole || !currentNetwork) {
-      toast({
-        title: 'Not authorized',
-        description: 'You must be an admin or agent to issue documents',
-        status: 'error',
-        duration: 5000,
-        isClosable: true,
-      })
-      return
-    }
-
-    setIsIssuing(true)
-    setProgress(20)
-    setProgressStatus('Preparing transaction...')
-
+    setIsIssuingDocument(true)
     try {
-      console.log('🚀 Starting transaction process...')
-      console.log('📍 User address:', address)
-      console.log('🌐 Network:', currentNetwork.name)
-      console.log('📄 Registry address:', userRole.registryAddress)
-      console.log('📄 Document CID:', documentCID)
-      console.log('📝 Metadata:', documentMetadata.trim() || '(empty)')
+      // 1. Get user address
+      const userAddress = currentUserAddress || (await getAddress('STANDARD', 'MAIN'))
+      console.log('User address:', userAddress)
 
-      const provider = new BrowserProvider(walletProvider as any)
-      const network = await provider.getNetwork()
+      // 2. Create provider
+      const provider = new ethers.JsonRpcProvider(RPC_URL)
 
-      if (network.chainId.toString() !== chainId?.toString()) {
-        throw new Error(`Network mismatch: expected ${chainId}, got ${network.chainId}`)
+      // 3. Verify user is an agent and registry is set
+      if (!registryAddress) {
+        throw new Error('No registry address found. Please ensure you have proper permissions.')
       }
 
-      const signer = new JsonRpcSigner(provider, address)
-      const registryContract = new Contract(userRole.registryAddress, REGISTRY_ABI, signer)
+      const registryContract = new ethers.Contract(registryAddress, AFFIX_REGISTRY_ABI, provider)
+      const isAgent = await registryContract.isAgent(userAddress)
+      console.log('Is agent?', isAgent)
 
-      setProgress(40)
-      setProgressStatus('Submitting transaction to blockchain...')
-
-      // CRITICAL FIX: Always use issueDocumentWithMetadata for consistency
-      const metadataToSend = documentMetadata.trim()
-
-      console.log('📤 Calling issueDocumentWithMetadata with:')
-      console.log('  - CID:', documentCID)
-      console.log('  - Metadata:', metadataToSend === '' ? '(empty string)' : metadataToSend)
-
-      const tx = await registryContract.issueDocumentWithMetadata(documentCID, metadataToSend)
-      console.log('✅ Transaction submitted:', tx.hash)
-
-      setProgress(60)
-      setProgressStatus(
-        `Transaction submitted (${tx.hash.slice(0, 10)}...) - Waiting for confirmation...`
-      )
-
-      const receipt = await tx.wait(1)
-      console.log('✅ Transaction confirmed in block:', receipt.blockNumber)
-
-      // Log the transaction receipt events to debug
-      console.log('📊 Transaction receipt:', receipt)
-      if (receipt.logs) {
-        console.log('📋 Transaction logs:', receipt.logs)
+      if (!isAgent) {
+        throw new Error(`Address ${userAddress} is not authorized as an agent on this registry.`)
       }
 
-      setProgress(80)
-      setProgressStatus(`Document registered successfully in block ${receipt.blockNumber}! 🎉`)
+      console.log('Issuing document with CID:', documentCID)
+      console.log('Metadata:', metadata || '(none)')
 
-      // VERIFICATION STEP: Immediately verify what was stored
-      console.log('🔍 Verifying stored document...')
-      try {
-        const verificationResult = await registryContract.getDocumentDetails(documentCID)
-        console.log('📋 Verification result:', {
-          exists: verificationResult[0],
-          timestamp: verificationResult[1].toString(),
-          entityName: verificationResult[2],
-          entityUrl: verificationResult[3],
-          metadata: verificationResult[4],
-          issuedBy: verificationResult[5],
+      // 4. Check if agent has set up delegation, if not, do it now
+      // We check if the agent's code has been set (EIP-7702 delegation)
+      const agentCode = await provider.getCode(userAddress)
+      const hasDelegation = agentCode !== '0x' && agentCode.startsWith('0xef0100')
+
+      if (!hasDelegation) {
+        console.log('🔗 Agent has not set up delegation yet, setting it up now...')
+
+        toaster.create({
+          title: 'Setting up delegation',
+          description: 'Please sign the delegation authorization. You only need to do this once.',
+          type: 'info',
+          duration: 5000,
         })
 
-        // Check if the issuedBy address matches the sender
-        if (verificationResult[5].toLowerCase() !== address.toLowerCase()) {
-          console.warn('⚠️ WARNING: IssuedBy address mismatch!')
-          console.warn('Expected:', address)
-          console.warn('Actual:', verificationResult[5])
+        // Get current nonce for authorization
+        const nonce = await provider.getTransactionCount(userAddress)
+
+        // Create EIP-7702 authorization
+        const { createW3PKAuthorization } = await import('@/lib/eip7702')
+        const authorization = await createW3PKAuthorization(
+          w3pkInstance,
+          registryAddress,
+          nonce,
+          DEFAULT_NETWORK
+        )
+
+        // Submit delegation setup
+        const delegationResponse = await fetch('/api/setup-delegation', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            agentAddress: userAddress,
+            registryAddress,
+            authorization,
+          }),
+        })
+
+        const delegationResult = await delegationResponse.json()
+
+        if (!delegationResponse.ok || !delegationResult.success) {
+          throw new Error(delegationResult.error || 'Failed to set up delegation')
         }
 
-        // Check if metadata matches what we sent
-        if (verificationResult[4] !== metadataToSend) {
-          console.warn('⚠️ WARNING: Metadata mismatch!')
-          console.warn('Expected:', metadataToSend)
-          console.warn('Actual:', verificationResult[4])
-        }
-      } catch (verificationError) {
-        console.error('❌ Verification error:', verificationError)
+        console.log('✅ Delegation set up successfully:', delegationResult.transactionHash)
+
+        toaster.create({
+          title: 'Delegation Active!',
+          description: 'You can now issue documents without paying gas fees.',
+          type: 'success',
+          duration: 5000,
+        })
+      } else {
+        console.log('✅ Agent already has delegation set up')
       }
 
-      setProgress(100)
+      // 5. Submit sponsored transaction
+      const functionName = metadata ? 'issueDocumentWithMetadata' : 'issueDocument'
+      const args = metadata ? [documentCID, metadata] : [documentCID]
 
-      const result: IssueResult = {
-        txHash: tx.hash,
-        cid: documentCID,
-        timestamp: new Date().toISOString(),
-        registryAddress: userRole.registryAddress,
-        blockNumber: receipt.blockNumber,
-        network: currentNetwork.name,
-        metadata: documentMetadata.trim() || undefined,
-      }
-
-      setIssueResult(result)
-
-      toast({
-        title: 'Document Issued Successfully! 🎉',
-        description: `Document has been registered on the blockchain`,
-        status: 'success',
-        duration: 8000,
-        isClosable: true,
+      const response = await fetch('/api/sponsored-tx', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          agentAddress: userAddress,
+          registryAddress,
+          functionName,
+          args,
+        }),
       })
 
-      // Refresh balance after transaction
-      if (address && walletProvider) {
-        try {
-          const balanceWei = await provider.getBalance(address)
-          const balanceEth = formatEther(balanceWei)
-          const balanceNum = parseFloat(balanceEth)
+      const result = await response.json()
 
-          const formattedBalance =
-            balanceNum === 0
-              ? '0.0000'
-              : balanceNum < 0.0001
-                ? balanceNum.toFixed(6)
-                : balanceNum.toFixed(4)
-
-          setBalance(formattedBalance)
-        } catch (error) {
-          console.error('Error refreshing balance:', error)
-        }
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || 'Failed to submit sponsored transaction')
       }
-    } catch (error: any) {
-      console.error('💥 Error issuing document:', error)
 
-      let errorMessage = 'An error occurred while issuing the document'
+      toaster.create({
+        title: t.dashboard.issueDocument.txSubmitted,
+        description: `${t.dashboard.issueDocument.txHash}: ${result.transactionHash.slice(0, 10)}... (Sponsored by relayer)`,
+        type: 'info',
+        duration: 3000,
+      })
 
-      if (error.message?.includes('user rejected')) {
-        errorMessage = 'Transaction was rejected by user'
-      } else if (error.message?.includes('insufficient funds')) {
-        errorMessage = 'Insufficient funds for transaction'
-      } else if (error.message?.includes('execution reverted')) {
-        if (error.message?.includes('Document already exists')) {
-          errorMessage = 'Document with this hash already exists on blockchain'
-        } else if (error.message?.includes('Not authorized')) {
-          errorMessage = 'You are not authorized to issue documents for this registry'
-        } else if (error.message?.includes('IPFS CID cannot be empty')) {
-          errorMessage = 'Invalid document hash (CID cannot be empty)'
-        } else {
-          errorMessage = 'Contract call failed - check permissions and try again'
+      console.log('Transaction submitted:', result.transactionHash)
+
+      // 6. Wait for confirmation by polling the transaction
+      let receipt = null
+      let attempts = 0
+      const maxAttempts = 60 // 60 seconds timeout
+
+      while (!receipt && attempts < maxAttempts) {
+        try {
+          receipt = await provider.getTransactionReceipt(result.transactionHash)
+          if (receipt) break
+        } catch (e) {
+          // Transaction not yet mined
         }
-      } else if (error.message?.includes('could not coalesce error')) {
+        await new Promise(resolve => setTimeout(resolve, 1000))
+        attempts++
+      }
+
+      if (!receipt) {
+        throw new Error('Transaction timeout - please check block explorer')
+      }
+
+      console.log('Transaction confirmed in block:', receipt.blockNumber)
+
+      // Check if transaction was successful
+      if (receipt.status === 0) {
+        throw new Error('Transaction reverted onchain. Check if you have the correct permissions.')
+      }
+
+      toaster.create({
+        title: t.dashboard.issueDocument.success,
+        description: `${t.dashboard.issueDocument.viewTxOn} ${currentNetwork.explorerName} (No gas fees paid!)`,
+        type: 'success',
+        duration: 10000,
+        action: {
+          label: t.dashboard.issueDocument.viewTx,
+          onClick: () => {
+            window.open(`${currentNetwork.blockExplorer}/tx/${result.transactionHash}`, '_blank')
+          },
+        },
+      })
+
+      // Clear form after success
+      handleFileRemove()
+      setMetadata('')
+    } catch (error: any) {
+      console.error('Error issuing document:', error)
+
+      let errorMessage = 'Failed to issue document'
+
+      if (error.message?.includes('user rejected') || error.message?.includes('cancelled')) {
+        errorMessage = 'Authorization was cancelled by user'
+      } else if (error.message?.includes('nonce')) {
+        errorMessage = 'Transaction nonce error. Please try again.'
+      } else if (
+        error.message?.includes('revert') ||
+        error.message?.includes('execution reverted')
+      ) {
         errorMessage =
-          'Wallet connection issue. Please try disconnecting and reconnecting your wallet.'
-      } else if (error.message?.includes('eth_requestAccounts')) {
-        errorMessage =
-          'Authentication issue with social login. Please try reconnecting your wallet.'
-      } else if (error.code === 'CALL_EXCEPTION') {
-        errorMessage = 'Contract call failed - verify contract address and network'
+          'Transaction reverted. You may not have permission to issue documents on this registry.'
+      } else if (error.message?.includes('Relayer has insufficient funds')) {
+        errorMessage = 'Relayer wallet has insufficient funds. Please contact administrator.'
       } else if (error.message) {
         errorMessage = error.message
       }
 
-      toast({
-        title: 'Issue Failed',
+      toaster.create({
+        title: t.dashboard.issueDocument.failed,
         description: errorMessage,
-        status: 'error',
+        type: 'error',
         duration: 7000,
-        isClosable: true,
+      })
+    } finally {
+      setIsIssuingDocument(false)
+    }
+  }
+
+  const handleMakeAgent = async () => {
+    if (!newAgentAddress.trim()) {
+      toaster.create({
+        title: t.dashboard.addAgent.noAddress,
+        description: t.dashboard.addAgent.noAddressDesc,
+        type: 'warning',
+        duration: 5000,
+      })
+      return
+    }
+
+    if (!ethers.isAddress(newAgentAddress)) {
+      toaster.create({
+        title: t.dashboard.addAgent.invalidAddress,
+        description: t.dashboard.addAgent.invalidAddressDesc,
+        type: 'error',
+        duration: 5000,
+      })
+      return
+    }
+
+    if (!registryAddress) {
+      toaster.create({
+        title: t.dashboard.addAgent.noRegistry,
+        description: t.dashboard.addAgent.noRegistryDesc,
+        type: 'error',
+        duration: 5000,
+      })
+      return
+    }
+
+    setIsMakingAgent(true)
+    try {
+      const response = await fetch('/api/make-agent', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userAddress: newAgentAddress,
+          registryAddress: registryAddress,
+        }),
       })
 
-      setProgress(0)
-      setProgressStatus('')
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to make agent')
+      }
+
+      toaster.create({
+        title: data.alreadyAgent ? t.dashboard.addAgent.alreadyAgent : t.dashboard.addAgent.success,
+        description: data.message,
+        type: 'success',
+        duration: 5000,
+      })
+
+      setNewAgentAddress('')
+    } catch (error: any) {
+      console.error('Error making agent:', error)
+      toaster.create({
+        title: t.dashboard.addAgent.failed,
+        description: error.message || 'An error occurred',
+        type: 'error',
+        duration: 7000,
+      })
     } finally {
-      setIsIssuing(false)
+      setIsMakingAgent(false)
     }
+  }
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text)
+    toaster.create({
+      title: t.verify.upload.copied,
+      type: 'info',
+      duration: 2000,
+    })
   }
 
   const formatFileSize = (bytes: number) => {
@@ -1381,917 +614,405 @@ export default function Dashboard() {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
   }
 
-  const getExplorerLink = (type: 'tx' | 'address', value: string) => {
-    if (!currentNetwork) return '#'
-
-    if (type === 'tx') {
-      console.log('tx link:', `${currentNetwork.blockExplorer}/tx/${value}`)
-      return `${currentNetwork.blockExplorer}/${value}`
-    } else {
-      console.log('addr link:', `${currentNetwork.blockExplorer}/address/${value}`)
-
-      return `${currentNetwork.blockExplorer}/address/${value}`
-    }
-  }
-
-  if (!isConnected) {
+  if (!isAuthenticated) {
     return (
-      <Container maxW="container.sm" py={20}>
-        <VStack spacing={8} align="center">
-          <Heading>Dashboard</Heading>
-          <Text>Please connect your wallet to access the dashboard.</Text>
-
-          {/* Test Dashboard Button */}
-          <Box
-            bg="blue.900"
-            border="1px solid"
-            borderColor="blue.500"
-            borderRadius="md"
-            p={6}
-            w="100%"
-            textAlign="center"
-          >
-            <VStack spacing={4}>
-              <Icon as={FiPlay} boxSize={8} color="blue.300" />
-              <Heading size="md" color="blue.300">
-                Want to Try Document Issuance?
-              </Heading>
-              <Text fontSize="sm" color="gray.400" textAlign="center">
-                Login and become an agent
-              </Text>
-
+      <Container maxW="container.lg" py={20}>
+        <VStack gap={8} align="stretch">
+          <Box p={6} borderRadius="md" textAlign="center">
+            <Heading as="h1" size="xl" mb={4}>
+              {t.dashboard.title}
+            </Heading>
+            <Text mb={6} color="gray.400">
+              {t.dashboard.subtitle}
+            </Text>
+            <Text fontSize="sm" color="gray.500">
               <Button
-                bg="blue.600"
-                color="white"
-                _hover={{ bg: 'blue.500' }}
-                leftIcon={<Icon as={FiPlay} />}
-                size="lg"
-                onClick={() => router.push('/dashboard-test')}
+                variant="plain"
+                as="span"
+                color="gray.500"
+                textDecorationStyle="dotted"
+                textUnderlineOffset="3px"
+                cursor="pointer"
+                _hover={{ color: 'gray.300' }}
+                onClick={login}
+                fontSize="sm"
               >
-                Test the app
+                {t.dashboard.loginPrompt}{' '}
               </Button>
-            </VStack>
+            </Text>
+          </Box>
+
+          <Box
+            bg="orange.900"
+            border="1px solid"
+            borderColor="orange.500"
+            borderRadius="md"
+            p={4}
+            maxW="md"
+            mx="auto"
+          >
+            <HStack gap={3}>
+              <FiAlertCircle size={20} color="orange" />
+              <Box flex={1}>
+                <Text fontSize="sm" color="orange.200" mb={1}>
+                  {t.dashboard.exploreWithout}
+                </Text>
+                <Text fontSize="xs" color="orange.300">
+                  {t.dashboard.tryThe}{' '}
+                  <ChakraLink
+                    asChild
+                    color="orange.100"
+                    textDecoration="underline"
+                    _hover={{ color: 'orange.50' }}
+                  >
+                    <Link href="/sandbox">{t.navigation.sandbox}</Link>
+                  </ChakraLink>{' '}
+                  {t.dashboard.toExplore}
+                </Text>
+              </Box>
+            </HStack>
           </Box>
         </VStack>
       </Container>
     )
   }
 
-  // Show error if unsupported network
-  if (!currentNetwork) {
+  if (isCheckingRole) {
     return (
-      <main>
-        <Container maxW="container.lg" py={20}>
-          <VStack spacing={8}>
-            <Box textAlign="center">
-              <Heading as="h1" size="xl" mb={4} color="red.400">
-                Unsupported Network
-              </Heading>
-              <Text fontSize="lg" color="gray.400" mb={6}>
-                Please switch to one of the supported networks:
-              </Text>
-              <VStack spacing={2}>
-                <Text color="blue.300">• Sepolia Testnet (Chain ID: 11155111)</Text>
-                <Text color="green.300">• OP Mainnet (Chain ID: 10)</Text>
-              </VStack>
-              <Text fontSize="sm" color="gray.500" mt={4}>
-                Current Chain ID: {chainId || 'Unknown'}
-              </Text>
-            </Box>
-          </VStack>
-        </Container>
-      </main>
+      <Container maxW="container.lg" py={20}>
+        <VStack gap={6}>
+          <Spinner size="xl" />
+          <Text color="gray.400">{t.dashboard.checkingPermissions}</Text>
+        </VStack>
+      </Container>
     )
   }
 
   return (
     <main>
-      <Container maxW="container.lg" py={20}>
-        <VStack spacing={6} align="stretch">
+      <Container maxW="container.xl" py={20}>
+        <VStack gap={8} align="stretch">
           <header>
-            <Heading as="h1" size="xl" mb={2}>
-              Dashboard
-            </Heading>
-            <HStack spacing={4} align="center">
-              <Text fontSize="lg" color="gray.400">
-                {userRole?.type === 'admin' ? 'Admin Management Portal' : 'Issue a document'}
-              </Text>
-              <Badge
-                colorScheme={chainId === 10 ? 'red' : chainId === 11155111 ? 'blue' : 'orange'}
-                size="md"
-              >
-                {currentNetwork.name}
-              </Badge>
-            </HStack>
-          </header>
-
-          {/* User Role Status */}
-          <section aria-label="User Status">
-            <Box p={6} borderWidth={1} borderRadius="lg" bg="gray.800">
-              <VStack spacing={4}>
-                <Heading size="md">User Status</Heading>
-                {isCheckingRole ? (
-                  <HStack>
-                    <Spinner size="sm" />
-                    <Text>Checking permissions...</Text>
-                  </HStack>
-                ) : userRole ? (
-                  <VStack spacing={2}>
-                    <Text
-                      fontSize="lg"
-                      fontWeight="bold"
-                      color={userRole.type === 'admin' ? 'green.400' : 'blue.400'}
-                    >
-                      Role: {userRole.type.toUpperCase()}
-                    </Text>
-                    <Text>Entity: {userRole.entityName}</Text>
-                    <Text fontSize="sm" color="gray.400">
-                      Registry: {userRole.registryAddress}
-                    </Text>
-                    <Text fontSize="sm" color="gray.500">
-                      Network: {currentNetwork.name}
-                    </Text>
-                  </VStack>
-                ) : (
-                  <VStack spacing={4}>
-                    <Text color="red.400" fontWeight="medium" fontSize="lg">
-                      Unauthorized
-                    </Text>
-                    <Text fontSize="sm" color="gray.400" textAlign="center">
-                      You are not an admin or agent of any registered entity on{' '}
-                      {currentNetwork.name}
-                    </Text>
-
-                    {/* Test Dashboard Redirect */}
-                    <Box
-                      bg="blue.900"
-                      border="1px solid"
-                      borderColor="blue.500"
-                      borderRadius="md"
-                      p={4}
-                      w="100%"
-                      textAlign="center"
-                    >
-                      <VStack spacing={4}>
-                        <Icon as={FiPlay} boxSize={8} color="blue.300" />
-                        <Heading size="md" color="blue.300">
-                          Want to Try Document Issuance?
-                        </Heading>
-                        <Text fontSize="sm" color="gray.400" textAlign="center">
-                          Go to the test environment
-                        </Text>
-
-                        <Button
-                          bg="blue.600"
-                          color="white"
-                          _hover={{ bg: 'blue.500' }}
-                          leftIcon={<Icon as={FiPlay} />}
-                          size="lg"
-                          onClick={() => router.push('/dashboard-test')}
-                        >
-                          Test the app
-                        </Button>
-                      </VStack>
-                    </Box>
-                  </VStack>
-                )}
-              </VStack>
-            </Box>
-          </section>
-
-          <section aria-label="Account Information">
-            {/* Only show the orange "Copy this address" box if user is NOT admin or agent */}
-            {!isCheckingRole && !userRole && (
-              <Box
-                bg="orange.900"
-                border="2px solid"
-                borderColor="orange.500"
-                borderRadius="lg"
-                p={6}
-                w="100%"
-                textAlign="center"
-              >
-                <VStack spacing={4}>
-                  <Icon as={FiCopy} boxSize={8} color="orange.300" />
-                  <Text fontSize="md" color="orange.300" fontWeight="bold">
-                    Your Wallet Address
-                  </Text>
-                  <Box
-                    bg="whiteAlpha.200"
-                    p={4}
-                    borderRadius="md"
-                    w="100%"
-                    cursor="pointer"
-                    onClick={() => copyToClipboard(address || '')}
-                    _hover={{ bg: 'whiteAlpha.300' }}
-                    transition="all 0.2s"
-                  >
-                    <Text
-                      fontFamily="mono"
-                      fontSize="lg"
-                      fontWeight="bold"
-                      color="white"
-                      wordBreak="break-all"
-                    >
-                      {address}
-                    </Text>
-                  </Box>
-                  <Text fontSize="sm" color="orange.200" textAlign="center" lineHeight="1.5">
-                    📋{' '}
-                    <Text as="span" fontWeight="medium">
-                      Copy this address
-                    </Text>{' '}
-                    and give it to your entity&apos;s admin so they can add you as an agent.
-                  </Text>
-                  <Text fontSize="xs" color="gray.400" textAlign="center">
-                    Click the address above to copy it to your clipboard
-                  </Text>
-                </VStack>
-              </Box>
-            )}
-
-            <Box pt={6} pb={6}>
-              <VStack spacing={2} align="stretch">
-                <Text>
-                  <Text as="span" fontWeight="medium">
-                    Your Address:
-                  </Text>{' '}
-                  {address}
+            <Flex justify="space-between" align="center" mb={2}></Flex>
+            <VStack align="start" gap={2}>
+              <HStack gap={2}>
+                <Text fontSize="lg" color="gray.400">
+                  {t.dashboard.welcome}, {user?.displayName || user?.username}
                 </Text>
-                <Flex align="center" gap={2}>
-                  <Text fontWeight="medium">{chainId === 314159 ? 'FIL' : 'ETH'} Balance:</Text>
-                  {isLoadingBalance ? (
-                    <HStack spacing={2}>
-                      <Spinner size="xs" />
-                      <Text fontSize="sm" color="gray.400">
-                        Loading...
-                      </Text>
-                    </HStack>
-                  ) : (
-                    <HStack spacing={2}>
-                      <Text fontFamily="mono" color={balance === 'Error' ? 'red.400' : 'green.400'}>
-                        {balance} {chainId === 314159 ? 'FIL' : 'ETH'}
-                      </Text>
-                      {isAutoTransferring ? (
-                        <Text
-                          fontSize="xs"
-                          color="red.400"
-                          fontWeight="bold"
-                          animation={`${blinkAnimation} 1s infinite`}
-                        >
-                          We&apos;re sending some FIL your way
-                        </Text>
-                      ) : (
-                        <Tooltip label="Refresh balance">
-                          <IconButton
-                            aria-label="Refresh balance"
-                            icon={<Icon as={FiRefreshCw} />}
-                            size="xs"
-                            variant="ghost"
-                            onClick={refreshBalance}
-                            isLoading={isLoadingBalance}
-                          />
-                        </Tooltip>
-                      )}
-                    </HStack>
-                  )}
-                  {/* Add manual refresh button for role checking */}
-                  {!isCheckingRole && (
+                {role !== 'nobody' && (
+                  <Badge colorPalette={role === 'admin' ? 'purple' : 'blue'} variant="solid" px={3}>
+                    {role}
+                  </Badge>
+                )}
+              </HStack>
+              {currentUserAddress && (
+                <Box
+                  bg="whiteAlpha.100"
+                  px={3}
+                  py={2}
+                  borderRadius="md"
+                  border="1px solid"
+                  borderColor="gray.600"
+                >
+                  <HStack gap={2}>
+                    <FiUser size={14} color="#45a2f8" />
+                    <Text fontSize="xs" color="gray.400" fontWeight="medium">
+                      {t.dashboard.yourAddress}
+                    </Text>
+                    <Text fontSize="xs" fontFamily="mono" color="gray.300">
+                      {currentUserAddress}
+                    </Text>
                     <Button
                       size="xs"
-                      variant="outline"
-                      leftIcon={<Icon as={FiRefreshCw} />}
-                      onClick={checkUserRole}
-                      ml={4}
+                      variant="ghost"
+                      onClick={() => copyToClipboard(currentUserAddress)}
                     >
-                      Refresh Role
+                      <FiCopy />
                     </Button>
-                  )}
-                </Flex>
-              </VStack>
-            </Box>
-          </section>
-
-          {!userRole ? (
-            <Box p={6} borderWidth={1} borderRadius="lg" bg="red.900" borderColor="red.600">
-              <VStack spacing={4}>
-                <Icon as={FiX} boxSize={8} color="red.400" />
-                <Text textAlign="center" fontSize="lg">
-                  You are not authorized to authenticate documents for now.
-                </Text>
-                <Text textAlign="center" color="gray.400">
-                  You must be an admin or agent of a registered entity to use this dashboard.
-                </Text>
-              </VStack>
-            </Box>
-          ) : (
-            <SimpleGrid columns={{ base: 1, lg: userRole.type === 'admin' ? 2 : 1 }} spacing={6}>
-              {/* Admin Panel - Agent Management */}
-              {userRole.type === 'admin' && (
-                <Box>
-                  <VStack spacing={6} align="stretch">
-                    <Card bg="gray.800" borderColor="gray.600">
-                      <CardHeader>
-                        <HStack justify="space-between">
-                          <HStack>
-                            <Icon as={FiUsers} boxSize={5} color="green.400" />
-                            <Heading size="md" color="green.400">
-                              Agent Management
-                            </Heading>
-                          </HStack>
-                          <HStack>
-                            <Tooltip label="Refresh agents list">
-                              <IconButton
-                                aria-label="Refresh agents"
-                                icon={<FiRefreshCw />}
-                                size="sm"
-                                variant="ghost"
-                                onClick={loadAgents}
-                                isLoading={isLoadingAgents}
-                              />
-                            </Tooltip>
-                            <Button
-                              leftIcon={<Icon as={FiUserPlus} />}
-                              colorScheme="green"
-                              size="sm"
-                              onClick={onAddAgentOpen}
-                            >
-                              Add Agent
-                            </Button>
-                          </HStack>
-                        </HStack>
-                      </CardHeader>
-                      <CardBody>
-                        {isLoadingAgents ? (
-                          <VStack spacing={4}>
-                            <Spinner />
-                            <Text>Loading agents...</Text>
-                          </VStack>
-                        ) : agents.length === 0 ? (
-                          <VStack spacing={4} py={8}>
-                            <Icon as={FiUsers} boxSize={12} color="gray.500" />
-                            <Text color="gray.400" textAlign="center">
-                              No agents found for this registry
-                            </Text>
-                            <Button
-                              leftIcon={<Icon as={FiUserPlus} />}
-                              colorScheme="green"
-                              onClick={onAddAgentOpen}
-                            >
-                              Add First Agent
-                            </Button>
-                          </VStack>
-                        ) : (
-                          <VStack spacing={4}>
-                            <HStack justify="space-between" w="100%">
-                              <Text fontSize="sm" color="gray.400">
-                                {agents.length} agent{agents.length !== 1 ? 's' : ''} registered
-                              </Text>
-                            </HStack>
-
-                            <Box w="100%" overflowX="auto">
-                              <Table variant="simple" size="sm">
-                                <Thead>
-                                  <Tr>
-                                    <Th>Agent Address</Th>
-                                    <Th>Status</Th>
-                                    <Th>Actions</Th>
-                                  </Tr>
-                                </Thead>
-                                <Tbody>
-                                  {agents.map(agent => (
-                                    <Tr key={agent.address}>
-                                      <Td>
-                                        <HStack>
-                                          <Text fontFamily="mono" fontSize="sm">
-                                            {agent.address.slice(0, 6)}...{agent.address.slice(-4)}
-                                          </Text>
-                                          <Tooltip label="Copy full address">
-                                            <IconButton
-                                              aria-label="Copy address"
-                                              icon={<FiCopy />}
-                                              size="xs"
-                                              variant="ghost"
-                                              onClick={() => copyToClipboard(agent.address)}
-                                            />
-                                          </Tooltip>
-                                        </HStack>
-                                      </Td>
-                                      <Td>
-                                        <Badge
-                                          colorScheme={agent.isActive ? 'green' : 'red'}
-                                          variant="subtle"
-                                        >
-                                          {agent.isActive ? 'Active' : 'Inactive'}
-                                        </Badge>
-                                      </Td>
-                                      <Td>
-                                        <HStack spacing={1}>
-                                          <Tooltip label={`View on ${currentNetwork.explorerName}`}>
-                                            <IconButton
-                                              aria-label="View on block explorer"
-                                              icon={<FiExternalLink />}
-                                              size="xs"
-                                              variant="ghost"
-                                              onClick={() =>
-                                                window.open(
-                                                  getExplorerLink('address', agent.address),
-                                                  '_blank'
-                                                )
-                                              }
-                                            />
-                                          </Tooltip>
-                                          {agent.isActive && (
-                                            <Tooltip label="Revoke agent">
-                                              <IconButton
-                                                aria-label="Revoke agent"
-                                                icon={<FiUserMinus />}
-                                                size="xs"
-                                                colorScheme="red"
-                                                variant="ghost"
-                                                onClick={() => openRevokeDialog(agent.address)}
-                                              />
-                                            </Tooltip>
-                                          )}
-                                        </HStack>
-                                      </Td>
-                                    </Tr>
-                                  ))}
-                                </Tbody>
-                              </Table>
-                            </Box>
-                          </VStack>
-                        )}
-                      </CardBody>
-                    </Card>
-                  </VStack>
+                  </HStack>
                 </Box>
               )}
+            </VStack>
+          </header>
 
-              {/* Document Issuance Panel */}
-              <Box>
-                <section aria-label="Document Upload">
-                  <Card bg="gray.800" borderColor="gray.600">
-                    <CardHeader>
+          <Grid
+            templateColumns={{ base: '1fr', lg: role === 'agent' ? '1fr' : 'repeat(2, 1fr)' }}
+            gap={8}
+          >
+            {/* Issue Document Section */}
+            {(role === 'agent' || role === 'admin') && (
+              <section aria-label="Issue Document">
+                <Box
+                  bg="whiteAlpha.50"
+                  p={6}
+                  borderRadius="lg"
+                  border="1px solid"
+                  borderColor="gray.700"
+                >
+                  <VStack gap={6} align="stretch">
+                    <VStack align="start" gap={2}>
                       <HStack>
-                        <Icon as={FiUpload} boxSize={5} color="blue.400" />
-                        <Heading size="md" color="blue.400">
-                          Document Issuance
-                        </Heading>
+                        <FiUpload size={20} color="#45a2f8" />
+                        <Heading size="md">{t.dashboard.issueDocument.title}</Heading>
                       </HStack>
-                    </CardHeader>
-                    <CardBody>
-                      <VStack spacing={6} align="stretch">
-                        <FormControl>
-                          <FormLabel fontSize="md" fontWeight="semibold" mb={3}>
-                            Upload Document to Issue
-                          </FormLabel>
-
-                          {!selectedFile ? (
-                            <Box
-                              borderWidth={2}
-                              borderStyle="dashed"
-                              borderColor="gray.500"
-                              borderRadius="lg"
-                              p={8}
-                              textAlign="center"
-                              cursor="pointer"
-                              transition="all 0.2s"
-                              _hover={{
-                                borderColor: '#45a2f8',
-                                bg: 'whiteAlpha.50',
-                              }}
-                              onClick={() => fileInputRef.current?.click()}
-                            >
-                              <VStack spacing={3}>
-                                <Icon as={FiUpload} boxSize={8} color="gray.400" />
-                                <Box>
-                                  <Text fontSize="md" fontWeight="medium" mb={1}>
-                                    Drop your document here, or{' '}
-                                    <Text as="span" color="#45a2f8" textDecoration="underline">
-                                      browse
-                                    </Text>
-                                  </Text>
-                                  <Text fontSize="sm" color="gray.500">
-                                    Supports any file format (Max 10MB)
-                                  </Text>
-                                </Box>
-                              </VStack>
-                              <input
-                                ref={fileInputRef}
-                                type="file"
-                                hidden
-                                accept="*/*"
-                                onChange={handleFileSelect}
-                              />
-                            </Box>
-                          ) : (
-                            <VStack spacing={4}>
-                              <Box
-                                bg="whiteAlpha.200"
-                                borderRadius="lg"
-                                p={4}
-                                border="1px solid"
-                                borderColor="gray.600"
-                                w="100%"
-                              >
-                                <Flex justify="space-between" align="center">
-                                  <HStack spacing={3}>
-                                    <Icon as={FiFile} boxSize={5} color="#45a2f8" />
-                                    <Box>
-                                      <Text fontSize="md" fontWeight="medium" noOfLines={1}>
-                                        {selectedFile.name}
-                                      </Text>
-                                      <Text fontSize="sm" color="gray.400">
-                                        {formatFileSize(selectedFile.size)}
-                                      </Text>
-                                    </Box>
-                                  </HStack>
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={handleFileRemove}
-                                    leftIcon={<Icon as={FiX} />}
-                                    _hover={{ bg: 'whiteAlpha.200' }}
-                                  >
-                                    Remove
-                                  </Button>
-                                </Flex>
-                              </Box>
-
-                              {/* CID Calculation Status */}
-                              {isCalculatingCID && (
-                                <Box
-                                  bg="blue.900"
-                                  border="1px solid"
-                                  borderColor="blue.500"
-                                  borderRadius="md"
-                                  p={4}
-                                  w="100%"
-                                >
-                                  <HStack spacing={3} mb={2}>
-                                    <Spinner size="sm" color="blue.300" />
-                                    <Text fontSize="sm" color="blue.300">
-                                      Calculating IPFS hash...
-                                    </Text>
-                                  </HStack>
-                                  {progress > 0 && (
-                                    <Progress value={progress} size="sm" colorScheme="blue" />
-                                  )}
-                                </Box>
-                              )}
-
-                              {/* Display CID when available */}
-                              {documentCID && !isCalculatingCID && (
-                                <Box
-                                  bg="green.900"
-                                  border="1px solid"
-                                  borderColor="green.500"
-                                  borderRadius="md"
-                                  p={4}
-                                  w="100%"
-                                >
-                                  <VStack spacing={2} align="stretch">
-                                    <HStack>
-                                      <Icon as={FiHash} color="green.300" />
-                                      <Text fontSize="sm" color="green.300" fontWeight="medium">
-                                        Document Hash (CID)
-                                      </Text>
-                                    </HStack>
-                                    <Box
-                                      bg="whiteAlpha.100"
-                                      p={2}
-                                      borderRadius="sm"
-                                      cursor="pointer"
-                                      onClick={() => copyToClipboard(documentCID)}
-                                      _hover={{ bg: 'whiteAlpha.200' }}
-                                    >
-                                      <Text fontSize="xs" fontFamily="mono" wordBreak="break-all">
-                                        {documentCID}
-                                      </Text>
-                                    </Box>
-                                    <Text fontSize="xs" color="gray.400" textAlign="center">
-                                      Click to copy hash
-                                    </Text>
-                                  </VStack>
-                                </Box>
-                              )}
-                            </VStack>
-                          )}
-                        </FormControl>
-
-                        {/* Metadata Input */}
-                        {selectedFile && (
-                          <FormControl>
-                            <FormLabel fontSize="md" fontWeight="semibold">
-                              Document Metadata (Optional)
-                            </FormLabel>
-                            <Textarea
-                              placeholder="Enter additional information about this document (e.g., document type, description, notes)..."
-                              value={documentMetadata}
-                              onChange={e => setDocumentMetadata(e.target.value)}
-                              size="sm"
-                              rows={3}
-                              bg="whiteAlpha.100"
-                              borderColor="gray.600"
-                              _hover={{ borderColor: 'gray.500' }}
-                              _focus={{ borderColor: 'blue.400', boxShadow: '0 0 0 1px #3182ce' }}
-                            />
-                            <Text fontSize="xs" color="gray.500" mt={1}>
-                              This information will be stored on the blockchain along with the
-                              document hash
-                            </Text>
-                          </FormControl>
-                        )}
-
-                        <Button
-                          onClick={handleIssue}
-                          bg="#45a2f8"
-                          color="white"
-                          _hover={{ bg: '#3182ce' }}
-                          _disabled={{
-                            bg: 'gray.600',
-                            color: 'gray.400',
-                            cursor: 'not-allowed',
-                          }}
-                          isDisabled={
-                            !selectedFile || !documentCID || isCalculatingCID || !userRole
-                          }
-                          isLoading={isIssuing}
-                          loadingText="Issuing Document..."
-                          size="lg"
-                          leftIcon={<Icon as={FiUpload} />}
-                        >
-                          Issue Document on Blockchain
-                        </Button>
-
-                        {(!selectedFile || !documentCID) && (
-                          <Text fontSize="sm" color="gray.500" textAlign="center">
-                            {!selectedFile
-                              ? 'Please select a document to issue'
-                              : 'Calculating document hash...'}
+                      {entityName && (
+                        <Text fontSize="sm" color="gray.400">
+                          {t.dashboard.issueDocument.issueOnBehalf}{' '}
+                          <Text as="span" color="gray.200" fontWeight="medium">
+                            {entityName}
                           </Text>
-                        )}
+                        </Text>
+                      )}
+                      {registryAddress && (
+                        <Box
+                          bg="whiteAlpha.100"
+                          px={3}
+                          py={2}
+                          borderRadius="md"
+                          border="1px solid"
+                          borderColor="gray.600"
+                          w="100%"
+                        >
+                          <Text fontSize="xs" color="gray.400" mb={1}>
+                            {t.dashboard.issueDocument.contractAddress}
+                          </Text>
+                          <Flex align="center" gap={2}>
+                            <Text
+                              fontSize="xs"
+                              fontFamily="mono"
+                              color="gray.300"
+                              flex={1}
+                              lineClamp={1}
+                            >
+                              {registryAddress}
+                            </Text>
+                            <Button
+                              size="xs"
+                              variant="ghost"
+                              onClick={() => copyToClipboard(registryAddress)}
+                            >
+                              <FiCopy />
+                            </Button>
+                          </Flex>
+                        </Box>
+                      )}
+                    </VStack>
 
-                        {/* Progress Status Bar */}
-                        {progress > 0 && isIssuing && (
+                    {!selectedFile ? (
+                      <Box
+                        borderWidth={2}
+                        borderStyle="dashed"
+                        borderColor="gray.600"
+                        borderRadius="md"
+                        p={6}
+                        textAlign="center"
+                        cursor="pointer"
+                        transition="all 0.2s"
+                        _hover={{
+                          borderColor: '#45a2f8',
+                          bg: 'whiteAlpha.50',
+                        }}
+                        onClick={() => fileInputRef.current?.click()}
+                      >
+                        <VStack gap={2}>
+                          <FiFile size={24} color="gray" />
+                          <Text fontSize="sm" color="gray.400">
+                            {t.dashboard.issueDocument.clickToUpload}
+                          </Text>
+                        </VStack>
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          hidden
+                          accept="*/*"
+                          onChange={handleFileSelect}
+                        />
+                      </Box>
+                    ) : (
+                      <VStack gap={3}>
+                        <Box
+                          bg="whiteAlpha.100"
+                          borderRadius="md"
+                          p={3}
+                          border="1px solid"
+                          borderColor="gray.600"
+                          w="100%"
+                        >
+                          <Flex justify="space-between" align="center">
+                            <HStack gap={2}>
+                              <FiFile size={16} color="#45a2f8" />
+                              <Box>
+                                <Text fontSize="sm" lineClamp={1}>
+                                  {selectedFile.name}
+                                </Text>
+                                <Text fontSize="xs" color="gray.400">
+                                  {formatFileSize(selectedFile.size)}
+                                </Text>
+                              </Box>
+                            </HStack>
+                            <Button size="xs" variant="ghost" onClick={handleFileRemove}>
+                              <FiX />
+                            </Button>
+                          </Flex>
+                        </Box>
+
+                        {documentCID && (
                           <Box
-                            mt={6}
-                            p={4}
-                            bg="whiteAlpha.100"
-                            borderRadius="md"
+                            bg="blue.900"
                             border="1px solid"
-                            borderColor="whiteAlpha.300"
-                          >
-                            <VStack spacing={3}>
-                              <Text fontSize="sm" fontWeight="medium" color="blue.300">
-                                {progressStatus}
-                              </Text>
-                              <Progress
-                                value={progress}
-                                size="sm"
-                                colorScheme="blue"
-                                w="100%"
-                                bg="whiteAlpha.200"
-                                borderRadius="full"
-                              />
-                            </VStack>
-                          </Box>
-                        )}
-
-                        {issueResult && (
-                          <Box
-                            bg="green.900"
-                            border="1px solid"
-                            borderColor="green.500"
+                            borderColor="blue.500"
                             borderRadius="md"
-                            p={4}
-                            mt={4}
+                            p={3}
+                            w="100%"
                           >
-                            <VStack spacing={3} align="stretch">
-                              <HStack spacing={3}>
-                                <Icon as={FiCheck} color="green.300" boxSize={5} />
-                                <Text fontSize="md" color="green.300" fontWeight="bold">
-                                  Document Issued Successfully! 🎉
-                                </Text>
-                              </HStack>
-
-                              <Box>
-                                <Text fontSize="sm" color="green.300" fontWeight="medium" mb={1}>
-                                  Transaction Hash:
-                                </Text>
-                                <Box
-                                  bg="whiteAlpha.100"
-                                  p={2}
-                                  borderRadius="sm"
-                                  cursor="pointer"
-                                  onClick={() => copyToClipboard(issueResult.txHash)}
-                                  _hover={{ bg: 'whiteAlpha.200' }}
-                                >
-                                  <Flex align="center" justify="space-between">
-                                    <Text fontSize="xs" fontFamily="mono" wordBreak="break-all">
-                                      {issueResult.txHash}
-                                    </Text>
-                                    <Icon
-                                      as={FiExternalLink}
-                                      color="green.300"
-                                      boxSize={3}
-                                      ml={2}
-                                      cursor="pointer"
-                                      onClick={e => {
-                                        e.stopPropagation()
-                                        window.open(
-                                          getExplorerLink('tx', issueResult.txHash),
-                                          '_blank'
-                                        )
-                                      }}
-                                    />
-                                  </Flex>
-                                </Box>
-                              </Box>
-
-                              <Box>
-                                <Text fontSize="sm" color="green.300" fontWeight="medium" mb={1}>
-                                  IPFS Hash (CID):
-                                </Text>
-                                <Box
-                                  bg="whiteAlpha.100"
-                                  p={2}
-                                  borderRadius="sm"
-                                  cursor="pointer"
-                                  onClick={() => copyToClipboard(issueResult.cid)}
-                                  _hover={{ bg: 'whiteAlpha.200' }}
-                                >
-                                  <Text fontSize="xs" fontFamily="mono" wordBreak="break-all">
-                                    {issueResult.cid}
-                                  </Text>
-                                </Box>
-                              </Box>
-
-                              {issueResult.metadata && (
-                                <Box>
-                                  <Text fontSize="sm" color="green.300" fontWeight="medium" mb={1}>
-                                    Metadata:
-                                  </Text>
-                                  <Box bg="whiteAlpha.100" p={2} borderRadius="sm">
-                                    <Text fontSize="xs">{issueResult.metadata}</Text>
-                                  </Box>
-                                </Box>
-                              )}
-
-                              <Box>
-                                <Text fontSize="sm" color="green.300" fontWeight="medium" mb={1}>
-                                  Block Number:
-                                </Text>
-                                <Box bg="whiteAlpha.100" p={2} borderRadius="sm">
-                                  <Text fontSize="xs" fontFamily="mono">
-                                    {issueResult.blockNumber}
-                                  </Text>
-                                </Box>
-                              </Box>
-
-                              <Box>
-                                <Text fontSize="sm" color="green.300" fontWeight="medium" mb={1}>
-                                  Network:
-                                </Text>
-                                <Badge colorScheme="green" size="sm">
-                                  {issueResult.network}
-                                </Badge>
-                              </Box>
-
-                              <Text fontSize="xs" color="gray.400" textAlign="center">
-                                Click any hash to copy • Click 🔗 to view on{' '}
-                                {currentNetwork.explorerName}
+                            <HStack gap={2} mb={1}>
+                              <FiHash size={14} color="blue" />
+                              <Text fontSize="xs" color="blue.300" fontWeight="medium">
+                                {t.dashboard.issueDocument.documentCID}
                               </Text>
-                            </VStack>
+                            </HStack>
+                            <Box
+                              bg="whiteAlpha.100"
+                              p={2}
+                              borderRadius="sm"
+                              cursor="pointer"
+                              onClick={() => copyToClipboard(documentCID)}
+                              _hover={{ bg: 'whiteAlpha.200' }}
+                            >
+                              <Text
+                                fontSize="xs"
+                                color="blue.300"
+                                fontFamily="mono"
+                                wordBreak="break-all"
+                              >
+                                {documentCID}
+                              </Text>
+                            </Box>
                           </Box>
                         )}
                       </VStack>
-                    </CardBody>
-                  </Card>
-                </section>
-              </Box>
-            </SimpleGrid>
-          )}
-        </VStack>
+                    )}
 
-        {/* Add Agent Modal */}
-        <Modal isOpen={isAddAgentOpen} onClose={onAddAgentClose} size="md">
-          <ModalOverlay />
-          <ModalContent bg="gray.800" borderColor="gray.600">
-            <ModalHeader>
-              <HStack>
-                <Icon as={FiUserPlus} color="green.400" />
-                <Text>Add New Agent</Text>
-              </HStack>
-            </ModalHeader>
-            <ModalCloseButton />
-            <ModalBody>
-              <VStack spacing={4}>
-                <Text fontSize="sm" color="gray.400">
-                  Add a new agent to your registry on {currentNetwork.name}. Agents can issue
-                  documents on behalf of your entity.
-                </Text>
+                    {/* <Box>
+                      <Text fontSize="sm" fontWeight="medium" mb={2}>
+                        Metadata (optional)
+                      </Text>
+                      <Textarea
+                        value={metadata}
+                        onChange={e => setMetadata(e.target.value)}
+                        placeholder="Add any additional information about this document..."
+                        rows={3}
+                        px={4}
+                        py={2}
+                        bg="gray.900"
+                        borderColor="gray.600"
+                        borderWidth="1px"
+                        _hover={{ borderColor: 'gray.500' }}
+                        _focus={{
+                          borderColor: '#45a2f8',
+                          boxShadow: '0 0 0 1px #45a2f8',
+                          bg: 'gray.800',
+                        }}
+                      />
+                    </Box> */}
 
-                <FormControl isRequired>
-                  <FormLabel>Agent Ethereum Address</FormLabel>
-                  <Input
-                    placeholder="0x..."
-                    value={newAgentAddress}
-                    onChange={e => setNewAgentAddress(e.target.value)}
-                    fontFamily="mono"
-                    isDisabled={isAddingAgent}
-                  />
-                </FormControl>
-
-                <Box
-                  bg="yellow.900"
-                  border="1px solid"
-                  borderColor="yellow.600"
-                  borderRadius="md"
-                  p={3}
-                  w="100%"
-                >
-                  <Text fontSize="xs" color="yellow.200">
-                    ⚠️ Make sure the address is correct. Agent privileges can be revoked but should
-                    be granted carefully.
-                  </Text>
+                    <Button
+                      onClick={handleIssueDocument}
+                      bg="#45a2f8"
+                      color="white"
+                      _hover={{ bg: '#3182ce' }}
+                      disabled={!documentCID}
+                      loading={isIssuingDocument}
+                      w="100%"
+                    >
+                      <FiShield /> {t.dashboard.issueDocument.issueButton}
+                    </Button>
+                  </VStack>
                 </Box>
-              </VStack>
-            </ModalBody>
-            <ModalFooter>
-              <HStack spacing={3}>
-                <Button variant="ghost" onClick={onAddAgentClose} isDisabled={isAddingAgent}>
-                  Cancel
-                </Button>
-                <Button
-                  colorScheme="green"
-                  onClick={handleAddAgent}
-                  isLoading={isAddingAgent}
-                  loadingText="Adding Agent..."
-                  leftIcon={<Icon as={FiUserPlus} />}
+              </section>
+            )}
+
+            {/* Agent Management Section */}
+            {role === 'admin' && (
+              <section aria-label="Agent Management">
+                <Box
+                  bg="whiteAlpha.50"
+                  p={6}
+                  borderRadius="lg"
+                  border="1px solid"
+                  borderColor="gray.700"
                 >
-                  Add Agent
-                </Button>
-              </HStack>
-            </ModalFooter>
-          </ModalContent>
-        </Modal>
+                  <VStack gap={6} align="stretch">
+                    <HStack>
+                      <FiUserPlus size={20} color="#45a2f8" />
+                      <Heading size="md">{t.dashboard.addAgent.title}</Heading>
+                    </HStack>
 
-        {/* Revoke Agent Confirmation Dialog */}
-        <AlertDialog isOpen={isRevokeOpen} leastDestructiveRef={cancelRef} onClose={onRevokeClose}>
-          <AlertDialogOverlay>
-            <AlertDialogContent bg="gray.800" borderColor="gray.600">
-              <AlertDialogHeader fontSize="lg" fontWeight="bold">
-                <HStack>
-                  <Icon as={FiUserMinus} color="red.400" />
-                  <Text>Revoke Agent Access</Text>
-                </HStack>
-              </AlertDialogHeader>
+                    <Box>
+                      <Text fontSize="sm" fontWeight="medium" mb={2}>
+                        {t.dashboard.addAgent.agentAddress}
+                      </Text>
+                      <Input
+                        value={newAgentAddress}
+                        onChange={e => setNewAgentAddress(e.target.value)}
+                        placeholder="0x..."
+                        fontFamily="mono"
+                      />
+                      <Text fontSize="xs" color="gray.500" mt={1}>
+                        {t.dashboard.addAgent.placeholder}
+                      </Text>
+                    </Box>
 
-              <AlertDialogBody>
-                <VStack spacing={4} align="start">
-                  <Text>Are you sure you want to revoke agent access for:</Text>
-                  <Box bg="whiteAlpha.100" p={3} borderRadius="md" w="100%">
-                    <Text fontFamily="mono" fontSize="sm" wordBreak="break-all">
-                      {agentToRevoke}
-                    </Text>
-                  </Box>
-                  <Box
-                    bg="red.900"
-                    border="1px solid"
-                    borderColor="red.600"
-                    borderRadius="md"
-                    p={3}
-                    w="100%"
-                  >
-                    <Text fontSize="sm" color="red.200">
-                      ⚠️ This action will immediately remove the agent&apos;s ability to issue
-                      documents. The agent can be re-added later if needed.
-                    </Text>
-                  </Box>
-                </VStack>
-              </AlertDialogBody>
+                    <Button
+                      onClick={handleMakeAgent}
+                      bg="purple.600"
+                      color="white"
+                      _hover={{ bg: 'purple.700' }}
+                      disabled={!newAgentAddress.trim()}
+                      loading={isMakingAgent}
+                      w="100%"
+                    >
+                      <FiUserPlus /> {t.dashboard.addAgent.addButton}
+                    </Button>
 
-              <AlertDialogFooter>
-                <HStack spacing={3}>
-                  <Button ref={cancelRef} onClick={onRevokeClose} isDisabled={isRevokingAgent}>
-                    Cancel
-                  </Button>
-                  <Button
-                    colorScheme="red"
-                    onClick={handleRevokeAgent}
-                    isLoading={isRevokingAgent}
-                    loadingText="Revoking..."
-                    leftIcon={<Icon as={FiTrash2} />}
-                  >
-                    Revoke Agent
-                  </Button>
-                </HStack>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialogOverlay>
-        </AlertDialog>
+                    {/* Registry Info */}
+                    {registryAddress && (
+                      <Box
+                        bg="whiteAlpha.100"
+                        p={3}
+                        borderRadius="md"
+                        border="1px solid"
+                        borderColor="gray.600"
+                      >
+                        <Text fontSize="xs" color="gray.400" mb={1}>
+                          {t.dashboard.addAgent.registryContract}
+                        </Text>
+                        <Flex align="center" gap={2}>
+                          <Text
+                            fontSize="xs"
+                            fontFamily="mono"
+                            color="gray.300"
+                            flex={1}
+                            lineClamp={1}
+                          >
+                            {registryAddress}
+                          </Text>
+                          <Button
+                            size="xs"
+                            variant="ghost"
+                            onClick={() => copyToClipboard(registryAddress)}
+                          >
+                            <FiCopy />
+                          </Button>
+                        </Flex>
+                      </Box>
+                    )}
+                  </VStack>
+                </Box>
+              </section>
+            )}
+          </Grid>
+        </VStack>
       </Container>
     </main>
   )

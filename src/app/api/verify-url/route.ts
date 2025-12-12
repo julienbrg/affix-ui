@@ -14,17 +14,15 @@ async function verifyUrl(address: string) {
   }
   console.log('✅ Address format is valid')
 
-  // Connect to Filecoin Calibration network
-  console.log('🌐 Connecting to Filecoin Calibration network...')
-  const provider = new ethers.JsonRpcProvider('https://api.calibration.node.glif.io/rpc/v1')
+  // Connect to OP Mainnet
+  console.log('🌐 Connecting to OP Mainnet...')
+  const provider = new ethers.JsonRpcProvider('https://mainnet.optimism.io')
 
   // Create contract instance
   const contract = new ethers.Contract(address, REGISTRY_ABI, provider)
   console.log('📄 Contract instance created successfully')
 
   // Get the URL from the registry contract
-
-  // let registryUrl: string = 'https://calibration.filscan.io/en/address/0x5bCf8999c91594EC0CCB2093d128F75B6008Af45'
   let registryUrl: string
   try {
     console.log('📖 Reading URL from registry contract...')

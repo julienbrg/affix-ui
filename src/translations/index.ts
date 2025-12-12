@@ -10,49 +10,242 @@ type TranslationKeys = {
   common: {
     login: string
     logout: string
-    back: string
-    loading: string
-    error: string
-    success: string
+    register: string
+    pleaseLogin: string
+    cancel: string
+    submit: string
+    copy: string
+    view: string
+    remove: string
+    tryAgain: string
+    browse: string
   }
   home: {
     title: string
-    sendEth: string
-    transactionSuccess: string
-    transactionFailed: string
-    notConnected: string
-    insufficientBalance: string
-  }
-  wallet: {
-    title: string
-    description: string
-    noWalletFound: string
-    createWallet: string
-    regenerateWallet: string
-    flushDb: string
-    yourAddress: string
-    messageToSign: string
-    enterMessage: string
-    signMessage: string
-    signature: string
-    verifySignature: string
-    verificationSuccess: string
-    verificationFailed: string
+    subtitle: string
+    greeting: string
+    greetingSubtitle: string
+    hero: {
+      tagline: string
+      letTheWorld: string
+      verify: string
+      it: string
+      description: string
+      dashboardButton: string
+      verifyButton: string
+    }
+    problem: {
+      title: string
+      description: string
+    }
+    features: {
+      title: string
+      easyToVerify: string
+      easyToVerifyDesc: string
+      unbreakableSecurity: string
+      unbreakableSecurityDesc: string
+      privacyFirst: string
+      privacyFirstDesc: string
+      aiPowered: string
+      aiPoweredDesc: string
+      forEveryone: string
+      forEveryoneDesc: string
+      antiFraud: string
+      antiFraudDesc: string
+    }
+    documentTypes: {
+      title: string
+      pdfs: string
+      images: string
+      videos: string
+      anyFile: string
+    }
+    howItWorks: {
+      title: string
+      step1Title: string
+      step1Desc: string
+      step2Title: string
+      step2Desc: string
+      step3Title: string
+      step3Desc: string
+    }
+    trust: {
+      noStorage: string
+      noStorageDesc: string
+      guaranteeAuthorship: string
+      guaranteeAuthorshipDesc: string
+    }
+    roadmap: {
+      title: string
+      publicDocuments: string
+      publicDocumentsDesc: string
+      digitalAgreements: string
+      digitalAgreementsDesc: string
+      mainnetLaunch: string
+      mainnetLaunchDesc: string
+      comingSoon: string
+    }
+    cta: {
+      title: string
+      description: string
+      contactButton: string
+    }
   }
   navigation: {
-    newPage: string
-    walletGenerator: string
-    referral: string
+    settings: string
+    dashboard: string
+    verify: string
+    sandbox: string
   }
-  newPage: {
+  settings: {
+    title: string
+    loginRequired: string
+  }
+  dashboard: {
     title: string
     subtitle: string
-    accountInfo: string
-    connectedAddress: string
-    balance: string
-    connectWallet: string
-    lastTransaction: string
-    backHome: string
+    loginPrompt: string
+    exploreWithout: string
+    tryThe: string
+    toExplore: string
+    checkingPermissions: string
+    welcome: string
+    yourAddress: string
+    issueDocument: {
+      title: string
+      issueOnBehalf: string
+      contractAddress: string
+      clickToUpload: string
+      documentCID: string
+      issueButton: string
+      fileTooLarge: string
+      fileTooLargeDesc: string
+      cidGenerated: string
+      cidGeneratedDesc: string
+      error: string
+      computeError: string
+      noDocument: string
+      noDocumentDesc: string
+      notAuthenticated: string
+      notAuthenticatedDesc: string
+      txSubmitted: string
+      txHash: string
+      success: string
+      viewTxOn: string
+      viewTx: string
+      failed: string
+    }
+    addAgent: {
+      title: string
+      agentAddress: string
+      placeholder: string
+      addButton: string
+      registryContract: string
+      noAddress: string
+      noAddressDesc: string
+      invalidAddress: string
+      invalidAddressDesc: string
+      noRegistry: string
+      noRegistryDesc: string
+      alreadyAgent: string
+      success: string
+      failed: string
+    }
+  }
+  verify: {
+    title: string
+    subtitle: string
+    upload: {
+      dropHere: string
+      supportsAny: string
+      noDocument: string
+      noDocumentDesc: string
+      copied: string
+      clickToCopy: string
+    }
+    progress: {
+      computing: string
+      checking: string
+      aiVerifying: string
+      complete: string
+    }
+    results: {
+      title: string
+      verified: string
+      notFound: string
+      verifiedBadge: string
+      unverifiedBadge: string
+      issuedOn: string
+      issuedBy: string
+      entityUrl: string
+      metadata: string
+      registryAddress: string
+      aiVerification: string
+      registryVerified: string
+      registryNotVerified: string
+    }
+    toast: {
+      verified: string
+      foundIn: string
+      notFound: string
+      notFoundDesc: string
+      failed: string
+      fileTooLarge: string
+      fileTooLargeDesc: string
+    }
+  }
+  sandbox: {
+    title: string
+    subtitle: string
+  }
+  errors: {
+    somethingWrong: string
+    apology: string
+    errorDetails: string
+    errorId: string
+    tryAgain: string
+    persistProblem: string
+    contactSupport: string
+  }
+  notFound: {
+    code: string
+    title: string
+    description: string
+    returnHome: string
+  }
+  components: {
+    header: {
+      registerTitle: string
+      registerDesc: string
+      w3pk: string
+      username: string
+      usernamePlaceholder: string
+      usernameValidation: string
+      createAccount: string
+      usernameRequired: string
+      usernameRequiredDesc: string
+      registrationFailed: string
+      registrationFailedDesc: string
+    }
+    passwordModal: {
+      password: string
+      placeholder: string
+      passwordRequired: string
+      passwordRequiredDesc: string
+      weakPassword: string
+      weakPasswordDesc: string
+      submissionError: string
+      passwordMustInclude: string
+      atLeast12: string
+      oneUppercase: string
+      oneLowercase: string
+      oneNumber: string
+      oneSpecial: string
+      notMeetRequirements: string
+      strongPassword: string
+      satisfied: string
+      required: string
+    }
   }
 }
 
@@ -67,202 +260,784 @@ export const translations: Translations = {
     common: {
       login: 'Login',
       logout: 'Logout',
-      back: 'Back',
-      loading: 'Loading...',
-      error: 'Error',
-      success: 'Success',
+      register: 'Register',
+      pleaseLogin: 'Please login',
+      cancel: 'Cancel',
+      submit: 'Submit',
+      copy: 'Copy',
+      view: 'View',
+      remove: 'Remove',
+      tryAgain: 'Try Again',
+      browse: 'browse',
     },
     home: {
-      title: 'Hello world!',
-      sendEth: 'Send 0.0001 ETH to self',
-      transactionSuccess: 'Transaction successful',
-      transactionFailed: 'Transaction failed',
-      notConnected: 'Please connect your wallet',
-      insufficientBalance: 'Please connect with an account that has a bit of ETH',
-    },
-    wallet: {
-      title: 'Welcome to Message Signer',
-      description: 'Securely sign and verify Ethereum messages with your wallet',
-      noWalletFound: 'No Ethereum Wallet Found',
-      createWallet: 'Create New Ethereum Wallet',
-      regenerateWallet: 'Generate New Wallet',
-      flushDb: 'Flush DB',
-      yourAddress: 'Your Ethereum Wallet Address',
-      messageToSign: 'Message to Sign',
-      enterMessage: 'Enter your message...',
-      signMessage: 'Sign Message',
-      signature: 'Ethereum Signature',
-      verifySignature: 'Verify Signature',
-      verificationSuccess: 'Signature is valid and matches the current wallet address',
-      verificationFailed: 'Signature does not match the current wallet address',
+      title: 'Welcome!',
+      subtitle: "It's a pleasure to have you here!",
+      greeting: 'Hello Anon!',
+      greetingSubtitle: 'Sit back, relax, and build something cool!',
+      hero: {
+        tagline: 'your onchain seal',
+        letTheWorld: 'Let the world',
+        verify: 'verify',
+        it: 'it',
+        description:
+          'Authenticate your documents onchain while keeping your existing workflows intact. Anyone can then instantly verify that documents are genuine and unaltered.',
+        dashboardButton: 'Your Dashboard',
+        verifyButton: 'Verify',
+      },
+      problem: {
+        title: 'The Document Fraud Epidemic...',
+        description:
+          'Fake documents cause billions of dollars in losses every year. From fraudulent certificates to forged contracts, document verification is broken. Web3 fixes this.',
+      },
+      features: {
+        title: 'Discover Affix!',
+        easyToVerify: 'Easy to Verify',
+        easyToVerifyDesc:
+          'One-click verification for anyone, anywhere. No technical knowledge required.',
+        unbreakableSecurity: 'Unbreakable Security',
+        unbreakableSecurityDesc: 'Blockchain-powered proof that cannot be tampered with or forged.',
+        privacyFirst: 'Privacy First',
+        privacyFirstDesc:
+          "We don't store your documents. Only cryptographic fingerprints go onchain.",
+        aiPowered: 'AI-Powered Verification',
+        aiPoweredDesc:
+          'AI helps you verify things. It checks if instance addresses match URLs registered onchain for enhanced security.',
+        forEveryone: 'For Everyone',
+        forEveryoneDesc:
+          'Perfect for organizations, businesses, and individuals who need document authenticity.',
+        antiFraud: 'Anti-Fraud Protection',
+        antiFraudDesc:
+          'Combat the billions in annual losses from fake documents with blockchain verification.',
+      },
+      documentTypes: {
+        title: 'Works with Any Document Type',
+        pdfs: 'PDFs',
+        images: 'Images',
+        videos: 'Videos',
+        anyFile: 'Any File',
+      },
+      howItWorks: {
+        title: 'How It Works',
+        step1Title: 'Publish Digital Footprint',
+        step1Desc:
+          'Upload any document type and we create a unique cryptographic fingerprint that goes onchain',
+        step2Title: 'Anyone Can Verify',
+        step2Desc:
+          'Share the document with anyone - they can instantly verify its authenticity with AI assistance',
+        step3Title: 'Guaranteed Authenticity',
+        step3Desc:
+          'Prove a statement was made by you with immutable blockchain evidence and AI verification',
+      },
+      trust: {
+        noStorage: "We Don't Store Your Documents",
+        noStorageDesc:
+          'Your files never leave your device. Only mathematical proofs are recorded onchain.',
+        guaranteeAuthorship: 'Guarantee Authorship',
+        guaranteeAuthorshipDesc:
+          "Cryptographically prove a statement was made by you at a specific time. That's the magic of Web3.",
+      },
+      roadmap: {
+        title: 'Roadmap',
+        publicDocuments: 'Public documents',
+        publicDocumentsDesc:
+          'Public documents stored in a decentralized fashion for permanent accessibility, transparency, and more',
+        digitalAgreements: 'Digital Agreements',
+        digitalAgreementsDesc: 'DocuSign-style functionality for agreements and contract signing',
+        mainnetLaunch: 'Mainnet Launch',
+        mainnetLaunchDesc:
+          "We're in contact with several institutions in Burkina Faso. They're ready to deploy their own instance...",
+        comingSoon: 'Coming Soon',
+      },
+      cta: {
+        title: 'Ready to Authenticate Your Documents with Affix?',
+        description:
+          'Join us in the fight against document fraud. Get started today or reach out to learn more.',
+        contactButton: 'Contact Us',
+      },
     },
     navigation: {
-      newPage: 'New page',
-      walletGenerator: 'Wallet generator',
-      referral: 'Referral',
+      settings: 'Settings',
+      dashboard: 'Dashboard',
+      verify: 'Verify',
+      sandbox: 'Sandbox',
     },
-    newPage: {
-      title: 'Welcome to New Page',
-      subtitle: 'Unleash your imagination in this new page!',
-      accountInfo: 'Account Information',
-      connectedAddress: 'Connected Address:',
-      balance: 'Balance:',
-      connectWallet: 'Connect your wallet to get started',
-      lastTransaction: 'Last Transaction:',
-      backHome: 'Back Home',
+    settings: {
+      title: 'Settings',
+      loginRequired: 'Please login to access your settings',
+    },
+    dashboard: {
+      title: 'Welcome to Your Dashboard',
+      subtitle: 'Manage your documents and permissions',
+      loginPrompt: 'Please login',
+      exploreWithout: 'Want to explore without logging in?',
+      tryThe: 'Try the',
+      toExplore: 'to explore the platform',
+      checkingPermissions: 'Checking permissions...',
+      welcome: 'Welcome',
+      yourAddress: 'Your Address:',
+      issueDocument: {
+        title: 'Issue Document',
+        issueOnBehalf: 'Issue a document on behalf of',
+        contractAddress: 'Contract address',
+        clickToUpload: 'Click to upload document',
+        documentCID: 'Document CID',
+        issueButton: 'Issue Document',
+        fileTooLarge: 'File too large',
+        fileTooLargeDesc: 'Please select a file smaller than 10MB',
+        cidGenerated: 'CID Generated',
+        cidGeneratedDesc: 'Document hash computed successfully',
+        error: 'Error',
+        computeError: 'Failed to compute document hash',
+        noDocument: 'No document',
+        noDocumentDesc: 'Please upload a document first',
+        notAuthenticated: 'Not authenticated',
+        notAuthenticatedDesc: 'Please login to issue documents',
+        txSubmitted: 'Transaction Submitted',
+        txHash: 'Hash',
+        success: 'Document Issued Successfully',
+        viewTxOn: 'View transaction on',
+        viewTx: 'View Transaction',
+        failed: 'Issuance Failed',
+      },
+      addAgent: {
+        title: 'Add Agent',
+        agentAddress: 'Agent Address',
+        placeholder: 'Enter the Ethereum address of the new agent',
+        addButton: 'Add as Agent',
+        registryContract: 'Registry Contract',
+        noAddress: 'No address provided',
+        noAddressDesc: 'Please enter an address',
+        invalidAddress: 'Invalid address',
+        invalidAddressDesc: 'Please enter a valid Ethereum address',
+        noRegistry: 'No registry found',
+        noRegistryDesc: 'Cannot add agent without a registry address',
+        alreadyAgent: 'Already an Agent',
+        success: 'Agent Created',
+        failed: 'Failed to Make Agent',
+      },
+    },
+    verify: {
+      title: 'Verify Documents',
+      subtitle: 'Verify document authenticity.',
+      upload: {
+        dropHere: 'Drop your document here, or',
+        supportsAny: 'Supports any file format',
+        noDocument: 'No document provided',
+        noDocumentDesc: 'Please upload a file or enter a document CID/hash',
+        copied: 'Copied to clipboard',
+        clickToCopy: 'Click to copy - This CID will be used for verification',
+      },
+      progress: {
+        computing: 'Computing document hash (CID)...',
+        checking: 'Checking registry...',
+        aiVerifying: 'Document found! Performing AI verification...',
+        complete: 'Verification complete!',
+      },
+      results: {
+        title: 'Verification Results',
+        verified: 'Document Verified!',
+        notFound: 'Not Found',
+        verifiedBadge: 'VERIFIED',
+        unverifiedBadge: 'UNVERIFIED',
+        issuedOn: 'Issued On',
+        issuedBy: 'Issued By',
+        entityUrl: 'Entity URL',
+        metadata: 'Metadata',
+        registryAddress: 'Registry Address',
+        aiVerification: 'AI Verification',
+        registryVerified: 'Registry address verified on entity website',
+        registryNotVerified: 'Could not verify registry address on entity website',
+      },
+      toast: {
+        verified: 'Document Verified!',
+        foundIn: 'Found in',
+        notFound: 'Document Not Found',
+        notFoundDesc: 'This document has not been registered on the blockchain',
+        failed: 'Verification Failed',
+        fileTooLarge: 'File too large',
+        fileTooLargeDesc: 'Please select a file smaller than 10MB',
+      },
+    },
+    sandbox: {
+      title: 'Sandbox',
+      subtitle: 'Explore and experiment with the Affix platform (soon)',
+    },
+    errors: {
+      somethingWrong: 'Something went wrong!',
+      apology:
+        'We apologize for the inconvenience. An error occurred while processing your request.',
+      errorDetails: 'Error Details:',
+      errorId: 'Error ID:',
+      tryAgain: 'Try Again',
+      persistProblem: 'If the problem persists, please refresh the page or',
+      contactSupport: 'contact support',
+    },
+    notFound: {
+      code: '404',
+      title: 'Page Not Found',
+      description: "The page you're looking for doesn't exist.",
+      returnHome: 'Return Home',
+    },
+    components: {
+      header: {
+        registerTitle: 'Register New Account',
+        registerDesc:
+          'An Ethereum wallet will be created and securely stored on your device, protected by your biometric or PIN thanks to',
+        w3pk: 'w3pk',
+        username: 'Username',
+        usernamePlaceholder: 'Enter your username',
+        usernameValidation:
+          'Username must be 3-50 characters long and contain only letters, numbers, underscores, and hyphens. It must start and end with a letter or number.',
+        createAccount: 'Create Account',
+        usernameRequired: 'Username Required',
+        usernameRequiredDesc: 'Please enter a username to register.',
+        registrationFailed: 'Registration Failed',
+        registrationFailedDesc: 'Unable to complete registration. Please try again.',
+      },
+      passwordModal: {
+        password: 'Password',
+        placeholder: 'Enter your password',
+        passwordRequired: 'Password Required.',
+        passwordRequiredDesc: 'Please enter your password.',
+        weakPassword: 'Weak Password.',
+        weakPasswordDesc: 'Please use a stronger password that meets all requirements.',
+        submissionError: 'Submission Error.',
+        passwordMustInclude: 'Password must include:',
+        atLeast12: 'At least 12 characters',
+        oneUppercase: 'One uppercase letter',
+        oneLowercase: 'One lowercase letter',
+        oneNumber: 'One number',
+        oneSpecial: 'One special character',
+        notMeetRequirements: 'Password does not meet all requirements',
+        strongPassword: 'Strong password!',
+        satisfied: '(satisfied)',
+        required: '(required)',
+      },
     },
   },
 
   // Mandarin Chinese
   zh: {
     common: {
-      login: '登录',
-      logout: '登出',
-      back: '返回',
-      loading: '加载中...',
-      error: '错误',
-      success: '成功',
+      login: 'Login',
+      logout: 'Logout',
+      register: 'Register',
+      pleaseLogin: 'Please login',
+      cancel: 'Cancel',
+      submit: 'Submit',
+      copy: 'Copy',
+      view: 'View',
+      remove: 'Remove',
+      tryAgain: 'Try Again',
+      browse: 'browse',
     },
     home: {
-      title: '你好，世界！',
-      sendEth: '向自己发送 0.0001 ETH',
-      transactionSuccess: '交易成功',
-      transactionFailed: '交易失败',
-      notConnected: '请连接您的钱包',
-      insufficientBalance: '请使用拥有一些 ETH 的账户连接',
-    },
-    wallet: {
-      title: '欢迎使用消息签名器',
-      description: '使用您的钱包安全地签名和验证以太坊消息',
-      noWalletFound: '未找到以太坊钱包',
-      createWallet: '创建新的以太坊钱包',
-      regenerateWallet: '生成新钱包',
-      flushDb: '清空数据库',
-      yourAddress: '您的以太坊钱包地址',
-      messageToSign: '要签名的消息',
-      enterMessage: '输入您的消息...',
-      signMessage: '签名消息',
-      signature: '以太坊签名',
-      verifySignature: '验证签名',
-      verificationSuccess: '签名有效并匹配当前钱包地址',
-      verificationFailed: '签名与当前钱包地址不匹配',
+      title: 'Welcome!',
+      subtitle: "It's a pleasure to have you here!",
+      greeting: 'Hello Anon!',
+      greetingSubtitle: 'Sit back, relax, and build something cool!',
+      hero: {
+        tagline: 'your onchain seal',
+        letTheWorld: 'Let the world',
+        verify: 'verify',
+        it: 'it',
+        description:
+          'Authenticate your documents onchain while keeping your existing workflows intact. Anyone can then instantly verify that documents are genuine and unaltered.',
+        dashboardButton: 'Your Dashboard',
+        verifyButton: 'Verify',
+      },
+      problem: {
+        title: 'The Document Fraud Epidemic...',
+        description:
+          'Fake documents cause billions of dollars in losses every year. From fraudulent certificates to forged contracts, document verification is broken. Web3 fixes this.',
+      },
+      features: {
+        title: 'Discover Affix!',
+        easyToVerify: 'Easy to Verify',
+        easyToVerifyDesc:
+          'One-click verification for anyone, anywhere. No technical knowledge required.',
+        unbreakableSecurity: 'Unbreakable Security',
+        unbreakableSecurityDesc: 'Blockchain-powered proof that cannot be tampered with or forged.',
+        privacyFirst: 'Privacy First',
+        privacyFirstDesc:
+          "We don't store your documents. Only cryptographic fingerprints go onchain.",
+        aiPowered: 'AI-Powered Verification',
+        aiPoweredDesc:
+          'AI helps you verify things. It checks if instance addresses match URLs registered onchain for enhanced security.',
+        forEveryone: 'For Everyone',
+        forEveryoneDesc:
+          'Perfect for organizations, businesses, and individuals who need document authenticity.',
+        antiFraud: 'Anti-Fraud Protection',
+        antiFraudDesc:
+          'Combat the billions in annual losses from fake documents with blockchain verification.',
+      },
+      documentTypes: {
+        title: 'Works with Any Document Type',
+        pdfs: 'PDFs',
+        images: 'Images',
+        videos: 'Videos',
+        anyFile: 'Any File',
+      },
+      howItWorks: {
+        title: 'How It Works',
+        step1Title: 'Publish Digital Footprint',
+        step1Desc:
+          'Upload any document type and we create a unique cryptographic fingerprint that goes onchain',
+        step2Title: 'Anyone Can Verify',
+        step2Desc:
+          'Share the document with anyone - they can instantly verify its authenticity with AI assistance',
+        step3Title: 'Guaranteed Authenticity',
+        step3Desc:
+          'Prove a statement was made by you with immutable blockchain evidence and AI verification',
+      },
+      trust: {
+        noStorage: "We Don't Store Your Documents",
+        noStorageDesc:
+          'Your files never leave your device. Only mathematical proofs are recorded onchain.',
+        guaranteeAuthorship: 'Guarantee Authorship',
+        guaranteeAuthorshipDesc:
+          "Cryptographically prove a statement was made by you at a specific time. That's the magic of Web3.",
+      },
+      roadmap: {
+        title: 'Roadmap',
+        publicDocuments: 'Public documents',
+        publicDocumentsDesc:
+          'Public documents stored in a decentralized fashion for permanent accessibility, transparency, and more',
+        digitalAgreements: 'Digital Agreements',
+        digitalAgreementsDesc: 'DocuSign-style functionality for agreements and contract signing',
+        mainnetLaunch: 'Mainnet Launch',
+        mainnetLaunchDesc:
+          "We're in contact with several institutions in Burkina Faso. They're ready to deploy their own instance...",
+        comingSoon: 'Coming Soon',
+      },
+      cta: {
+        title: 'Ready to Authenticate Your Documents with Affix?',
+        description:
+          'Join us in the fight against document fraud. Get started today or reach out to learn more.',
+        contactButton: 'Contact Us',
+      },
     },
     navigation: {
-      newPage: '新页面',
-      walletGenerator: '钱包生成器',
-      referral: '推荐',
+      settings: 'Settings',
+      dashboard: 'Dashboard',
+      verify: 'Verify',
+      sandbox: 'Sandbox',
     },
-    newPage: {
-      title: '欢迎来到新页面',
-      subtitle: '在这个新页面释放你的想象力！',
-      accountInfo: '账户信息',
-      connectedAddress: '已连接地址：',
-      balance: '余额：',
-      connectWallet: '连接您的钱包以开始',
-      lastTransaction: '最后交易：',
-      backHome: '返回首页',
+    settings: {
+      title: 'Settings',
+      loginRequired: 'Please login to access your settings',
+    },
+    dashboard: {
+      title: 'Welcome to Your Dashboard',
+      subtitle: 'Manage your documents and permissions',
+      loginPrompt: 'Please login',
+      exploreWithout: 'Want to explore without logging in?',
+      tryThe: 'Try the',
+      toExplore: 'to explore the platform',
+      checkingPermissions: 'Checking permissions...',
+      welcome: 'Welcome',
+      yourAddress: 'Your Address:',
+      issueDocument: {
+        title: 'Issue Document',
+        issueOnBehalf: 'Issue a document on behalf of',
+        contractAddress: 'Contract address',
+        clickToUpload: 'Click to upload document',
+        documentCID: 'Document CID',
+        issueButton: 'Issue Document',
+        fileTooLarge: 'File too large',
+        fileTooLargeDesc: 'Please select a file smaller than 10MB',
+        cidGenerated: 'CID Generated',
+        cidGeneratedDesc: 'Document hash computed successfully',
+        error: 'Error',
+        computeError: 'Failed to compute document hash',
+        noDocument: 'No document',
+        noDocumentDesc: 'Please upload a document first',
+        notAuthenticated: 'Not authenticated',
+        notAuthenticatedDesc: 'Please login to issue documents',
+        txSubmitted: 'Transaction Submitted',
+        txHash: 'Hash',
+        success: 'Document Issued Successfully',
+        viewTxOn: 'View transaction on',
+        viewTx: 'View Transaction',
+        failed: 'Issuance Failed',
+      },
+      addAgent: {
+        title: 'Add Agent',
+        agentAddress: 'Agent Address',
+        placeholder: 'Enter the Ethereum address of the new agent',
+        addButton: 'Add as Agent',
+        registryContract: 'Registry Contract',
+        noAddress: 'No address provided',
+        noAddressDesc: 'Please enter an address',
+        invalidAddress: 'Invalid address',
+        invalidAddressDesc: 'Please enter a valid Ethereum address',
+        noRegistry: 'No registry found',
+        noRegistryDesc: 'Cannot add agent without a registry address',
+        alreadyAgent: 'Already an Agent',
+        success: 'Agent Created',
+        failed: 'Failed to Make Agent',
+      },
+    },
+    verify: {
+      title: 'Verify Documents',
+      subtitle: 'Verify document authenticity.',
+      upload: {
+        dropHere: 'Drop your document here, or',
+        supportsAny: 'Supports any file format',
+        noDocument: 'No document provided',
+        noDocumentDesc: 'Please upload a file or enter a document CID/hash',
+        copied: 'Copied to clipboard',
+        clickToCopy: 'Click to copy - This CID will be used for verification',
+      },
+      progress: {
+        computing: 'Computing document hash (CID)...',
+        checking: 'Checking registry...',
+        aiVerifying: 'Document found! Performing AI verification...',
+        complete: 'Verification complete!',
+      },
+      results: {
+        title: 'Verification Results',
+        verified: 'Document Verified!',
+        notFound: 'Not Found',
+        verifiedBadge: 'VERIFIED',
+        unverifiedBadge: 'UNVERIFIED',
+        issuedOn: 'Issued On',
+        issuedBy: 'Issued By',
+        entityUrl: 'Entity URL',
+        metadata: 'Metadata',
+        registryAddress: 'Registry Address',
+        aiVerification: 'AI Verification',
+        registryVerified: 'Registry address verified on entity website',
+        registryNotVerified: 'Could not verify registry address on entity website',
+      },
+      toast: {
+        verified: 'Document Verified!',
+        foundIn: 'Found in',
+        notFound: 'Document Not Found',
+        notFoundDesc: 'This document has not been registered on the blockchain',
+        failed: 'Verification Failed',
+        fileTooLarge: 'File too large',
+        fileTooLargeDesc: 'Please select a file smaller than 10MB',
+      },
+    },
+    sandbox: {
+      title: 'Sandbox',
+      subtitle: 'Explore and experiment with the Affix platform (soon)',
+    },
+    errors: {
+      somethingWrong: 'Something went wrong!',
+      apology:
+        'We apologize for the inconvenience. An error occurred while processing your request.',
+      errorDetails: 'Error Details:',
+      errorId: 'Error ID:',
+      tryAgain: 'Try Again',
+      persistProblem: 'If the problem persists, please refresh the page or',
+      contactSupport: 'contact support',
+    },
+    notFound: {
+      code: '404',
+      title: 'Page Not Found',
+      description: "The page you're looking for doesn't exist.",
+      returnHome: 'Return Home',
+    },
+    components: {
+      header: {
+        registerTitle: 'Register New Account',
+        registerDesc:
+          'An Ethereum wallet will be created and securely stored on your device, protected by your biometric or PIN thanks to',
+        w3pk: 'w3pk',
+        username: 'Username',
+        usernamePlaceholder: 'Enter your username',
+        usernameValidation:
+          'Username must be 3-50 characters long and contain only letters, numbers, underscores, and hyphens. It must start and end with a letter or number.',
+        createAccount: 'Create Account',
+        usernameRequired: 'Username Required',
+        usernameRequiredDesc: 'Please enter a username to register.',
+        registrationFailed: 'Registration Failed',
+        registrationFailedDesc: 'Unable to complete registration. Please try again.',
+      },
+      passwordModal: {
+        password: 'Password',
+        placeholder: 'Enter your password',
+        passwordRequired: 'Password Required.',
+        passwordRequiredDesc: 'Please enter your password.',
+        weakPassword: 'Weak Password.',
+        weakPasswordDesc: 'Please use a stronger password that meets all requirements.',
+        submissionError: 'Submission Error.',
+        passwordMustInclude: 'Password must include:',
+        atLeast12: 'At least 12 characters',
+        oneUppercase: 'One uppercase letter',
+        oneLowercase: 'One lowercase letter',
+        oneNumber: 'One number',
+        oneSpecial: 'One special character',
+        notMeetRequirements: 'Password does not meet all requirements',
+        strongPassword: 'Strong password!',
+        satisfied: '(satisfied)',
+        required: '(required)',
+      },
     },
   },
 
   // Hindi
   hi: {
     common: {
-      login: 'लॉगिन',
-      logout: 'लॉगआउट',
-      back: 'पीछे',
-      loading: 'लोड हो रहा है...',
-      error: 'त्रुटि',
-      success: 'सफलता',
+      login: 'Login',
+      logout: 'Logout',
+      register: 'Register',
+      pleaseLogin: 'Please login',
+      cancel: 'Cancel',
+      submit: 'Submit',
+      copy: 'Copy',
+      view: 'View',
+      remove: 'Remove',
+      tryAgain: 'Try Again',
+      browse: 'browse',
     },
     home: {
-      title: 'नमस्ते दुनिया!',
-      sendEth: 'स्वयं को 0.0001 ETH भेजें',
-      transactionSuccess: 'लेन-देन सफल',
-      transactionFailed: 'लेन-देन विफल',
-      notConnected: 'कृपया अपना वॉलेट कनेक्ट करें',
-      insufficientBalance: 'कृपया ऐसे खाते से कनेक्ट करें जिसमें थोड़ा ETH हो',
-    },
-    wallet: {
-      title: 'मैसेज साइनर में आपका स्वागत है',
-      description: 'अपने वॉलेट से ईथेरियम संदेशों को सुरक्षित रूप से साइन और सत्यापित करें',
-      noWalletFound: 'कोई ईथेरियम वॉलेट नहीं मिला',
-      createWallet: 'नया ईथेरियम वॉलेट बनाएं',
-      regenerateWallet: 'नया वॉलेट जनरेट करें',
-      flushDb: 'डीबी खाली करें',
-      yourAddress: 'आपका ईथेरियम वॉलेट पता',
-      messageToSign: 'साइन करने के लिए संदेश',
-      enterMessage: 'अपना संदेश दर्ज करें...',
-      signMessage: 'संदेश साइन करें',
-      signature: 'ईथेरियम सिग्नेचर',
-      verifySignature: 'सिग्नेचर वेरिफाई करें',
-      verificationSuccess: 'सिग्नेचर वैध है और वर्तमान वॉलेट पते से मेल खाता है',
-      verificationFailed: 'सिग्नेचर वर्तमान वॉलेट पते से मेल नहीं खाता',
+      title: 'Welcome!',
+      subtitle: "It's a pleasure to have you here!",
+      greeting: 'Hello Anon!',
+      greetingSubtitle: 'Sit back, relax, and build something cool!',
+      hero: {
+        tagline: 'your onchain seal',
+        letTheWorld: 'Let the world',
+        verify: 'verify',
+        it: 'it',
+        description:
+          'Authenticate your documents onchain while keeping your existing workflows intact. Anyone can then instantly verify that documents are genuine and unaltered.',
+        dashboardButton: 'Your Dashboard',
+        verifyButton: 'Verify',
+      },
+      problem: {
+        title: 'The Document Fraud Epidemic...',
+        description:
+          'Fake documents cause billions of dollars in losses every year. From fraudulent certificates to forged contracts, document verification is broken. Web3 fixes this.',
+      },
+      features: {
+        title: 'Discover Affix!',
+        easyToVerify: 'Easy to Verify',
+        easyToVerifyDesc:
+          'One-click verification for anyone, anywhere. No technical knowledge required.',
+        unbreakableSecurity: 'Unbreakable Security',
+        unbreakableSecurityDesc: 'Blockchain-powered proof that cannot be tampered with or forged.',
+        privacyFirst: 'Privacy First',
+        privacyFirstDesc:
+          "We don't store your documents. Only cryptographic fingerprints go onchain.",
+        aiPowered: 'AI-Powered Verification',
+        aiPoweredDesc:
+          'AI helps you verify things. It checks if instance addresses match URLs registered onchain for enhanced security.',
+        forEveryone: 'For Everyone',
+        forEveryoneDesc:
+          'Perfect for organizations, businesses, and individuals who need document authenticity.',
+        antiFraud: 'Anti-Fraud Protection',
+        antiFraudDesc:
+          'Combat the billions in annual losses from fake documents with blockchain verification.',
+      },
+      documentTypes: {
+        title: 'Works with Any Document Type',
+        pdfs: 'PDFs',
+        images: 'Images',
+        videos: 'Videos',
+        anyFile: 'Any File',
+      },
+      howItWorks: {
+        title: 'How It Works',
+        step1Title: 'Publish Digital Footprint',
+        step1Desc:
+          'Upload any document type and we create a unique cryptographic fingerprint that goes onchain',
+        step2Title: 'Anyone Can Verify',
+        step2Desc:
+          'Share the document with anyone - they can instantly verify its authenticity with AI assistance',
+        step3Title: 'Guaranteed Authenticity',
+        step3Desc:
+          'Prove a statement was made by you with immutable blockchain evidence and AI verification',
+      },
+      trust: {
+        noStorage: "We Don't Store Your Documents",
+        noStorageDesc:
+          'Your files never leave your device. Only mathematical proofs are recorded onchain.',
+        guaranteeAuthorship: 'Guarantee Authorship',
+        guaranteeAuthorshipDesc:
+          "Cryptographically prove a statement was made by you at a specific time. That's the magic of Web3.",
+      },
+      roadmap: {
+        title: 'Roadmap',
+        publicDocuments: 'Public documents',
+        publicDocumentsDesc:
+          'Public documents stored in a decentralized fashion for permanent accessibility, transparency, and more',
+        digitalAgreements: 'Digital Agreements',
+        digitalAgreementsDesc: 'DocuSign-style functionality for agreements and contract signing',
+        mainnetLaunch: 'Mainnet Launch',
+        mainnetLaunchDesc:
+          "We're in contact with several institutions in Burkina Faso. They're ready to deploy their own instance...",
+        comingSoon: 'Coming Soon',
+      },
+      cta: {
+        title: 'Ready to Authenticate Your Documents with Affix?',
+        description:
+          'Join us in the fight against document fraud. Get started today or reach out to learn more.',
+        contactButton: 'Contact Us',
+      },
     },
     navigation: {
-      newPage: 'नया पेज',
-      walletGenerator: 'वॉलेट जनरेटर',
-      referral: 'रेफरल',
+      settings: 'Settings',
+      dashboard: 'Dashboard',
+      verify: 'Verify',
+      sandbox: 'Sandbox',
     },
-    newPage: {
-      title: 'नए पेज पर आपका स्वागत है',
-      subtitle: 'इस नए पेज पर अपनी कल्पना को मुक्त करें!',
-      accountInfo: 'खाता जानकारी',
-      connectedAddress: 'कनेक्टेड पता:',
-      balance: 'बैलेंस:',
-      connectWallet: 'शुरू करने के लिए अपना वॉलेट कनेक्ट करें',
-      lastTransaction: 'अंतिम लेनदेन:',
-      backHome: 'होम पर वापस जाएं',
+    settings: {
+      title: 'Settings',
+      loginRequired: 'Please login to access your settings',
     },
-  },
-
-  // Spanish
-  es: {
-    common: {
-      login: 'Iniciar sesión',
-      logout: 'Cerrar sesión',
-      back: 'Atrás',
-      loading: 'Cargando...',
-      error: 'Error',
-      success: 'Éxito',
+    dashboard: {
+      title: 'Welcome to Your Dashboard',
+      subtitle: 'Manage your documents and permissions',
+      loginPrompt: 'Please login',
+      exploreWithout: 'Want to explore without logging in?',
+      tryThe: 'Try the',
+      toExplore: 'to explore the platform',
+      checkingPermissions: 'Checking permissions...',
+      welcome: 'Welcome',
+      yourAddress: 'Your Address:',
+      issueDocument: {
+        title: 'Issue Document',
+        issueOnBehalf: 'Issue a document on behalf of',
+        contractAddress: 'Contract address',
+        clickToUpload: 'Click to upload document',
+        documentCID: 'Document CID',
+        issueButton: 'Issue Document',
+        fileTooLarge: 'File too large',
+        fileTooLargeDesc: 'Please select a file smaller than 10MB',
+        cidGenerated: 'CID Generated',
+        cidGeneratedDesc: 'Document hash computed successfully',
+        error: 'Error',
+        computeError: 'Failed to compute document hash',
+        noDocument: 'No document',
+        noDocumentDesc: 'Please upload a document first',
+        notAuthenticated: 'Not authenticated',
+        notAuthenticatedDesc: 'Please login to issue documents',
+        txSubmitted: 'Transaction Submitted',
+        txHash: 'Hash',
+        success: 'Document Issued Successfully',
+        viewTxOn: 'View transaction on',
+        viewTx: 'View Transaction',
+        failed: 'Issuance Failed',
+      },
+      addAgent: {
+        title: 'Add Agent',
+        agentAddress: 'Agent Address',
+        placeholder: 'Enter the Ethereum address of the new agent',
+        addButton: 'Add as Agent',
+        registryContract: 'Registry Contract',
+        noAddress: 'No address provided',
+        noAddressDesc: 'Please enter an address',
+        invalidAddress: 'Invalid address',
+        invalidAddressDesc: 'Please enter a valid Ethereum address',
+        noRegistry: 'No registry found',
+        noRegistryDesc: 'Cannot add agent without a registry address',
+        alreadyAgent: 'Already an Agent',
+        success: 'Agent Created',
+        failed: 'Failed to Make Agent',
+      },
     },
-    home: {
-      title: '¡Hola mundo!',
-      sendEth: 'Enviar 0.0001 ETH a sí mismo',
-      transactionSuccess: 'Transacción exitosa',
-      transactionFailed: 'Transacción fallida',
-      notConnected: 'Por favor conecte su billetera',
-      insufficientBalance: 'Por favor conecte con una cuenta que tenga un poco de ETH',
+    verify: {
+      title: 'Verify Documents',
+      subtitle: 'Verify document authenticity.',
+      upload: {
+        dropHere: 'Drop your document here, or',
+        supportsAny: 'Supports any file format',
+        noDocument: 'No document provided',
+        noDocumentDesc: 'Please upload a file or enter a document CID/hash',
+        copied: 'Copied to clipboard',
+        clickToCopy: 'Click to copy - This CID will be used for verification',
+      },
+      progress: {
+        computing: 'Computing document hash (CID)...',
+        checking: 'Checking registry...',
+        aiVerifying: 'Document found! Performing AI verification...',
+        complete: 'Verification complete!',
+      },
+      results: {
+        title: 'Verification Results',
+        verified: 'Document Verified!',
+        notFound: 'Not Found',
+        verifiedBadge: 'VERIFIED',
+        unverifiedBadge: 'UNVERIFIED',
+        issuedOn: 'Issued On',
+        issuedBy: 'Issued By',
+        entityUrl: 'Entity URL',
+        metadata: 'Metadata',
+        registryAddress: 'Registry Address',
+        aiVerification: 'AI Verification',
+        registryVerified: 'Registry address verified on entity website',
+        registryNotVerified: 'Could not verify registry address on entity website',
+      },
+      toast: {
+        verified: 'Document Verified!',
+        foundIn: 'Found in',
+        notFound: 'Document Not Found',
+        notFoundDesc: 'This document has not been registered on the blockchain',
+        failed: 'Verification Failed',
+        fileTooLarge: 'File too large',
+        fileTooLargeDesc: 'Please select a file smaller than 10MB',
+      },
     },
-    wallet: {
-      title: 'Bienvenido al Firmador de Mensajes',
-      description: 'Firme y verifique mensajes de Ethereum de forma segura con su billetera',
-      noWalletFound: 'No se encontró ninguna billetera Ethereum',
-      createWallet: 'Crear nueva billetera Ethereum',
-      regenerateWallet: 'Generar nueva billetera',
-      flushDb: 'Vaciar BD',
-      yourAddress: 'Su dirección de billetera Ethereum',
-      messageToSign: 'Mensaje para firmar',
-      enterMessage: 'Ingrese su mensaje...',
-      signMessage: 'Firmar mensaje',
-      signature: 'Firma Ethereum',
-      verifySignature: 'Verificar firma',
-      verificationSuccess: 'La firma es válida y coincide con la dirección de la billetera actual',
-      verificationFailed: 'La firma no coincide con la dirección de la billetera actual',
+    sandbox: {
+      title: 'Sandbox',
+      subtitle: 'Explore and experiment with the Affix platform (soon)',
     },
-    navigation: {
-      newPage: 'Nueva página',
-      walletGenerator: 'Generador de billetera',
-      referral: 'Referido',
+    errors: {
+      somethingWrong: 'Something went wrong!',
+      apology:
+        'We apologize for the inconvenience. An error occurred while processing your request.',
+      errorDetails: 'Error Details:',
+      errorId: 'Error ID:',
+      tryAgain: 'Try Again',
+      persistProblem: 'If the problem persists, please refresh the page or',
+      contactSupport: 'contact support',
     },
-    newPage: {
-      title: 'Bienvenido a Nueva Página',
-      subtitle: '¡Libera tu imaginación en esta nueva página!',
-      accountInfo: 'Información de la cuenta',
-      connectedAddress: 'Dirección conectada:',
-      balance: 'Saldo:',
-      connectWallet: 'Conecta tu billetera para comenzar',
-      lastTransaction: 'Última transacción:',
-      backHome: 'Volver a Inicio',
+    notFound: {
+      code: '404',
+      title: 'Page Not Found',
+      description: "The page you're looking for doesn't exist.",
+      returnHome: 'Return Home',
+    },
+    components: {
+      header: {
+        registerTitle: 'Register New Account',
+        registerDesc:
+          'An Ethereum wallet will be created and securely stored on your device, protected by your biometric or PIN thanks to',
+        w3pk: 'w3pk',
+        username: 'Username',
+        usernamePlaceholder: 'Enter your username',
+        usernameValidation:
+          'Username must be 3-50 characters long and contain only letters, numbers, underscores, and hyphens. It must start and end with a letter or number.',
+        createAccount: 'Create Account',
+        usernameRequired: 'Username Required',
+        usernameRequiredDesc: 'Please enter a username to register.',
+        registrationFailed: 'Registration Failed',
+        registrationFailedDesc: 'Unable to complete registration. Please try again.',
+      },
+      passwordModal: {
+        password: 'Password',
+        placeholder: 'Enter your password',
+        passwordRequired: 'Password Required.',
+        passwordRequiredDesc: 'Please enter your password.',
+        weakPassword: 'Weak Password.',
+        weakPasswordDesc: 'Please use a stronger password that meets all requirements.',
+        submissionError: 'Submission Error.',
+        passwordMustInclude: 'Password must include:',
+        atLeast12: 'At least 12 characters',
+        oneUppercase: 'One uppercase letter',
+        oneLowercase: 'One lowercase letter',
+        oneNumber: 'One number',
+        oneSpecial: 'One special character',
+        notMeetRequirements: 'Password does not meet all requirements',
+        strongPassword: 'Strong password!',
+        satisfied: '(satisfied)',
+        required: '(required)',
+      },
     },
   },
 
@@ -271,305 +1046,1836 @@ export const translations: Translations = {
     common: {
       login: 'Connexion',
       logout: 'Déconnexion',
-      back: 'Retour',
-      loading: 'Chargement...',
-      error: 'Erreur',
-      success: 'Succès',
+      register: "S'inscrire",
+      pleaseLogin: 'Veuillez vous connecter',
+      cancel: 'Annuler',
+      submit: 'Envoyer',
+      copy: 'Copier',
+      view: 'Voir',
+      remove: 'Supprimer',
+      tryAgain: 'Réessayer',
+      browse: 'parcourir',
     },
     home: {
-      title: 'Salut tout le monde !',
-      sendEth: 'Envoyer 0.0001 ETH à soi-même',
-      transactionSuccess: 'Transaction réussie',
-      transactionFailed: 'Échec de la transaction',
-      notConnected: 'Veuillez connecter votre wallet',
-      insufficientBalance: "Veuillez vous connecter avec un compte qui possède un peu d'ETH",
-    },
-    wallet: {
-      title: 'Bienvenue sur le Signataire de Messages',
-      description: 'Signez et vérifiez en toute sécurité des messages Ethereum avec votre wallet',
-      noWalletFound: 'Aucun wallet',
-      createWallet: 'Créer un Nouveau wallet Ethereum',
-      regenerateWallet: 'Générer un nouveau wallet',
-      flushDb: 'Vider la BD',
-      yourAddress: 'Votre adresse Ethereum',
-      messageToSign: 'Message à signer',
-      enterMessage: 'Entrez votre message...',
-      signMessage: 'Signer le mlessage',
-      signature: 'Signature',
-      verifySignature: 'Vérifier la signature',
-      verificationSuccess: 'La signature est valide et correspond à ce wallet',
-      verificationFailed: 'La signature ne correspond pas à ce wallet',
+      title: 'Bienvenue !',
+      subtitle: "C'est un plaisir de vous avoir ici !",
+      greeting: 'Bonjour Anon !',
+      greetingSubtitle: 'Détendez-vous et créez quelque chose de cool !',
+      hero: {
+        tagline: 'Apposer votre sceau',
+        letTheWorld: 'Tout le monde peut',
+        verify: 'vérifier',
+        it: 'ça',
+        description:
+          "Authentifiez vos documents sur la blockchain sans changer vos habitudes de travail. N'importe qui peut ensuite vérifier instantanément que les documents sont authentiques et non altérés.",
+        dashboardButton: 'Dashboard',
+        verifyButton: 'Vérifier',
+      },
+      problem: {
+        title: 'Une épidémie de fraude aux documents...',
+        description:
+          'Les faux documents causent des milliards de pertes chaque année. Des certificats frauduleux aux contrats falsifiés, les faux documents sont un vrai problème. Affix résout ce problème.',
+      },
+      features: {
+        title: 'Découvrez Affix !',
+        easyToVerify: 'Facile à vérifier',
+        easyToVerifyDesc:
+          'Vérification en un clic pour tous, partout. Aucune connaissance technique requise.',
+        unbreakableSecurity: 'Sécurité inviolable',
+        unbreakableSecurityDesc:
+          'Les preuve enregistrées sur la blockchain. Rien ni personne ne peut les altérer.',
+        privacyFirst: 'Confidentialité maximum',
+        privacyFirstDesc:
+          'Nous ne stockons pas vos documents. Seules les empreintes cryptographiques sont enregistrées sur la blockchain.',
+        aiPowered: 'Vérification par IA',
+        aiPoweredDesc:
+          "L'assistant vérifie si les adresses d'instance correspondent aux URL enregistrées onchain pour une sécurité renforcée.",
+        forEveryone: 'Pour tous',
+        forEveryoneDesc:
+          "Parfait pour les organisations, les entreprises et les particuliers qui ont besoin d'émettre des documents officiels.",
+        antiFraud: 'Protection anti-fraude',
+        antiFraudDesc:
+          'Combattez les milliards de pertes annuelles dues aux faux documents grâce à Affix.',
+      },
+      documentTypes: {
+        title: 'Fonctionne avec tous les types de documents',
+        pdfs: 'PDF',
+        images: 'Images',
+        videos: 'Vidéos',
+        anyFile: 'Tout Fichier',
+      },
+      howItWorks: {
+        title: 'Comment ça marche',
+        step1Title: "Publier l'empreinte numérique",
+        step1Desc:
+          "Téléchargez n'importe quel type de document et nous créons une empreinte cryptographique unique qui va en chaîne",
+        step2Title: 'Tout le monde peut vérifier',
+        step2Desc:
+          "Partagez le document avec n'importe qui - ils peuvent vérifier instantanément son authenticité avec l'assistance de l'IA",
+        step3Title: 'Authenticité garantie',
+        step3Desc:
+          "Prouvez qu'une déclaration a été faite par vous avec des preuves blockchain immuables et une vérification IA",
+      },
+      trust: {
+        noStorage: 'Nous ne stockons pas vos documents',
+        noStorageDesc:
+          'Vos fichiers ne quittent jamais votre appareil. Seules les preuves mathématiques sont enregistrées en chaîne.',
+        guaranteeAuthorship: 'Garantir la paternité',
+        guaranteeAuthorshipDesc:
+          "Prouvez cryptographiquement qu'une déclaration a été faite par vous à un moment précis. C'est toute la magie du Web3.",
+      },
+      roadmap: {
+        title: 'Feuille de Route',
+        publicDocuments: 'Documents publics',
+        publicDocumentsDesc:
+          'Documents publics stockés de manière décentralisée pour une accessibilité permanente, la transparence et plus encore',
+        digitalAgreements: 'Signatures numériques',
+        digitalAgreementsDesc:
+          'Fonctionnalité de type DocuSign pour les accords et la signature de contrats',
+        mainnetLaunch: 'Lancement sur Mainnet',
+        mainnetLaunchDesc:
+          'Nous sommes en contact avec plusieurs institutions au Burkina Faso. Elles sont prêtes à déployer leur propre instance...',
+        comingSoon: 'Soon',
+      },
+      cta: {
+        title: 'Prêt à authentifier vos documents avec Affix ?',
+        description:
+          "Rejoignez-nous dans la lutte contre la fraude documentaire. Commencez dès aujourd'hui ou contactez-nous pour en savoir plus.",
+        contactButton: 'Contactez-nous',
+      },
     },
     navigation: {
-      newPage: 'Nouvelle page',
-      walletGenerator: 'Générateur de wallet',
-      referral: 'Parrainage',
+      settings: 'Paramètres',
+      dashboard: 'Dashboard',
+      verify: 'Vérifier',
+      sandbox: 'Sandbox',
     },
-    newPage: {
-      title: 'Bienvenue sur la nouvelle page',
-      subtitle: 'Libérez votre imagination sur cette nouvelle page !',
-      accountInfo: 'Informations du compte',
-      connectedAddress: 'Adresse connectée :',
-      balance: 'Solde :',
-      connectWallet: 'Connectez votre wallet pour commencer',
-      lastTransaction: 'Dernière transaction :',
-      backHome: "Retour à l'accueil",
+    settings: {
+      title: 'Paramètres',
+      loginRequired: 'Veuillez vous connecter pour accéder à vos paramètres',
+    },
+    dashboard: {
+      title: 'Bienvenue sur votre dashboard',
+      subtitle: 'Gérez vos documents et permissions',
+      loginPrompt: 'Veuillez vous connecter',
+      exploreWithout: 'Vous voulez explorer sans vous connecter ?',
+      tryThe: 'Essayez le',
+      toExplore: 'pour explorer la plateforme',
+      checkingPermissions: 'Vérification des permissions...',
+      welcome: 'Bienvenue',
+      yourAddress: 'Votre adresse :',
+      issueDocument: {
+        title: 'Émettre un document',
+        issueOnBehalf: 'Émettre un document au nom de',
+        contractAddress: 'Adresse du contrat',
+        clickToUpload: 'Cliquez pour télécharger un document',
+        documentCID: 'CID du Document',
+        issueButton: 'Émettre le Document',
+        fileTooLarge: 'Fichier trop volumineux',
+        fileTooLargeDesc: 'Veuillez sélectionner un fichier de moins de 10 Mo',
+        cidGenerated: 'CID Généré',
+        cidGeneratedDesc: 'Hash du document calculé avec succès',
+        error: 'Erreur',
+        computeError: 'Échec du calcul du hash du document',
+        noDocument: 'Aucun document',
+        noDocumentDesc: "Veuillez d'abord télécharger un document",
+        notAuthenticated: 'Non authentifié',
+        notAuthenticatedDesc: 'Veuillez vous connecter pour émettre des documents',
+        txSubmitted: 'Transaction Soumise',
+        txHash: 'Hash',
+        success: 'Document Émis avec Succès',
+        viewTxOn: 'Voir la transaction sur',
+        viewTx: 'Voir la Transaction',
+        failed: "Échec de l'Émission",
+      },
+      addAgent: {
+        title: 'Ajouter un agent',
+        agentAddress: "Adresse de l'agent",
+        placeholder: "Entrez l'adresse Ethereum du nouvel agent",
+        addButton: 'Ajouter comme agent',
+        registryContract: 'Contrat de registre',
+        noAddress: 'Aucune adresse fournie',
+        noAddressDesc: 'Veuillez entrer une adresse',
+        invalidAddress: 'Adresse invalide',
+        invalidAddressDesc: 'Veuillez entrer une adresse Ethereum valide',
+        noRegistry: 'Aucun registre trouvé',
+        noRegistryDesc: "Impossible d'ajouter un agent sans adresse de registre",
+        alreadyAgent: 'Déjà un agent',
+        success: 'Agent créé',
+        failed: "Échec de la création de l'agent",
+      },
+    },
+    verify: {
+      title: 'Vérifier un document',
+      subtitle: "Vérifiez l'authenticité d'un document.",
+      upload: {
+        dropHere: 'Déposez votre document ici, ou',
+        supportsAny: 'Prend en charge tous les formats de fichiers',
+        noDocument: 'Aucun document fourni',
+        noDocumentDesc: 'Veuillez télécharger un fichier ou entrer un CID/hash de document',
+        copied: 'Copié dans le presse-papiers',
+        clickToCopy: 'Cliquez pour copier - Ce CID sera utilisé pour la vérification',
+      },
+      progress: {
+        computing: 'Calcul du hash du document (CID)...',
+        checking: 'Vérification du registre...',
+        aiVerifying: 'Document trouvé ! Exécution de la vérification IA...',
+        complete: 'Vérification terminée !',
+      },
+      results: {
+        title: 'Résultats de la Vérification',
+        verified: 'Document Vérifié !',
+        notFound: 'Non Trouvé',
+        verifiedBadge: 'VÉRIFIÉ',
+        unverifiedBadge: 'NON VÉRIFIÉ',
+        issuedOn: 'Émis le',
+        issuedBy: 'Émis par',
+        entityUrl: "URL de l'Entité",
+        metadata: 'Métadonnées',
+        registryAddress: 'Adresse du Registre',
+        aiVerification: 'Vérification IA',
+        registryVerified: "Adresse du registre vérifiée sur le site web de l'entité",
+        registryNotVerified:
+          "Impossible de vérifier l'adresse du registre sur le site web de l'entité",
+      },
+      toast: {
+        verified: 'Document Vérifié !',
+        foundIn: 'Trouvé dans',
+        notFound: 'Document Non Trouvé',
+        notFoundDesc: "Ce document n'a pas été enregistré sur la blockchain",
+        failed: 'Échec de la Vérification',
+        fileTooLarge: 'Fichier trop volumineux',
+        fileTooLargeDesc: 'Veuillez sélectionner un fichier de moins de 10 Mo',
+      },
+    },
+    sandbox: {
+      title: 'Sandbox',
+      subtitle: 'Explorez et expérimentez Affix (soon)',
+    },
+    errors: {
+      somethingWrong: "Quelque chose s'est mal passé !",
+      apology:
+        "Nous nous excusons pour le désagrément. Une erreur s'est produite lors du traitement de votre demande.",
+      errorDetails: "Détails de l'Erreur :",
+      errorId: "ID de l'Erreur :",
+      tryAgain: 'Réessayer',
+      persistProblem: 'Si le problème persiste, veuillez actualiser la page ou',
+      contactSupport: 'contacter le support',
+    },
+    notFound: {
+      code: '404',
+      title: 'Page Non Trouvée',
+      description: "La page que vous recherchez n'existe pas.",
+      returnHome: "Retour à l'Accueil",
+    },
+    components: {
+      header: {
+        registerTitle: 'Créer un Nouveau Compte',
+        registerDesc:
+          'Un portefeuille Ethereum sera créé et stocké en toute sécurité sur votre appareil, protégé par votre biométrie ou code PIN grâce à',
+        w3pk: 'w3pk',
+        username: "Nom d'utilisateur",
+        usernamePlaceholder: "Entrez votre nom d'utilisateur",
+        usernameValidation:
+          "Le nom d'utilisateur doit contenir entre 3 et 50 caractères et ne contenir que des lettres, des chiffres, des tirets bas et des traits d'union. Il doit commencer et se terminer par une lettre ou un chiffre.",
+        createAccount: 'Créer un Compte',
+        usernameRequired: "Nom d'utilisateur Requis",
+        usernameRequiredDesc: "Veuillez entrer un nom d'utilisateur pour vous inscrire.",
+        registrationFailed: "Échec de l'Inscription",
+        registrationFailedDesc: "Impossible de terminer l'inscription. Veuillez réessayer.",
+      },
+      passwordModal: {
+        password: 'Mot de passe',
+        placeholder: 'Entrez votre mot de passe',
+        passwordRequired: 'Mot de passe Requis.',
+        passwordRequiredDesc: 'Veuillez entrer votre mot de passe.',
+        weakPassword: 'Mot de passe Faible.',
+        weakPasswordDesc:
+          'Veuillez utiliser un mot de passe plus fort qui répond à toutes les exigences.',
+        submissionError: 'Erreur de Soumission.',
+        passwordMustInclude: 'Le mot de passe doit inclure :',
+        atLeast12: 'Au moins 12 caractères',
+        oneUppercase: 'Une lettre majuscule',
+        oneLowercase: 'Une lettre minuscule',
+        oneNumber: 'Un chiffre',
+        oneSpecial: 'Un caractère spécial',
+        notMeetRequirements: 'Le mot de passe ne répond pas à toutes les exigences',
+        strongPassword: 'Mot de passe fort !',
+        satisfied: '(satisfait)',
+        required: '(requis)',
+      },
+    },
+  },
+
+  // Spanish
+  es: {
+    common: {
+      login: 'Login',
+      logout: 'Logout',
+      register: 'Register',
+      pleaseLogin: 'Please login',
+      cancel: 'Cancel',
+      submit: 'Submit',
+      copy: 'Copy',
+      view: 'View',
+      remove: 'Remove',
+      tryAgain: 'Try Again',
+      browse: 'browse',
+    },
+    home: {
+      title: 'Welcome!',
+      subtitle: "It's a pleasure to have you here!",
+      greeting: 'Hello Anon!',
+      greetingSubtitle: 'Sit back, relax, and build something cool!',
+      hero: {
+        tagline: 'your onchain seal',
+        letTheWorld: 'Let the world',
+        verify: 'verify',
+        it: 'it',
+        description:
+          'Authenticate your documents onchain while keeping your existing workflows intact. Anyone can then instantly verify that documents are genuine and unaltered.',
+        dashboardButton: 'Your Dashboard',
+        verifyButton: 'Verify',
+      },
+      problem: {
+        title: 'The Document Fraud Epidemic...',
+        description:
+          'Fake documents cause billions of dollars in losses every year. From fraudulent certificates to forged contracts, document verification is broken. Web3 fixes this.',
+      },
+      features: {
+        title: 'Discover Affix!',
+        easyToVerify: 'Easy to Verify',
+        easyToVerifyDesc:
+          'One-click verification for anyone, anywhere. No technical knowledge required.',
+        unbreakableSecurity: 'Unbreakable Security',
+        unbreakableSecurityDesc: 'Blockchain-powered proof that cannot be tampered with or forged.',
+        privacyFirst: 'Privacy First',
+        privacyFirstDesc:
+          "We don't store your documents. Only cryptographic fingerprints go onchain.",
+        aiPowered: 'AI-Powered Verification',
+        aiPoweredDesc:
+          'AI helps you verify things. It checks if instance addresses match URLs registered onchain for enhanced security.',
+        forEveryone: 'For Everyone',
+        forEveryoneDesc:
+          'Perfect for organizations, businesses, and individuals who need document authenticity.',
+        antiFraud: 'Anti-Fraud Protection',
+        antiFraudDesc:
+          'Combat the billions in annual losses from fake documents with blockchain verification.',
+      },
+      documentTypes: {
+        title: 'Works with Any Document Type',
+        pdfs: 'PDFs',
+        images: 'Images',
+        videos: 'Videos',
+        anyFile: 'Any File',
+      },
+      howItWorks: {
+        title: 'How It Works',
+        step1Title: 'Publish Digital Footprint',
+        step1Desc:
+          'Upload any document type and we create a unique cryptographic fingerprint that goes onchain',
+        step2Title: 'Anyone Can Verify',
+        step2Desc:
+          'Share the document with anyone - they can instantly verify its authenticity with AI assistance',
+        step3Title: 'Guaranteed Authenticity',
+        step3Desc:
+          'Prove a statement was made by you with immutable blockchain evidence and AI verification',
+      },
+      trust: {
+        noStorage: "We Don't Store Your Documents",
+        noStorageDesc:
+          'Your files never leave your device. Only mathematical proofs are recorded onchain.',
+        guaranteeAuthorship: 'Guarantee Authorship',
+        guaranteeAuthorshipDesc:
+          "Cryptographically prove a statement was made by you at a specific time. That's the magic of Web3.",
+      },
+      roadmap: {
+        title: 'Roadmap',
+        publicDocuments: 'Public documents',
+        publicDocumentsDesc:
+          'Public documents stored in a decentralized fashion for permanent accessibility, transparency, and more',
+        digitalAgreements: 'Digital Agreements',
+        digitalAgreementsDesc: 'DocuSign-style functionality for agreements and contract signing',
+        mainnetLaunch: 'Mainnet Launch',
+        mainnetLaunchDesc:
+          "We're in contact with several institutions in Burkina Faso. They're ready to deploy their own instance...",
+        comingSoon: 'Coming Soon',
+      },
+      cta: {
+        title: 'Ready to Authenticate Your Documents with Affix?',
+        description:
+          'Join us in the fight against document fraud. Get started today or reach out to learn more.',
+        contactButton: 'Contact Us',
+      },
+    },
+    navigation: {
+      settings: 'Settings',
+      dashboard: 'Dashboard',
+      verify: 'Verify',
+      sandbox: 'Sandbox',
+    },
+    settings: {
+      title: 'Settings',
+      loginRequired: 'Please login to access your settings',
+    },
+    dashboard: {
+      title: 'Welcome to Your Dashboard',
+      subtitle: 'Manage your documents and permissions',
+      loginPrompt: 'Please login',
+      exploreWithout: 'Want to explore without logging in?',
+      tryThe: 'Try the',
+      toExplore: 'to explore the platform',
+      checkingPermissions: 'Checking permissions...',
+      welcome: 'Welcome',
+      yourAddress: 'Your Address:',
+      issueDocument: {
+        title: 'Issue Document',
+        issueOnBehalf: 'Issue a document on behalf of',
+        contractAddress: 'Contract address',
+        clickToUpload: 'Click to upload document',
+        documentCID: 'Document CID',
+        issueButton: 'Issue Document',
+        fileTooLarge: 'File too large',
+        fileTooLargeDesc: 'Please select a file smaller than 10MB',
+        cidGenerated: 'CID Generated',
+        cidGeneratedDesc: 'Document hash computed successfully',
+        error: 'Error',
+        computeError: 'Failed to compute document hash',
+        noDocument: 'No document',
+        noDocumentDesc: 'Please upload a document first',
+        notAuthenticated: 'Not authenticated',
+        notAuthenticatedDesc: 'Please login to issue documents',
+        txSubmitted: 'Transaction Submitted',
+        txHash: 'Hash',
+        success: 'Document Issued Successfully',
+        viewTxOn: 'View transaction on',
+        viewTx: 'View Transaction',
+        failed: 'Issuance Failed',
+      },
+      addAgent: {
+        title: 'Add Agent',
+        agentAddress: 'Agent Address',
+        placeholder: 'Enter the Ethereum address of the new agent',
+        addButton: 'Add as Agent',
+        registryContract: 'Registry Contract',
+        noAddress: 'No address provided',
+        noAddressDesc: 'Please enter an address',
+        invalidAddress: 'Invalid address',
+        invalidAddressDesc: 'Please enter a valid Ethereum address',
+        noRegistry: 'No registry found',
+        noRegistryDesc: 'Cannot add agent without a registry address',
+        alreadyAgent: 'Already an Agent',
+        success: 'Agent Created',
+        failed: 'Failed to Make Agent',
+      },
+    },
+    verify: {
+      title: 'Verify Documents',
+      subtitle: 'Verify document authenticity.',
+      upload: {
+        dropHere: 'Drop your document here, or',
+        supportsAny: 'Supports any file format',
+        noDocument: 'No document provided',
+        noDocumentDesc: 'Please upload a file or enter a document CID/hash',
+        copied: 'Copied to clipboard',
+        clickToCopy: 'Click to copy - This CID will be used for verification',
+      },
+      progress: {
+        computing: 'Computing document hash (CID)...',
+        checking: 'Checking registry...',
+        aiVerifying: 'Document found! Performing AI verification...',
+        complete: 'Verification complete!',
+      },
+      results: {
+        title: 'Verification Results',
+        verified: 'Document Verified!',
+        notFound: 'Not Found',
+        verifiedBadge: 'VERIFIED',
+        unverifiedBadge: 'UNVERIFIED',
+        issuedOn: 'Issued On',
+        issuedBy: 'Issued By',
+        entityUrl: 'Entity URL',
+        metadata: 'Metadata',
+        registryAddress: 'Registry Address',
+        aiVerification: 'AI Verification',
+        registryVerified: 'Registry address verified on entity website',
+        registryNotVerified: 'Could not verify registry address on entity website',
+      },
+      toast: {
+        verified: 'Document Verified!',
+        foundIn: 'Found in',
+        notFound: 'Document Not Found',
+        notFoundDesc: 'This document has not been registered on the blockchain',
+        failed: 'Verification Failed',
+        fileTooLarge: 'File too large',
+        fileTooLargeDesc: 'Please select a file smaller than 10MB',
+      },
+    },
+    sandbox: {
+      title: 'Sandbox',
+      subtitle: 'Explore and experiment with the Affix platform (soon)',
+    },
+    errors: {
+      somethingWrong: 'Something went wrong!',
+      apology:
+        'We apologize for the inconvenience. An error occurred while processing your request.',
+      errorDetails: 'Error Details:',
+      errorId: 'Error ID:',
+      tryAgain: 'Try Again',
+      persistProblem: 'If the problem persists, please refresh the page or',
+      contactSupport: 'contact support',
+    },
+    notFound: {
+      code: '404',
+      title: 'Page Not Found',
+      description: "The page you're looking for doesn't exist.",
+      returnHome: 'Return Home',
+    },
+    components: {
+      header: {
+        registerTitle: 'Register New Account',
+        registerDesc:
+          'An Ethereum wallet will be created and securely stored on your device, protected by your biometric or PIN thanks to',
+        w3pk: 'w3pk',
+        username: 'Username',
+        usernamePlaceholder: 'Enter your username',
+        usernameValidation:
+          'Username must be 3-50 characters long and contain only letters, numbers, underscores, and hyphens. It must start and end with a letter or number.',
+        createAccount: 'Create Account',
+        usernameRequired: 'Username Required',
+        usernameRequiredDesc: 'Please enter a username to register.',
+        registrationFailed: 'Registration Failed',
+        registrationFailedDesc: 'Unable to complete registration. Please try again.',
+      },
+      passwordModal: {
+        password: 'Password',
+        placeholder: 'Enter your password',
+        passwordRequired: 'Password Required.',
+        passwordRequiredDesc: 'Please enter your password.',
+        weakPassword: 'Weak Password.',
+        weakPasswordDesc: 'Please use a stronger password that meets all requirements.',
+        submissionError: 'Submission Error.',
+        passwordMustInclude: 'Password must include:',
+        atLeast12: 'At least 12 characters',
+        oneUppercase: 'One uppercase letter',
+        oneLowercase: 'One lowercase letter',
+        oneNumber: 'One number',
+        oneSpecial: 'One special character',
+        notMeetRequirements: 'Password does not meet all requirements',
+        strongPassword: 'Strong password!',
+        satisfied: '(satisfied)',
+        required: '(required)',
+      },
     },
   },
 
   // Arabic
   ar: {
     common: {
-      login: 'تسجيل الدخول',
-      logout: 'تسجيل الخروج',
-      back: 'رجوع',
-      loading: 'جاري التحميل...',
-      error: 'خطأ',
-      success: 'نجاح',
+      login: 'Login',
+      logout: 'Logout',
+      register: 'Register',
+      pleaseLogin: 'Please login',
+      cancel: 'Cancel',
+      submit: 'Submit',
+      copy: 'Copy',
+      view: 'View',
+      remove: 'Remove',
+      tryAgain: 'Try Again',
+      browse: 'browse',
     },
     home: {
-      title: 'مرحبا بالعالم!',
-      sendEth: 'إرسال 0.0001 ETH لنفسك',
-      transactionSuccess: 'تمت المعاملة بنجاح',
-      transactionFailed: 'فشلت المعاملة',
-      notConnected: 'يرجى توصيل محفظتك',
-      insufficientBalance: 'يرجى الاتصال بحساب يحتوي على قليل من ETH',
-    },
-    wallet: {
-      title: 'مرحبًا بك في موقع توقيع الرسائل',
-      description: 'قم بتوقيع رسائل إيثريوم والتحقق منها بشكل آمن باستخدام محفظتك',
-      noWalletFound: 'لم يتم العثور على محفظة إيثريوم',
-      createWallet: 'إنشاء محفظة إيثريوم جديدة',
-      regenerateWallet: 'إنشاء محفظة جديدة',
-      flushDb: 'مسح قاعدة البيانات',
-      yourAddress: 'عنوان محفظة الإيثريوم الخاصة بك',
-      messageToSign: 'رسالة للتوقيع',
-      enterMessage: 'أدخل رسالتك...',
-      signMessage: 'توقيع الرسالة',
-      signature: 'توقيع الإيثريوم',
-      verifySignature: 'التحقق من التوقيع',
-      verificationSuccess: 'التوقيع صالح ويتطابق مع عنوان المحفظة الحالي',
-      verificationFailed: 'التوقيع لا يتطابق مع عنوان المحفظة الحالي',
+      title: 'Welcome!',
+      subtitle: "It's a pleasure to have you here!",
+      greeting: 'Hello Anon!',
+      greetingSubtitle: 'Sit back, relax, and build something cool!',
+      hero: {
+        tagline: 'your onchain seal',
+        letTheWorld: 'Let the world',
+        verify: 'verify',
+        it: 'it',
+        description:
+          'Authenticate your documents onchain while keeping your existing workflows intact. Anyone can then instantly verify that documents are genuine and unaltered.',
+        dashboardButton: 'Your Dashboard',
+        verifyButton: 'Verify',
+      },
+      problem: {
+        title: 'The Document Fraud Epidemic...',
+        description:
+          'Fake documents cause billions of dollars in losses every year. From fraudulent certificates to forged contracts, document verification is broken. Web3 fixes this.',
+      },
+      features: {
+        title: 'Discover Affix!',
+        easyToVerify: 'Easy to Verify',
+        easyToVerifyDesc:
+          'One-click verification for anyone, anywhere. No technical knowledge required.',
+        unbreakableSecurity: 'Unbreakable Security',
+        unbreakableSecurityDesc: 'Blockchain-powered proof that cannot be tampered with or forged.',
+        privacyFirst: 'Privacy First',
+        privacyFirstDesc:
+          "We don't store your documents. Only cryptographic fingerprints go onchain.",
+        aiPowered: 'AI-Powered Verification',
+        aiPoweredDesc:
+          'AI helps you verify things. It checks if instance addresses match URLs registered onchain for enhanced security.',
+        forEveryone: 'For Everyone',
+        forEveryoneDesc:
+          'Perfect for organizations, businesses, and individuals who need document authenticity.',
+        antiFraud: 'Anti-Fraud Protection',
+        antiFraudDesc:
+          'Combat the billions in annual losses from fake documents with blockchain verification.',
+      },
+      documentTypes: {
+        title: 'Works with Any Document Type',
+        pdfs: 'PDFs',
+        images: 'Images',
+        videos: 'Videos',
+        anyFile: 'Any File',
+      },
+      howItWorks: {
+        title: 'How It Works',
+        step1Title: 'Publish Digital Footprint',
+        step1Desc:
+          'Upload any document type and we create a unique cryptographic fingerprint that goes onchain',
+        step2Title: 'Anyone Can Verify',
+        step2Desc:
+          'Share the document with anyone - they can instantly verify its authenticity with AI assistance',
+        step3Title: 'Guaranteed Authenticity',
+        step3Desc:
+          'Prove a statement was made by you with immutable blockchain evidence and AI verification',
+      },
+      trust: {
+        noStorage: "We Don't Store Your Documents",
+        noStorageDesc:
+          'Your files never leave your device. Only mathematical proofs are recorded onchain.',
+        guaranteeAuthorship: 'Guarantee Authorship',
+        guaranteeAuthorshipDesc:
+          "Cryptographically prove a statement was made by you at a specific time. That's the magic of Web3.",
+      },
+      roadmap: {
+        title: 'Roadmap',
+        publicDocuments: 'Public documents',
+        publicDocumentsDesc:
+          'Public documents stored in a decentralized fashion for permanent accessibility, transparency, and more',
+        digitalAgreements: 'Digital Agreements',
+        digitalAgreementsDesc: 'DocuSign-style functionality for agreements and contract signing',
+        mainnetLaunch: 'Mainnet Launch',
+        mainnetLaunchDesc:
+          "We're in contact with several institutions in Burkina Faso. They're ready to deploy their own instance...",
+        comingSoon: 'Coming Soon',
+      },
+      cta: {
+        title: 'Ready to Authenticate Your Documents with Affix?',
+        description:
+          'Join us in the fight against document fraud. Get started today or reach out to learn more.',
+        contactButton: 'Contact Us',
+      },
     },
     navigation: {
-      newPage: 'صفحة جديدة',
-      walletGenerator: 'منشئ المحفظة',
-      referral: 'إحالة',
+      settings: 'Settings',
+      dashboard: 'Dashboard',
+      verify: 'Verify',
+      sandbox: 'Sandbox',
     },
-    newPage: {
-      title: 'مرحبًا بك في الصفحة الجديدة',
-      subtitle: 'أطلق العنان لخيالك في هذه الصفحة الجديدة!',
-      accountInfo: 'معلومات الحساب',
-      connectedAddress: 'العنوان المتصل:',
-      balance: 'الرصيد:',
-      connectWallet: 'قم بتوصيل محفظتك للبدء',
-      lastTransaction: 'آخر معاملة:',
-      backHome: 'العودة إلى الصفحة الرئيسية',
+    settings: {
+      title: 'Settings',
+      loginRequired: 'Please login to access your settings',
+    },
+    dashboard: {
+      title: 'Welcome to Your Dashboard',
+      subtitle: 'Manage your documents and permissions',
+      loginPrompt: 'Please login',
+      exploreWithout: 'Want to explore without logging in?',
+      tryThe: 'Try the',
+      toExplore: 'to explore the platform',
+      checkingPermissions: 'Checking permissions...',
+      welcome: 'Welcome',
+      yourAddress: 'Your Address:',
+      issueDocument: {
+        title: 'Issue Document',
+        issueOnBehalf: 'Issue a document on behalf of',
+        contractAddress: 'Contract address',
+        clickToUpload: 'Click to upload document',
+        documentCID: 'Document CID',
+        issueButton: 'Issue Document',
+        fileTooLarge: 'File too large',
+        fileTooLargeDesc: 'Please select a file smaller than 10MB',
+        cidGenerated: 'CID Generated',
+        cidGeneratedDesc: 'Document hash computed successfully',
+        error: 'Error',
+        computeError: 'Failed to compute document hash',
+        noDocument: 'No document',
+        noDocumentDesc: 'Please upload a document first',
+        notAuthenticated: 'Not authenticated',
+        notAuthenticatedDesc: 'Please login to issue documents',
+        txSubmitted: 'Transaction Submitted',
+        txHash: 'Hash',
+        success: 'Document Issued Successfully',
+        viewTxOn: 'View transaction on',
+        viewTx: 'View Transaction',
+        failed: 'Issuance Failed',
+      },
+      addAgent: {
+        title: 'Add Agent',
+        agentAddress: 'Agent Address',
+        placeholder: 'Enter the Ethereum address of the new agent',
+        addButton: 'Add as Agent',
+        registryContract: 'Registry Contract',
+        noAddress: 'No address provided',
+        noAddressDesc: 'Please enter an address',
+        invalidAddress: 'Invalid address',
+        invalidAddressDesc: 'Please enter a valid Ethereum address',
+        noRegistry: 'No registry found',
+        noRegistryDesc: 'Cannot add agent without a registry address',
+        alreadyAgent: 'Already an Agent',
+        success: 'Agent Created',
+        failed: 'Failed to Make Agent',
+      },
+    },
+    verify: {
+      title: 'Verify Documents',
+      subtitle: 'Verify document authenticity.',
+      upload: {
+        dropHere: 'Drop your document here, or',
+        supportsAny: 'Supports any file format',
+        noDocument: 'No document provided',
+        noDocumentDesc: 'Please upload a file or enter a document CID/hash',
+        copied: 'Copied to clipboard',
+        clickToCopy: 'Click to copy - This CID will be used for verification',
+      },
+      progress: {
+        computing: 'Computing document hash (CID)...',
+        checking: 'Checking registry...',
+        aiVerifying: 'Document found! Performing AI verification...',
+        complete: 'Verification complete!',
+      },
+      results: {
+        title: 'Verification Results',
+        verified: 'Document Verified!',
+        notFound: 'Not Found',
+        verifiedBadge: 'VERIFIED',
+        unverifiedBadge: 'UNVERIFIED',
+        issuedOn: 'Issued On',
+        issuedBy: 'Issued By',
+        entityUrl: 'Entity URL',
+        metadata: 'Metadata',
+        registryAddress: 'Registry Address',
+        aiVerification: 'AI Verification',
+        registryVerified: 'Registry address verified on entity website',
+        registryNotVerified: 'Could not verify registry address on entity website',
+      },
+      toast: {
+        verified: 'Document Verified!',
+        foundIn: 'Found in',
+        notFound: 'Document Not Found',
+        notFoundDesc: 'This document has not been registered on the blockchain',
+        failed: 'Verification Failed',
+        fileTooLarge: 'File too large',
+        fileTooLargeDesc: 'Please select a file smaller than 10MB',
+      },
+    },
+    sandbox: {
+      title: 'Sandbox',
+      subtitle: 'Explore and experiment with the Affix platform (soon)',
+    },
+    errors: {
+      somethingWrong: 'Something went wrong!',
+      apology:
+        'We apologize for the inconvenience. An error occurred while processing your request.',
+      errorDetails: 'Error Details:',
+      errorId: 'Error ID:',
+      tryAgain: 'Try Again',
+      persistProblem: 'If the problem persists, please refresh the page or',
+      contactSupport: 'contact support',
+    },
+    notFound: {
+      code: '404',
+      title: 'Page Not Found',
+      description: "The page you're looking for doesn't exist.",
+      returnHome: 'Return Home',
+    },
+    components: {
+      header: {
+        registerTitle: 'Register New Account',
+        registerDesc:
+          'An Ethereum wallet will be created and securely stored on your device, protected by your biometric or PIN thanks to',
+        w3pk: 'w3pk',
+        username: 'Username',
+        usernamePlaceholder: 'Enter your username',
+        usernameValidation:
+          'Username must be 3-50 characters long and contain only letters, numbers, underscores, and hyphens. It must start and end with a letter or number.',
+        createAccount: 'Create Account',
+        usernameRequired: 'Username Required',
+        usernameRequiredDesc: 'Please enter a username to register.',
+        registrationFailed: 'Registration Failed',
+        registrationFailedDesc: 'Unable to complete registration. Please try again.',
+      },
+      passwordModal: {
+        password: 'Password',
+        placeholder: 'Enter your password',
+        passwordRequired: 'Password Required.',
+        passwordRequiredDesc: 'Please enter your password.',
+        weakPassword: 'Weak Password.',
+        weakPasswordDesc: 'Please use a stronger password that meets all requirements.',
+        submissionError: 'Submission Error.',
+        passwordMustInclude: 'Password must include:',
+        atLeast12: 'At least 12 characters',
+        oneUppercase: 'One uppercase letter',
+        oneLowercase: 'One lowercase letter',
+        oneNumber: 'One number',
+        oneSpecial: 'One special character',
+        notMeetRequirements: 'Password does not meet all requirements',
+        strongPassword: 'Strong password!',
+        satisfied: '(satisfied)',
+        required: '(required)',
+      },
     },
   },
 
   // Bengali
   bn: {
     common: {
-      login: 'লগ ইন',
-      logout: 'লগ আউট',
-      back: 'পিছনে',
-      loading: 'লোড হচ্ছে...',
-      error: 'ত্রুটি',
-      success: 'সফল',
+      login: 'Login',
+      logout: 'Logout',
+      register: 'Register',
+      pleaseLogin: 'Please login',
+      cancel: 'Cancel',
+      submit: 'Submit',
+      copy: 'Copy',
+      view: 'View',
+      remove: 'Remove',
+      tryAgain: 'Try Again',
+      browse: 'browse',
     },
     home: {
-      title: 'ওহে বিশ্ব!',
-      sendEth: 'নিজেকে 0.0001 ETH পাঠান',
-      transactionSuccess: 'লেনদেন সফল',
-      transactionFailed: 'লেনদেন ব্যর্থ',
-      notConnected: 'অনুগ্রহ করে আপনার ওয়ালেট সংযুক্ত করুন',
-      insufficientBalance: 'অনুগ্রহ করে এমন একটি অ্যাকাউন্টের সাথে সংযোগ করুন যার কিছু ETH আছে',
-    },
-    wallet: {
-      title: 'মেসেজ সাইনারে স্বাগতম',
-      description: 'আপনার ওয়ালেট দিয়ে নিরাপদে ইথেরিয়াম বার্তা স্বাক্ষর এবং যাচাই করুন',
-      noWalletFound: 'কোনও ইথেরিয়াম ওয়ালেট পাওয়া যায়নি',
-      createWallet: 'নতুন ইথেরিয়াম ওয়ালেট তৈরি করুন',
-      regenerateWallet: 'নতুন ওয়ালেট তৈরি করুন',
-      flushDb: 'ডাটাবেস খালি করুন',
-      yourAddress: 'আপনার ইথেরিয়াম ওয়ালেট ঠিকানা',
-      messageToSign: 'স্বাক্ষর করার বার্তা',
-      enterMessage: 'আপনার বার্তা লিখুন...',
-      signMessage: 'বার্তা স্বাক্ষর করুন',
-      signature: 'ইথেরিয়াম স্বাক্ষর',
-      verifySignature: 'স্বাক্ষর যাচাই করুন',
-      verificationSuccess: 'স্বাক্ষর বৈধ এবং বর্তমান ওয়ালেট ঠিকানার সাথে মেলে',
-      verificationFailed: 'স্বাক্ষর বর্তমান ওয়ালেট ঠিকানার সাথে মেলে না',
+      title: 'Welcome!',
+      subtitle: "It's a pleasure to have you here!",
+      greeting: 'Hello Anon!',
+      greetingSubtitle: 'Sit back, relax, and build something cool!',
+      hero: {
+        tagline: 'your onchain seal',
+        letTheWorld: 'Let the world',
+        verify: 'verify',
+        it: 'it',
+        description:
+          'Authenticate your documents onchain while keeping your existing workflows intact. Anyone can then instantly verify that documents are genuine and unaltered.',
+        dashboardButton: 'Your Dashboard',
+        verifyButton: 'Verify',
+      },
+      problem: {
+        title: 'The Document Fraud Epidemic...',
+        description:
+          'Fake documents cause billions of dollars in losses every year. From fraudulent certificates to forged contracts, document verification is broken. Web3 fixes this.',
+      },
+      features: {
+        title: 'Discover Affix!',
+        easyToVerify: 'Easy to Verify',
+        easyToVerifyDesc:
+          'One-click verification for anyone, anywhere. No technical knowledge required.',
+        unbreakableSecurity: 'Unbreakable Security',
+        unbreakableSecurityDesc: 'Blockchain-powered proof that cannot be tampered with or forged.',
+        privacyFirst: 'Privacy First',
+        privacyFirstDesc:
+          "We don't store your documents. Only cryptographic fingerprints go onchain.",
+        aiPowered: 'AI-Powered Verification',
+        aiPoweredDesc:
+          'AI helps you verify things. It checks if instance addresses match URLs registered onchain for enhanced security.',
+        forEveryone: 'For Everyone',
+        forEveryoneDesc:
+          'Perfect for organizations, businesses, and individuals who need document authenticity.',
+        antiFraud: 'Anti-Fraud Protection',
+        antiFraudDesc:
+          'Combat the billions in annual losses from fake documents with blockchain verification.',
+      },
+      documentTypes: {
+        title: 'Works with Any Document Type',
+        pdfs: 'PDFs',
+        images: 'Images',
+        videos: 'Videos',
+        anyFile: 'Any File',
+      },
+      howItWorks: {
+        title: 'How It Works',
+        step1Title: 'Publish Digital Footprint',
+        step1Desc:
+          'Upload any document type and we create a unique cryptographic fingerprint that goes onchain',
+        step2Title: 'Anyone Can Verify',
+        step2Desc:
+          'Share the document with anyone - they can instantly verify its authenticity with AI assistance',
+        step3Title: 'Guaranteed Authenticity',
+        step3Desc:
+          'Prove a statement was made by you with immutable blockchain evidence and AI verification',
+      },
+      trust: {
+        noStorage: "We Don't Store Your Documents",
+        noStorageDesc:
+          'Your files never leave your device. Only mathematical proofs are recorded onchain.',
+        guaranteeAuthorship: 'Guarantee Authorship',
+        guaranteeAuthorshipDesc:
+          "Cryptographically prove a statement was made by you at a specific time. That's the magic of Web3.",
+      },
+      roadmap: {
+        title: 'Roadmap',
+        publicDocuments: 'Public documents',
+        publicDocumentsDesc:
+          'Public documents stored in a decentralized fashion for permanent accessibility, transparency, and more',
+        digitalAgreements: 'Digital Agreements',
+        digitalAgreementsDesc: 'DocuSign-style functionality for agreements and contract signing',
+        mainnetLaunch: 'Mainnet Launch',
+        mainnetLaunchDesc:
+          "We're in contact with several institutions in Burkina Faso. They're ready to deploy their own instance...",
+        comingSoon: 'Coming Soon',
+      },
+      cta: {
+        title: 'Ready to Authenticate Your Documents with Affix?',
+        description:
+          'Join us in the fight against document fraud. Get started today or reach out to learn more.',
+        contactButton: 'Contact Us',
+      },
     },
     navigation: {
-      newPage: 'নতুন পৃষ্ঠা',
-      walletGenerator: 'ওয়ালেট জেনারেটর',
-      referral: 'রেফারেল',
+      settings: 'Settings',
+      dashboard: 'Dashboard',
+      verify: 'Verify',
+      sandbox: 'Sandbox',
     },
-    newPage: {
-      title: 'নতুন পৃষ্ঠায় স্বাগতম',
-      subtitle: 'এই নতুন পৃষ্ঠায় আপনার কল্পনাকে মুক্ত করুন!',
-      accountInfo: 'অ্যাকাউন্ট তথ্য',
-      connectedAddress: 'সংযুক্ত ঠিকানা:',
-      balance: 'ব্যালেন্স:',
-      connectWallet: 'শুরু করতে আপনার ওয়ালেট সংযোগ করুন',
-      lastTransaction: 'সর্বশেষ লেনদেন:',
-      backHome: 'হোমে ফিরে যান',
+    settings: {
+      title: 'Settings',
+      loginRequired: 'Please login to access your settings',
+    },
+    dashboard: {
+      title: 'Welcome to Your Dashboard',
+      subtitle: 'Manage your documents and permissions',
+      loginPrompt: 'Please login',
+      exploreWithout: 'Want to explore without logging in?',
+      tryThe: 'Try the',
+      toExplore: 'to explore the platform',
+      checkingPermissions: 'Checking permissions...',
+      welcome: 'Welcome',
+      yourAddress: 'Your Address:',
+      issueDocument: {
+        title: 'Issue Document',
+        issueOnBehalf: 'Issue a document on behalf of',
+        contractAddress: 'Contract address',
+        clickToUpload: 'Click to upload document',
+        documentCID: 'Document CID',
+        issueButton: 'Issue Document',
+        fileTooLarge: 'File too large',
+        fileTooLargeDesc: 'Please select a file smaller than 10MB',
+        cidGenerated: 'CID Generated',
+        cidGeneratedDesc: 'Document hash computed successfully',
+        error: 'Error',
+        computeError: 'Failed to compute document hash',
+        noDocument: 'No document',
+        noDocumentDesc: 'Please upload a document first',
+        notAuthenticated: 'Not authenticated',
+        notAuthenticatedDesc: 'Please login to issue documents',
+        txSubmitted: 'Transaction Submitted',
+        txHash: 'Hash',
+        success: 'Document Issued Successfully',
+        viewTxOn: 'View transaction on',
+        viewTx: 'View Transaction',
+        failed: 'Issuance Failed',
+      },
+      addAgent: {
+        title: 'Add Agent',
+        agentAddress: 'Agent Address',
+        placeholder: 'Enter the Ethereum address of the new agent',
+        addButton: 'Add as Agent',
+        registryContract: 'Registry Contract',
+        noAddress: 'No address provided',
+        noAddressDesc: 'Please enter an address',
+        invalidAddress: 'Invalid address',
+        invalidAddressDesc: 'Please enter a valid Ethereum address',
+        noRegistry: 'No registry found',
+        noRegistryDesc: 'Cannot add agent without a registry address',
+        alreadyAgent: 'Already an Agent',
+        success: 'Agent Created',
+        failed: 'Failed to Make Agent',
+      },
+    },
+    verify: {
+      title: 'Verify Documents',
+      subtitle: 'Verify document authenticity.',
+      upload: {
+        dropHere: 'Drop your document here, or',
+        supportsAny: 'Supports any file format',
+        noDocument: 'No document provided',
+        noDocumentDesc: 'Please upload a file or enter a document CID/hash',
+        copied: 'Copied to clipboard',
+        clickToCopy: 'Click to copy - This CID will be used for verification',
+      },
+      progress: {
+        computing: 'Computing document hash (CID)...',
+        checking: 'Checking registry...',
+        aiVerifying: 'Document found! Performing AI verification...',
+        complete: 'Verification complete!',
+      },
+      results: {
+        title: 'Verification Results',
+        verified: 'Document Verified!',
+        notFound: 'Not Found',
+        verifiedBadge: 'VERIFIED',
+        unverifiedBadge: 'UNVERIFIED',
+        issuedOn: 'Issued On',
+        issuedBy: 'Issued By',
+        entityUrl: 'Entity URL',
+        metadata: 'Metadata',
+        registryAddress: 'Registry Address',
+        aiVerification: 'AI Verification',
+        registryVerified: 'Registry address verified on entity website',
+        registryNotVerified: 'Could not verify registry address on entity website',
+      },
+      toast: {
+        verified: 'Document Verified!',
+        foundIn: 'Found in',
+        notFound: 'Document Not Found',
+        notFoundDesc: 'This document has not been registered on the blockchain',
+        failed: 'Verification Failed',
+        fileTooLarge: 'File too large',
+        fileTooLargeDesc: 'Please select a file smaller than 10MB',
+      },
+    },
+    sandbox: {
+      title: 'Sandbox',
+      subtitle: 'Explore and experiment with the Affix platform (soon)',
+    },
+    errors: {
+      somethingWrong: 'Something went wrong!',
+      apology:
+        'We apologize for the inconvenience. An error occurred while processing your request.',
+      errorDetails: 'Error Details:',
+      errorId: 'Error ID:',
+      tryAgain: 'Try Again',
+      persistProblem: 'If the problem persists, please refresh the page or',
+      contactSupport: 'contact support',
+    },
+    notFound: {
+      code: '404',
+      title: 'Page Not Found',
+      description: "The page you're looking for doesn't exist.",
+      returnHome: 'Return Home',
+    },
+    components: {
+      header: {
+        registerTitle: 'Register New Account',
+        registerDesc:
+          'An Ethereum wallet will be created and securely stored on your device, protected by your biometric or PIN thanks to',
+        w3pk: 'w3pk',
+        username: 'Username',
+        usernamePlaceholder: 'Enter your username',
+        usernameValidation:
+          'Username must be 3-50 characters long and contain only letters, numbers, underscores, and hyphens. It must start and end with a letter or number.',
+        createAccount: 'Create Account',
+        usernameRequired: 'Username Required',
+        usernameRequiredDesc: 'Please enter a username to register.',
+        registrationFailed: 'Registration Failed',
+        registrationFailedDesc: 'Unable to complete registration. Please try again.',
+      },
+      passwordModal: {
+        password: 'Password',
+        placeholder: 'Enter your password',
+        passwordRequired: 'Password Required.',
+        passwordRequiredDesc: 'Please enter your password.',
+        weakPassword: 'Weak Password.',
+        weakPasswordDesc: 'Please use a stronger password that meets all requirements.',
+        submissionError: 'Submission Error.',
+        passwordMustInclude: 'Password must include:',
+        atLeast12: 'At least 12 characters',
+        oneUppercase: 'One uppercase letter',
+        oneLowercase: 'One lowercase letter',
+        oneNumber: 'One number',
+        oneSpecial: 'One special character',
+        notMeetRequirements: 'Password does not meet all requirements',
+        strongPassword: 'Strong password!',
+        satisfied: '(satisfied)',
+        required: '(required)',
+      },
     },
   },
 
   // Russian
   ru: {
     common: {
-      login: 'Вход',
-      logout: 'Выход',
-      back: 'Назад',
-      loading: 'Загрузка...',
-      error: 'Ошибка',
-      success: 'Успех',
+      login: 'Login',
+      logout: 'Logout',
+      register: 'Register',
+      pleaseLogin: 'Please login',
+      cancel: 'Cancel',
+      submit: 'Submit',
+      copy: 'Copy',
+      view: 'View',
+      remove: 'Remove',
+      tryAgain: 'Try Again',
+      browse: 'browse',
     },
     home: {
-      title: 'Привет, мир!',
-      sendEth: 'Отправить 0.0001 ETH себе',
-      transactionSuccess: 'Транзакция успешна',
-      transactionFailed: 'Транзакция не удалась',
-      notConnected: 'Пожалуйста, подключите ваш кошелек',
-      insufficientBalance: 'Пожалуйста, подключитесь с аккаунтом, на котором есть немного ETH',
-    },
-    wallet: {
-      title: 'Добро пожаловать в Подписчик сообщений',
-      description:
-        'Безопасно подписывайте и проверяйте сообщения Ethereum с помощью вашего кошелька',
-      noWalletFound: 'Кошелек Ethereum не найден',
-      createWallet: 'Создать новый кошелек Ethereum',
-      regenerateWallet: 'Сгенерировать новый кошелек',
-      flushDb: 'Очистить БД',
-      yourAddress: 'Адрес вашего кошелька Ethereum',
-      messageToSign: 'Сообщение для подписи',
-      enterMessage: 'Введите ваше сообщение...',
-      signMessage: 'Подписать сообщение',
-      signature: 'Подпись Ethereum',
-      verifySignature: 'Проверить подпись',
-      verificationSuccess: 'Подпись действительна и соответствует текущему адресу кошелька',
-      verificationFailed: 'Подпись не соответствует текущему адресу кошелька',
+      title: 'Welcome!',
+      subtitle: "It's a pleasure to have you here!",
+      greeting: 'Hello Anon!',
+      greetingSubtitle: 'Sit back, relax, and build something cool!',
+      hero: {
+        tagline: 'your onchain seal',
+        letTheWorld: 'Let the world',
+        verify: 'verify',
+        it: 'it',
+        description:
+          'Authenticate your documents onchain while keeping your existing workflows intact. Anyone can then instantly verify that documents are genuine and unaltered.',
+        dashboardButton: 'Your Dashboard',
+        verifyButton: 'Verify',
+      },
+      problem: {
+        title: 'The Document Fraud Epidemic...',
+        description:
+          'Fake documents cause billions of dollars in losses every year. From fraudulent certificates to forged contracts, document verification is broken. Web3 fixes this.',
+      },
+      features: {
+        title: 'Discover Affix!',
+        easyToVerify: 'Easy to Verify',
+        easyToVerifyDesc:
+          'One-click verification for anyone, anywhere. No technical knowledge required.',
+        unbreakableSecurity: 'Unbreakable Security',
+        unbreakableSecurityDesc: 'Blockchain-powered proof that cannot be tampered with or forged.',
+        privacyFirst: 'Privacy First',
+        privacyFirstDesc:
+          "We don't store your documents. Only cryptographic fingerprints go onchain.",
+        aiPowered: 'AI-Powered Verification',
+        aiPoweredDesc:
+          'AI helps you verify things. It checks if instance addresses match URLs registered onchain for enhanced security.',
+        forEveryone: 'For Everyone',
+        forEveryoneDesc:
+          'Perfect for organizations, businesses, and individuals who need document authenticity.',
+        antiFraud: 'Anti-Fraud Protection',
+        antiFraudDesc:
+          'Combat the billions in annual losses from fake documents with blockchain verification.',
+      },
+      documentTypes: {
+        title: 'Works with Any Document Type',
+        pdfs: 'PDFs',
+        images: 'Images',
+        videos: 'Videos',
+        anyFile: 'Any File',
+      },
+      howItWorks: {
+        title: 'How It Works',
+        step1Title: 'Publish Digital Footprint',
+        step1Desc:
+          'Upload any document type and we create a unique cryptographic fingerprint that goes onchain',
+        step2Title: 'Anyone Can Verify',
+        step2Desc:
+          'Share the document with anyone - they can instantly verify its authenticity with AI assistance',
+        step3Title: 'Guaranteed Authenticity',
+        step3Desc:
+          'Prove a statement was made by you with immutable blockchain evidence and AI verification',
+      },
+      trust: {
+        noStorage: "We Don't Store Your Documents",
+        noStorageDesc:
+          'Your files never leave your device. Only mathematical proofs are recorded onchain.',
+        guaranteeAuthorship: 'Guarantee Authorship',
+        guaranteeAuthorshipDesc:
+          "Cryptographically prove a statement was made by you at a specific time. That's the magic of Web3.",
+      },
+      roadmap: {
+        title: 'Roadmap',
+        publicDocuments: 'Public documents',
+        publicDocumentsDesc:
+          'Public documents stored in a decentralized fashion for permanent accessibility, transparency, and more',
+        digitalAgreements: 'Digital Agreements',
+        digitalAgreementsDesc: 'DocuSign-style functionality for agreements and contract signing',
+        mainnetLaunch: 'Mainnet Launch',
+        mainnetLaunchDesc:
+          "We're in contact with several institutions in Burkina Faso. They're ready to deploy their own instance...",
+        comingSoon: 'Coming Soon',
+      },
+      cta: {
+        title: 'Ready to Authenticate Your Documents with Affix?',
+        description:
+          'Join us in the fight against document fraud. Get started today or reach out to learn more.',
+        contactButton: 'Contact Us',
+      },
     },
     navigation: {
-      newPage: 'Новая страница',
-      walletGenerator: 'Генератор кошельков',
-      referral: 'Рекомендация',
+      settings: 'Settings',
+      dashboard: 'Dashboard',
+      verify: 'Verify',
+      sandbox: 'Sandbox',
     },
-    newPage: {
-      title: 'Добро пожаловать на новую страницу',
-      subtitle: 'Раскройте свое воображение на этой новой странице!',
-      accountInfo: 'Информация об аккаунте',
-      connectedAddress: 'Подключенный адрес:',
-      balance: 'Баланс:',
-      connectWallet: 'Подключите ваш кошелек, чтобы начать',
-      lastTransaction: 'Последняя транзакция:',
-      backHome: 'Вернуться на главную',
+    settings: {
+      title: 'Settings',
+      loginRequired: 'Please login to access your settings',
+    },
+    dashboard: {
+      title: 'Welcome to Your Dashboard',
+      subtitle: 'Manage your documents and permissions',
+      loginPrompt: 'Please login',
+      exploreWithout: 'Want to explore without logging in?',
+      tryThe: 'Try the',
+      toExplore: 'to explore the platform',
+      checkingPermissions: 'Checking permissions...',
+      welcome: 'Welcome',
+      yourAddress: 'Your Address:',
+      issueDocument: {
+        title: 'Issue Document',
+        issueOnBehalf: 'Issue a document on behalf of',
+        contractAddress: 'Contract address',
+        clickToUpload: 'Click to upload document',
+        documentCID: 'Document CID',
+        issueButton: 'Issue Document',
+        fileTooLarge: 'File too large',
+        fileTooLargeDesc: 'Please select a file smaller than 10MB',
+        cidGenerated: 'CID Generated',
+        cidGeneratedDesc: 'Document hash computed successfully',
+        error: 'Error',
+        computeError: 'Failed to compute document hash',
+        noDocument: 'No document',
+        noDocumentDesc: 'Please upload a document first',
+        notAuthenticated: 'Not authenticated',
+        notAuthenticatedDesc: 'Please login to issue documents',
+        txSubmitted: 'Transaction Submitted',
+        txHash: 'Hash',
+        success: 'Document Issued Successfully',
+        viewTxOn: 'View transaction on',
+        viewTx: 'View Transaction',
+        failed: 'Issuance Failed',
+      },
+      addAgent: {
+        title: 'Add Agent',
+        agentAddress: 'Agent Address',
+        placeholder: 'Enter the Ethereum address of the new agent',
+        addButton: 'Add as Agent',
+        registryContract: 'Registry Contract',
+        noAddress: 'No address provided',
+        noAddressDesc: 'Please enter an address',
+        invalidAddress: 'Invalid address',
+        invalidAddressDesc: 'Please enter a valid Ethereum address',
+        noRegistry: 'No registry found',
+        noRegistryDesc: 'Cannot add agent without a registry address',
+        alreadyAgent: 'Already an Agent',
+        success: 'Agent Created',
+        failed: 'Failed to Make Agent',
+      },
+    },
+    verify: {
+      title: 'Verify Documents',
+      subtitle: 'Verify document authenticity.',
+      upload: {
+        dropHere: 'Drop your document here, or',
+        supportsAny: 'Supports any file format',
+        noDocument: 'No document provided',
+        noDocumentDesc: 'Please upload a file or enter a document CID/hash',
+        copied: 'Copied to clipboard',
+        clickToCopy: 'Click to copy - This CID will be used for verification',
+      },
+      progress: {
+        computing: 'Computing document hash (CID)...',
+        checking: 'Checking registry...',
+        aiVerifying: 'Document found! Performing AI verification...',
+        complete: 'Verification complete!',
+      },
+      results: {
+        title: 'Verification Results',
+        verified: 'Document Verified!',
+        notFound: 'Not Found',
+        verifiedBadge: 'VERIFIED',
+        unverifiedBadge: 'UNVERIFIED',
+        issuedOn: 'Issued On',
+        issuedBy: 'Issued By',
+        entityUrl: 'Entity URL',
+        metadata: 'Metadata',
+        registryAddress: 'Registry Address',
+        aiVerification: 'AI Verification',
+        registryVerified: 'Registry address verified on entity website',
+        registryNotVerified: 'Could not verify registry address on entity website',
+      },
+      toast: {
+        verified: 'Document Verified!',
+        foundIn: 'Found in',
+        notFound: 'Document Not Found',
+        notFoundDesc: 'This document has not been registered on the blockchain',
+        failed: 'Verification Failed',
+        fileTooLarge: 'File too large',
+        fileTooLargeDesc: 'Please select a file smaller than 10MB',
+      },
+    },
+    sandbox: {
+      title: 'Sandbox',
+      subtitle: 'Explore and experiment with the Affix platform (soon)',
+    },
+    errors: {
+      somethingWrong: 'Something went wrong!',
+      apology:
+        'We apologize for the inconvenience. An error occurred while processing your request.',
+      errorDetails: 'Error Details:',
+      errorId: 'Error ID:',
+      tryAgain: 'Try Again',
+      persistProblem: 'If the problem persists, please refresh the page or',
+      contactSupport: 'contact support',
+    },
+    notFound: {
+      code: '404',
+      title: 'Page Not Found',
+      description: "The page you're looking for doesn't exist.",
+      returnHome: 'Return Home',
+    },
+    components: {
+      header: {
+        registerTitle: 'Register New Account',
+        registerDesc:
+          'An Ethereum wallet will be created and securely stored on your device, protected by your biometric or PIN thanks to',
+        w3pk: 'w3pk',
+        username: 'Username',
+        usernamePlaceholder: 'Enter your username',
+        usernameValidation:
+          'Username must be 3-50 characters long and contain only letters, numbers, underscores, and hyphens. It must start and end with a letter or number.',
+        createAccount: 'Create Account',
+        usernameRequired: 'Username Required',
+        usernameRequiredDesc: 'Please enter a username to register.',
+        registrationFailed: 'Registration Failed',
+        registrationFailedDesc: 'Unable to complete registration. Please try again.',
+      },
+      passwordModal: {
+        password: 'Password',
+        placeholder: 'Enter your password',
+        passwordRequired: 'Password Required.',
+        passwordRequiredDesc: 'Please enter your password.',
+        weakPassword: 'Weak Password.',
+        weakPasswordDesc: 'Please use a stronger password that meets all requirements.',
+        submissionError: 'Submission Error.',
+        passwordMustInclude: 'Password must include:',
+        atLeast12: 'At least 12 characters',
+        oneUppercase: 'One uppercase letter',
+        oneLowercase: 'One lowercase letter',
+        oneNumber: 'One number',
+        oneSpecial: 'One special character',
+        notMeetRequirements: 'Password does not meet all requirements',
+        strongPassword: 'Strong password!',
+        satisfied: '(satisfied)',
+        required: '(required)',
+      },
     },
   },
 
   // Portuguese
   pt: {
     common: {
-      login: 'Entrar',
-      logout: 'Sair',
-      back: 'Voltar',
-      loading: 'Carregando...',
-      error: 'Erro',
-      success: 'Sucesso',
+      login: 'Login',
+      logout: 'Logout',
+      register: 'Register',
+      pleaseLogin: 'Please login',
+      cancel: 'Cancel',
+      submit: 'Submit',
+      copy: 'Copy',
+      view: 'View',
+      remove: 'Remove',
+      tryAgain: 'Try Again',
+      browse: 'browse',
     },
     home: {
-      title: 'Olá, mundo!',
-      sendEth: 'Enviar 0.0001 ETH para si mesmo',
-      transactionSuccess: 'Transação bem-sucedida',
-      transactionFailed: 'Falha na transação',
-      notConnected: 'Por favor, conecte sua carteira',
-      insufficientBalance: 'Por favor, conecte-se com uma conta que tenha um pouco de ETH',
-    },
-    wallet: {
-      title: 'Bem-vindo ao Assinador de Mensagens',
-      description: 'Assine e verifique mensagens Ethereum com segurança usando sua carteira',
-      noWalletFound: 'Nenhuma carteira Ethereum encontrada',
-      createWallet: 'Criar nova carteira Ethereum',
-      regenerateWallet: 'Gerar nova carteira',
-      flushDb: 'Limpar BD',
-      yourAddress: 'Seu endereço de carteira Ethereum',
-      messageToSign: 'Mensagem para assinar',
-      enterMessage: 'Digite sua mensagem...',
-      signMessage: 'Assinar mensagem',
-      signature: 'Assinatura Ethereum',
-      verifySignature: 'Verificar assinatura',
-      verificationSuccess: 'A assinatura é válida e corresponde ao endereço da carteira atual',
-      verificationFailed: 'A assinatura não corresponde ao endereço da carteira atual',
+      title: 'Welcome!',
+      subtitle: "It's a pleasure to have you here!",
+      greeting: 'Hello Anon!',
+      greetingSubtitle: 'Sit back, relax, and build something cool!',
+      hero: {
+        tagline: 'your onchain seal',
+        letTheWorld: 'Let the world',
+        verify: 'verify',
+        it: 'it',
+        description:
+          'Authenticate your documents onchain while keeping your existing workflows intact. Anyone can then instantly verify that documents are genuine and unaltered.',
+        dashboardButton: 'Your Dashboard',
+        verifyButton: 'Verify',
+      },
+      problem: {
+        title: 'The Document Fraud Epidemic...',
+        description:
+          'Fake documents cause billions of dollars in losses every year. From fraudulent certificates to forged contracts, document verification is broken. Web3 fixes this.',
+      },
+      features: {
+        title: 'Discover Affix!',
+        easyToVerify: 'Easy to Verify',
+        easyToVerifyDesc:
+          'One-click verification for anyone, anywhere. No technical knowledge required.',
+        unbreakableSecurity: 'Unbreakable Security',
+        unbreakableSecurityDesc: 'Blockchain-powered proof that cannot be tampered with or forged.',
+        privacyFirst: 'Privacy First',
+        privacyFirstDesc:
+          "We don't store your documents. Only cryptographic fingerprints go onchain.",
+        aiPowered: 'AI-Powered Verification',
+        aiPoweredDesc:
+          'AI helps you verify things. It checks if instance addresses match URLs registered onchain for enhanced security.',
+        forEveryone: 'For Everyone',
+        forEveryoneDesc:
+          'Perfect for organizations, businesses, and individuals who need document authenticity.',
+        antiFraud: 'Anti-Fraud Protection',
+        antiFraudDesc:
+          'Combat the billions in annual losses from fake documents with blockchain verification.',
+      },
+      documentTypes: {
+        title: 'Works with Any Document Type',
+        pdfs: 'PDFs',
+        images: 'Images',
+        videos: 'Videos',
+        anyFile: 'Any File',
+      },
+      howItWorks: {
+        title: 'How It Works',
+        step1Title: 'Publish Digital Footprint',
+        step1Desc:
+          'Upload any document type and we create a unique cryptographic fingerprint that goes onchain',
+        step2Title: 'Anyone Can Verify',
+        step2Desc:
+          'Share the document with anyone - they can instantly verify its authenticity with AI assistance',
+        step3Title: 'Guaranteed Authenticity',
+        step3Desc:
+          'Prove a statement was made by you with immutable blockchain evidence and AI verification',
+      },
+      trust: {
+        noStorage: "We Don't Store Your Documents",
+        noStorageDesc:
+          'Your files never leave your device. Only mathematical proofs are recorded onchain.',
+        guaranteeAuthorship: 'Guarantee Authorship',
+        guaranteeAuthorshipDesc:
+          "Cryptographically prove a statement was made by you at a specific time. That's the magic of Web3.",
+      },
+      roadmap: {
+        title: 'Roadmap',
+        publicDocuments: 'Public documents',
+        publicDocumentsDesc:
+          'Public documents stored in a decentralized fashion for permanent accessibility, transparency, and more',
+        digitalAgreements: 'Digital Agreements',
+        digitalAgreementsDesc: 'DocuSign-style functionality for agreements and contract signing',
+        mainnetLaunch: 'Mainnet Launch',
+        mainnetLaunchDesc:
+          "We're in contact with several institutions in Burkina Faso. They're ready to deploy their own instance...",
+        comingSoon: 'Coming Soon',
+      },
+      cta: {
+        title: 'Ready to Authenticate Your Documents with Affix?',
+        description:
+          'Join us in the fight against document fraud. Get started today or reach out to learn more.',
+        contactButton: 'Contact Us',
+      },
     },
     navigation: {
-      newPage: 'Nova página',
-      walletGenerator: 'Gerador de carteira',
-      referral: 'Indicação',
+      settings: 'Settings',
+      dashboard: 'Dashboard',
+      verify: 'Verify',
+      sandbox: 'Sandbox',
     },
-    newPage: {
-      title: 'Bem-vindo à Nova Página',
-      subtitle: 'Libere sua imaginação nesta nova página!',
-      accountInfo: 'Informações da Conta',
-      connectedAddress: 'Endereço conectado:',
-      balance: 'Saldo:',
-      connectWallet: 'Conecte sua carteira para começar',
-      lastTransaction: 'Última transação:',
-      backHome: 'Voltar para a Página Inicial',
+    settings: {
+      title: 'Settings',
+      loginRequired: 'Please login to access your settings',
+    },
+    dashboard: {
+      title: 'Welcome to Your Dashboard',
+      subtitle: 'Manage your documents and permissions',
+      loginPrompt: 'Please login',
+      exploreWithout: 'Want to explore without logging in?',
+      tryThe: 'Try the',
+      toExplore: 'to explore the platform',
+      checkingPermissions: 'Checking permissions...',
+      welcome: 'Welcome',
+      yourAddress: 'Your Address:',
+      issueDocument: {
+        title: 'Issue Document',
+        issueOnBehalf: 'Issue a document on behalf of',
+        contractAddress: 'Contract address',
+        clickToUpload: 'Click to upload document',
+        documentCID: 'Document CID',
+        issueButton: 'Issue Document',
+        fileTooLarge: 'File too large',
+        fileTooLargeDesc: 'Please select a file smaller than 10MB',
+        cidGenerated: 'CID Generated',
+        cidGeneratedDesc: 'Document hash computed successfully',
+        error: 'Error',
+        computeError: 'Failed to compute document hash',
+        noDocument: 'No document',
+        noDocumentDesc: 'Please upload a document first',
+        notAuthenticated: 'Not authenticated',
+        notAuthenticatedDesc: 'Please login to issue documents',
+        txSubmitted: 'Transaction Submitted',
+        txHash: 'Hash',
+        success: 'Document Issued Successfully',
+        viewTxOn: 'View transaction on',
+        viewTx: 'View Transaction',
+        failed: 'Issuance Failed',
+      },
+      addAgent: {
+        title: 'Add Agent',
+        agentAddress: 'Agent Address',
+        placeholder: 'Enter the Ethereum address of the new agent',
+        addButton: 'Add as Agent',
+        registryContract: 'Registry Contract',
+        noAddress: 'No address provided',
+        noAddressDesc: 'Please enter an address',
+        invalidAddress: 'Invalid address',
+        invalidAddressDesc: 'Please enter a valid Ethereum address',
+        noRegistry: 'No registry found',
+        noRegistryDesc: 'Cannot add agent without a registry address',
+        alreadyAgent: 'Already an Agent',
+        success: 'Agent Created',
+        failed: 'Failed to Make Agent',
+      },
+    },
+    verify: {
+      title: 'Verify Documents',
+      subtitle: 'Verify document authenticity.',
+      upload: {
+        dropHere: 'Drop your document here, or',
+        supportsAny: 'Supports any file format',
+        noDocument: 'No document provided',
+        noDocumentDesc: 'Please upload a file or enter a document CID/hash',
+        copied: 'Copied to clipboard',
+        clickToCopy: 'Click to copy - This CID will be used for verification',
+      },
+      progress: {
+        computing: 'Computing document hash (CID)...',
+        checking: 'Checking registry...',
+        aiVerifying: 'Document found! Performing AI verification...',
+        complete: 'Verification complete!',
+      },
+      results: {
+        title: 'Verification Results',
+        verified: 'Document Verified!',
+        notFound: 'Not Found',
+        verifiedBadge: 'VERIFIED',
+        unverifiedBadge: 'UNVERIFIED',
+        issuedOn: 'Issued On',
+        issuedBy: 'Issued By',
+        entityUrl: 'Entity URL',
+        metadata: 'Metadata',
+        registryAddress: 'Registry Address',
+        aiVerification: 'AI Verification',
+        registryVerified: 'Registry address verified on entity website',
+        registryNotVerified: 'Could not verify registry address on entity website',
+      },
+      toast: {
+        verified: 'Document Verified!',
+        foundIn: 'Found in',
+        notFound: 'Document Not Found',
+        notFoundDesc: 'This document has not been registered on the blockchain',
+        failed: 'Verification Failed',
+        fileTooLarge: 'File too large',
+        fileTooLargeDesc: 'Please select a file smaller than 10MB',
+      },
+    },
+    sandbox: {
+      title: 'Sandbox',
+      subtitle: 'Explore and experiment with the Affix platform (soon)',
+    },
+    errors: {
+      somethingWrong: 'Something went wrong!',
+      apology:
+        'We apologize for the inconvenience. An error occurred while processing your request.',
+      errorDetails: 'Error Details:',
+      errorId: 'Error ID:',
+      tryAgain: 'Try Again',
+      persistProblem: 'If the problem persists, please refresh the page or',
+      contactSupport: 'contact support',
+    },
+    notFound: {
+      code: '404',
+      title: 'Page Not Found',
+      description: "The page you're looking for doesn't exist.",
+      returnHome: 'Return Home',
+    },
+    components: {
+      header: {
+        registerTitle: 'Register New Account',
+        registerDesc:
+          'An Ethereum wallet will be created and securely stored on your device, protected by your biometric or PIN thanks to',
+        w3pk: 'w3pk',
+        username: 'Username',
+        usernamePlaceholder: 'Enter your username',
+        usernameValidation:
+          'Username must be 3-50 characters long and contain only letters, numbers, underscores, and hyphens. It must start and end with a letter or number.',
+        createAccount: 'Create Account',
+        usernameRequired: 'Username Required',
+        usernameRequiredDesc: 'Please enter a username to register.',
+        registrationFailed: 'Registration Failed',
+        registrationFailedDesc: 'Unable to complete registration. Please try again.',
+      },
+      passwordModal: {
+        password: 'Password',
+        placeholder: 'Enter your password',
+        passwordRequired: 'Password Required.',
+        passwordRequiredDesc: 'Please enter your password.',
+        weakPassword: 'Weak Password.',
+        weakPasswordDesc: 'Please use a stronger password that meets all requirements.',
+        submissionError: 'Submission Error.',
+        passwordMustInclude: 'Password must include:',
+        atLeast12: 'At least 12 characters',
+        oneUppercase: 'One uppercase letter',
+        oneLowercase: 'One lowercase letter',
+        oneNumber: 'One number',
+        oneSpecial: 'One special character',
+        notMeetRequirements: 'Password does not meet all requirements',
+        strongPassword: 'Strong password!',
+        satisfied: '(satisfied)',
+        required: '(required)',
+      },
     },
   },
 
   // Urdu
   ur: {
     common: {
-      login: 'لاگ ان',
-      logout: 'لاگ آؤٹ',
-      back: 'واپس',
-      loading: 'لوڈ ہو رہا ہے...',
-      error: 'خرابی',
-      success: 'کامیابی',
+      login: 'Login',
+      logout: 'Logout',
+      register: 'Register',
+      pleaseLogin: 'Please login',
+      cancel: 'Cancel',
+      submit: 'Submit',
+      copy: 'Copy',
+      view: 'View',
+      remove: 'Remove',
+      tryAgain: 'Try Again',
+      browse: 'browse',
     },
     home: {
-      title: 'ہیلو دنیا!',
-      sendEth: 'خود کو 0.0001 ETH بھیجیں',
-      transactionSuccess: 'لین دین کامیاب',
-      transactionFailed: 'لین دین ناکام',
-      notConnected: 'براہ کرم اپنا والیٹ منسلک کریں',
-      insufficientBalance: 'براہ کرم ایسے اکاؤنٹ سے منسلک ہوں جس میں تھوڑا سا ETH ہو',
-    },
-    wallet: {
-      title: 'میسج سائنر میں خوش آمدید',
-      description: 'اپنے والیٹ سے محفوظ طریقے سے ایتھیریم پیغامات پر دستخط کریں اور تصدیق کریں',
-      noWalletFound: 'کوئی ایتھیریم والیٹ نہیں ملا',
-      createWallet: 'نیا ایتھیریم والیٹ بنائیں',
-      regenerateWallet: 'نیا والیٹ بنائیں',
-      flushDb: 'ڈیٹابیس خالی کریں',
-      yourAddress: 'آپ کا ایتھیریم والیٹ ایڈریس',
-      messageToSign: 'دستخط کرنے کے لیے پیغام',
-      enterMessage: 'اپنا پیغام درج کریں...',
-      signMessage: 'پیغام پر دستخط کریں',
-      signature: 'ایتھیریم دستخط',
-      verifySignature: 'دستخط کی تصدیق کریں',
-      verificationSuccess: 'دستخط درست ہے اور موجودہ والیٹ ایڈریس سے مطابقت رکھتا ہے',
-      verificationFailed: 'دستخط موجودہ والیٹ ایڈریس سے مطابقت نہیں رکھتا',
+      title: 'Welcome!',
+      subtitle: "It's a pleasure to have you here!",
+      greeting: 'Hello Anon!',
+      greetingSubtitle: 'Sit back, relax, and build something cool!',
+      hero: {
+        tagline: 'your onchain seal',
+        letTheWorld: 'Let the world',
+        verify: 'verify',
+        it: 'it',
+        description:
+          'Authenticate your documents onchain while keeping your existing workflows intact. Anyone can then instantly verify that documents are genuine and unaltered.',
+        dashboardButton: 'Your Dashboard',
+        verifyButton: 'Verify',
+      },
+      problem: {
+        title: 'The Document Fraud Epidemic...',
+        description:
+          'Fake documents cause billions of dollars in losses every year. From fraudulent certificates to forged contracts, document verification is broken. Web3 fixes this.',
+      },
+      features: {
+        title: 'Discover Affix!',
+        easyToVerify: 'Easy to Verify',
+        easyToVerifyDesc:
+          'One-click verification for anyone, anywhere. No technical knowledge required.',
+        unbreakableSecurity: 'Unbreakable Security',
+        unbreakableSecurityDesc: 'Blockchain-powered proof that cannot be tampered with or forged.',
+        privacyFirst: 'Privacy First',
+        privacyFirstDesc:
+          "We don't store your documents. Only cryptographic fingerprints go onchain.",
+        aiPowered: 'AI-Powered Verification',
+        aiPoweredDesc:
+          'AI helps you verify things. It checks if instance addresses match URLs registered onchain for enhanced security.',
+        forEveryone: 'For Everyone',
+        forEveryoneDesc:
+          'Perfect for organizations, businesses, and individuals who need document authenticity.',
+        antiFraud: 'Anti-Fraud Protection',
+        antiFraudDesc:
+          'Combat the billions in annual losses from fake documents with blockchain verification.',
+      },
+      documentTypes: {
+        title: 'Works with Any Document Type',
+        pdfs: 'PDFs',
+        images: 'Images',
+        videos: 'Videos',
+        anyFile: 'Any File',
+      },
+      howItWorks: {
+        title: 'How It Works',
+        step1Title: 'Publish Digital Footprint',
+        step1Desc:
+          'Upload any document type and we create a unique cryptographic fingerprint that goes onchain',
+        step2Title: 'Anyone Can Verify',
+        step2Desc:
+          'Share the document with anyone - they can instantly verify its authenticity with AI assistance',
+        step3Title: 'Guaranteed Authenticity',
+        step3Desc:
+          'Prove a statement was made by you with immutable blockchain evidence and AI verification',
+      },
+      trust: {
+        noStorage: "We Don't Store Your Documents",
+        noStorageDesc:
+          'Your files never leave your device. Only mathematical proofs are recorded onchain.',
+        guaranteeAuthorship: 'Guarantee Authorship',
+        guaranteeAuthorshipDesc:
+          "Cryptographically prove a statement was made by you at a specific time. That's the magic of Web3.",
+      },
+      roadmap: {
+        title: 'Roadmap',
+        publicDocuments: 'Public documents',
+        publicDocumentsDesc:
+          'Public documents stored in a decentralized fashion for permanent accessibility, transparency, and more',
+        digitalAgreements: 'Digital Agreements',
+        digitalAgreementsDesc: 'DocuSign-style functionality for agreements and contract signing',
+        mainnetLaunch: 'Mainnet Launch',
+        mainnetLaunchDesc:
+          "We're in contact with several institutions in Burkina Faso. They're ready to deploy their own instance...",
+        comingSoon: 'Coming Soon',
+      },
+      cta: {
+        title: 'Ready to Authenticate Your Documents with Affix?',
+        description:
+          'Join us in the fight against document fraud. Get started today or reach out to learn more.',
+        contactButton: 'Contact Us',
+      },
     },
     navigation: {
-      newPage: 'نیا صفحہ',
-      walletGenerator: 'والیٹ جنریٹر',
-      referral: 'حوالہ',
+      settings: 'Settings',
+      dashboard: 'Dashboard',
+      verify: 'Verify',
+      sandbox: 'Sandbox',
     },
-    newPage: {
-      title: 'نئے صفحے میں خوش آمدید',
-      subtitle: 'اس نئے صفحے پر اپنے تخیل کو آزاد کریں!',
-      accountInfo: 'اکاؤنٹ کی معلومات',
-      connectedAddress: 'منسلک ایڈریس:',
-      balance: 'بیلنس:',
-      connectWallet: 'شروع کرنے کے لیے اپنا والیٹ منسلک کریں',
-      lastTransaction: 'آخری لین دین:',
-      backHome: 'ہوم پیج پر واپس جائیں',
+    settings: {
+      title: 'Settings',
+      loginRequired: 'Please login to access your settings',
+    },
+    dashboard: {
+      title: 'Welcome to Your Dashboard',
+      subtitle: 'Manage your documents and permissions',
+      loginPrompt: 'Please login',
+      exploreWithout: 'Want to explore without logging in?',
+      tryThe: 'Try the',
+      toExplore: 'to explore the platform',
+      checkingPermissions: 'Checking permissions...',
+      welcome: 'Welcome',
+      yourAddress: 'Your Address:',
+      issueDocument: {
+        title: 'Issue Document',
+        issueOnBehalf: 'Issue a document on behalf of',
+        contractAddress: 'Contract address',
+        clickToUpload: 'Click to upload document',
+        documentCID: 'Document CID',
+        issueButton: 'Issue Document',
+        fileTooLarge: 'File too large',
+        fileTooLargeDesc: 'Please select a file smaller than 10MB',
+        cidGenerated: 'CID Generated',
+        cidGeneratedDesc: 'Document hash computed successfully',
+        error: 'Error',
+        computeError: 'Failed to compute document hash',
+        noDocument: 'No document',
+        noDocumentDesc: 'Please upload a document first',
+        notAuthenticated: 'Not authenticated',
+        notAuthenticatedDesc: 'Please login to issue documents',
+        txSubmitted: 'Transaction Submitted',
+        txHash: 'Hash',
+        success: 'Document Issued Successfully',
+        viewTxOn: 'View transaction on',
+        viewTx: 'View Transaction',
+        failed: 'Issuance Failed',
+      },
+      addAgent: {
+        title: 'Add Agent',
+        agentAddress: 'Agent Address',
+        placeholder: 'Enter the Ethereum address of the new agent',
+        addButton: 'Add as Agent',
+        registryContract: 'Registry Contract',
+        noAddress: 'No address provided',
+        noAddressDesc: 'Please enter an address',
+        invalidAddress: 'Invalid address',
+        invalidAddressDesc: 'Please enter a valid Ethereum address',
+        noRegistry: 'No registry found',
+        noRegistryDesc: 'Cannot add agent without a registry address',
+        alreadyAgent: 'Already an Agent',
+        success: 'Agent Created',
+        failed: 'Failed to Make Agent',
+      },
+    },
+    verify: {
+      title: 'Verify Documents',
+      subtitle: 'Verify document authenticity.',
+      upload: {
+        dropHere: 'Drop your document here, or',
+        supportsAny: 'Supports any file format',
+        noDocument: 'No document provided',
+        noDocumentDesc: 'Please upload a file or enter a document CID/hash',
+        copied: 'Copied to clipboard',
+        clickToCopy: 'Click to copy - This CID will be used for verification',
+      },
+      progress: {
+        computing: 'Computing document hash (CID)...',
+        checking: 'Checking registry...',
+        aiVerifying: 'Document found! Performing AI verification...',
+        complete: 'Verification complete!',
+      },
+      results: {
+        title: 'Verification Results',
+        verified: 'Document Verified!',
+        notFound: 'Not Found',
+        verifiedBadge: 'VERIFIED',
+        unverifiedBadge: 'UNVERIFIED',
+        issuedOn: 'Issued On',
+        issuedBy: 'Issued By',
+        entityUrl: 'Entity URL',
+        metadata: 'Metadata',
+        registryAddress: 'Registry Address',
+        aiVerification: 'AI Verification',
+        registryVerified: 'Registry address verified on entity website',
+        registryNotVerified: 'Could not verify registry address on entity website',
+      },
+      toast: {
+        verified: 'Document Verified!',
+        foundIn: 'Found in',
+        notFound: 'Document Not Found',
+        notFoundDesc: 'This document has not been registered on the blockchain',
+        failed: 'Verification Failed',
+        fileTooLarge: 'File too large',
+        fileTooLargeDesc: 'Please select a file smaller than 10MB',
+      },
+    },
+    sandbox: {
+      title: 'Sandbox',
+      subtitle: 'Explore and experiment with the Affix platform (soon)',
+    },
+    errors: {
+      somethingWrong: 'Something went wrong!',
+      apology:
+        'We apologize for the inconvenience. An error occurred while processing your request.',
+      errorDetails: 'Error Details:',
+      errorId: 'Error ID:',
+      tryAgain: 'Try Again',
+      persistProblem: 'If the problem persists, please refresh the page or',
+      contactSupport: 'contact support',
+    },
+    notFound: {
+      code: '404',
+      title: 'Page Not Found',
+      description: "The page you're looking for doesn't exist.",
+      returnHome: 'Return Home',
+    },
+    components: {
+      header: {
+        registerTitle: 'Register New Account',
+        registerDesc:
+          'An Ethereum wallet will be created and securely stored on your device, protected by your biometric or PIN thanks to',
+        w3pk: 'w3pk',
+        username: 'Username',
+        usernamePlaceholder: 'Enter your username',
+        usernameValidation:
+          'Username must be 3-50 characters long and contain only letters, numbers, underscores, and hyphens. It must start and end with a letter or number.',
+        createAccount: 'Create Account',
+        usernameRequired: 'Username Required',
+        usernameRequiredDesc: 'Please enter a username to register.',
+        registrationFailed: 'Registration Failed',
+        registrationFailedDesc: 'Unable to complete registration. Please try again.',
+      },
+      passwordModal: {
+        password: 'Password',
+        placeholder: 'Enter your password',
+        passwordRequired: 'Password Required.',
+        passwordRequiredDesc: 'Please enter your password.',
+        weakPassword: 'Weak Password.',
+        weakPasswordDesc: 'Please use a stronger password that meets all requirements.',
+        submissionError: 'Submission Error.',
+        passwordMustInclude: 'Password must include:',
+        atLeast12: 'At least 12 characters',
+        oneUppercase: 'One uppercase letter',
+        oneLowercase: 'One lowercase letter',
+        oneNumber: 'One number',
+        oneSpecial: 'One special character',
+        notMeetRequirements: 'Password does not meet all requirements',
+        strongPassword: 'Strong password!',
+        satisfied: '(satisfied)',
+        required: '(required)',
+      },
     },
   },
 }
