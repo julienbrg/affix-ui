@@ -62,14 +62,14 @@ export async function createW3PKAuthorization(
     delegate: delegateAddress,
     nonce,
     chainId,
-    hash: authHash
+    hash: authHash,
   })
 
   // Sign with W3PK in STANDARD mode using rawHash
   const signResult = await w3pk.signMessage(authHash, {
     mode: 'STANDARD',
     tag: 'MAIN',
-    signingMethod: 'rawHash'
+    signingMethod: 'rawHash',
   })
 
   // Parse the signature
@@ -81,13 +81,13 @@ export async function createW3PKAuthorization(
     chainId,
     yParity: sig.yParity,
     r: sig.r,
-    s: sig.s
+    s: sig.s,
   }
 
   console.log('✅ Authorization created:', {
     yParity: authorization.yParity,
     r: authorization.r.slice(0, 10) + '...',
-    s: authorization.s.slice(0, 10) + '...'
+    s: authorization.s.slice(0, 10) + '...',
   })
 
   return authorization
@@ -115,7 +115,7 @@ export async function createAuthorization(
     delegate: delegateAddress,
     nonce,
     chainId,
-    hash: authHash
+    hash: authHash,
   })
 
   // Sign the hash
@@ -130,13 +130,13 @@ export async function createAuthorization(
     chainId,
     yParity: sig.yParity,
     r: sig.r,
-    s: sig.s
+    s: sig.s,
   }
 
   console.log('✅ Authorization created:', {
     yParity: authorization.yParity,
     r: authorization.r.slice(0, 10) + '...',
-    s: authorization.s.slice(0, 10) + '...'
+    s: authorization.s.slice(0, 10) + '...',
   })
 
   return authorization

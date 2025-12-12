@@ -116,7 +116,9 @@ export async function POST(request: NextRequest) {
 
     if (error.message?.includes('revert') || error.message?.includes('execution reverted')) {
       return NextResponse.json(
-        { error: 'Transaction reverted. Agent may not have set up delegation or lacks permission.' },
+        {
+          error: 'Transaction reverted. Agent may not have set up delegation or lacks permission.',
+        },
         { status: 403 }
       )
     }

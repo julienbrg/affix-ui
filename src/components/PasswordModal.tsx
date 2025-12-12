@@ -147,29 +147,49 @@ const PasswordModal: React.FC<PasswordModalProps> = ({
                 <Flex align="center" gap={2}>
                   {hasMinLength ? <MdCheckCircle color="green" /> : <MdWarning color="gray" />}
                   {t.components.passwordModal.atLeast12}
-                  <span className="sr-only">{hasMinLength ? ` ${t.components.passwordModal.satisfied}` : ` ${t.components.passwordModal.required}`}</span>
+                  <span className="sr-only">
+                    {hasMinLength
+                      ? ` ${t.components.passwordModal.satisfied}`
+                      : ` ${t.components.passwordModal.required}`}
+                  </span>
                 </Flex>
 
                 <Flex align="center" gap={2}>
                   {hasUpperCase ? <MdCheckCircle color="green" /> : <MdWarning color="gray" />}
                   {t.components.passwordModal.oneUppercase}
                 </Flex>
-                <span className="sr-only">{hasUpperCase ? ` ${t.components.passwordModal.satisfied}` : ` ${t.components.passwordModal.required}`}</span>
+                <span className="sr-only">
+                  {hasUpperCase
+                    ? ` ${t.components.passwordModal.satisfied}`
+                    : ` ${t.components.passwordModal.required}`}
+                </span>
                 <Flex align="center" gap={2}>
                   {hasLowerCase ? <MdCheckCircle color="green" /> : <MdWarning color="gray" />}
                   {t.components.passwordModal.oneLowercase}
                 </Flex>
-                <span className="sr-only">{hasLowerCase ? ` ${t.components.passwordModal.satisfied}` : ` ${t.components.passwordModal.required}`}</span>
+                <span className="sr-only">
+                  {hasLowerCase
+                    ? ` ${t.components.passwordModal.satisfied}`
+                    : ` ${t.components.passwordModal.required}`}
+                </span>
                 <Flex align="center" gap={2}>
                   {hasNumber ? <MdCheckCircle color="green" /> : <MdWarning color="gray" />}
                   {t.components.passwordModal.oneNumber}
                 </Flex>
-                <span className="sr-only">{hasNumber ? ` ${t.components.passwordModal.satisfied}` : ` ${t.components.passwordModal.required}`}</span>
+                <span className="sr-only">
+                  {hasNumber
+                    ? ` ${t.components.passwordModal.satisfied}`
+                    : ` ${t.components.passwordModal.required}`}
+                </span>
                 <Flex align="center" gap={2}>
                   {hasSpecialChar ? <MdCheckCircle color="green" /> : <MdWarning color="gray" />}
                   {t.components.passwordModal.oneSpecial}
                 </Flex>
-                <span className="sr-only">{hasSpecialChar ? ` ${t.components.passwordModal.satisfied}` : ` ${t.components.passwordModal.required}`}</span>
+                <span className="sr-only">
+                  {hasSpecialChar
+                    ? ` ${t.components.passwordModal.satisfied}`
+                    : ` ${t.components.passwordModal.required}`}
+                </span>
               </Box>
             </Dialog.Body>
 

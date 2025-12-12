@@ -449,7 +449,9 @@ export default function VerifyPage() {
                           )}
                           <Box>
                             <Heading size="sm" color={result.exists ? 'green.300' : 'red.300'}>
-                              {result.exists ? t.verify.results.verified : t.verify.results.notFound}
+                              {result.exists
+                                ? t.verify.results.verified
+                                : t.verify.results.notFound}
                             </Heading>
                             <Text fontSize="sm" color="gray.400">
                               {result.entityName}
@@ -457,7 +459,9 @@ export default function VerifyPage() {
                           </Box>
                         </HStack>
                         <Badge colorPalette={result.exists ? 'green' : 'red'} size="lg">
-                          {result.exists ? t.verify.results.verifiedBadge : t.verify.results.unverifiedBadge}
+                          {result.exists
+                            ? t.verify.results.verifiedBadge
+                            : t.verify.results.unverifiedBadge}
                         </Badge>
                       </Flex>
 

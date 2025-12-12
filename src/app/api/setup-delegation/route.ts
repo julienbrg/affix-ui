@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
     const signature = ethers.Signature.from({
       r: authorization.r,
       s: authorization.s,
-      yParity: authorization.yParity as 0 | 1
+      yParity: authorization.yParity as 0 | 1,
     }).serialized
 
     const tx = {
@@ -67,12 +67,14 @@ export async function POST(request: NextRequest) {
       data: '0x', // Empty data - just setting up delegation
       value: 0,
       gasLimit: 100000,
-      authorizationList: [{
-        address: authorization.address,
-        nonce: authorization.nonce,
-        chainId: authorization.chainId,
-        signature
-      }],
+      authorizationList: [
+        {
+          address: authorization.address,
+          nonce: authorization.nonce,
+          chainId: authorization.chainId,
+          signature,
+        },
+      ],
     }
 
     const txResponse = await relayerWallet.sendTransaction(tx)
@@ -91,10 +93,7 @@ export async function POST(request: NextRequest) {
     console.error('❌ Error setting up delegation:', error)
 
     if (error.code === 'INSUFFICIENT_FUNDS') {
-      return NextResponse.json(
-        { error: 'Relayer has insufficient funds' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Relayer has insufficient funds' }, { status: 400 })
     }
 
     if (error.code === 'NETWORK_ERROR') {

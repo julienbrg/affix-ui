@@ -404,9 +404,21 @@ export default function Home() {
 
             <SimpleGrid columns={{ base: 2, md: 4 }} gap={6} w="full">
               <DocumentTypeCard icon={FiFile} title={t.home.documentTypes.pdfs} color="#45a2f8" />
-              <DocumentTypeCard icon={FiImage} title={t.home.documentTypes.images} color="green.400" />
-              <DocumentTypeCard icon={FiVideo} title={t.home.documentTypes.videos} color="purple.400" />
-              <DocumentTypeCard icon={FiDatabase} title={t.home.documentTypes.anyFile} color="orange.400" />
+              <DocumentTypeCard
+                icon={FiImage}
+                title={t.home.documentTypes.images}
+                color="green.400"
+              />
+              <DocumentTypeCard
+                icon={FiVideo}
+                title={t.home.documentTypes.videos}
+                color="purple.400"
+              />
+              <DocumentTypeCard
+                icon={FiDatabase}
+                title={t.home.documentTypes.anyFile}
+                color="orange.400"
+              />
             </SimpleGrid>
           </VStack>
         </Box>

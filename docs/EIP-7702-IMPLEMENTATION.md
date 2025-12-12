@@ -7,7 +7,9 @@ A complete **EIP-7702 transaction sponsorship system** that allows agents to iss
 ## How It Works
 
 ### The Problem
+
 Your registry contract tracks `msg.sender` as the document issuer:
+
 ```solidity
 documents[cid].issuedBy = msg.sender;
 ```
@@ -63,6 +65,7 @@ If a relayer directly called the contract, `msg.sender` would be the relayer, no
 ## User Flow
 
 ### For Admins (Adding Agents)
+
 ```
 Admin → Dashboard → "Add Agent" → Enter agent address → Click Add
          ↓
@@ -74,6 +77,7 @@ Admin → Dashboard → "Add Agent" → Enter agent address → Click Add
 ```
 
 ### For Agents (First Document)
+
 ```
 Agent → Dashboard → Select file → Click "Issue Document"
          ↓
@@ -93,6 +97,7 @@ Agent → Dashboard → Select file → Click "Issue Document"
 ```
 
 ### For Agents (Subsequent Documents)
+
 ```
 Agent → Dashboard → Select file → Click "Issue Document"
          ↓
@@ -106,11 +111,13 @@ Agent → Dashboard → Select file → Click "Issue Document"
 ## Environment Setup
 
 Add to your `.env` file:
+
 ```bash
 RELAYER_PRIVATE_KEY=0xyour_private_key_here
 ```
 
 **Requirements:**
+
 - Relayer wallet must have ETH on OP Mainnet
 - Relayer wallet must be the admin of the registry contract
 - OP Mainnet supports EIP-7702 (Pectra upgrade, activated May 2025)
@@ -118,6 +125,7 @@ RELAYER_PRIVATE_KEY=0xyour_private_key_here
 ## Key Technical Points
 
 ### 1. Why We Call Agent Address, Not Registry
+
 ```typescript
 // ✅ Correct: msg.sender will be agentAddress
 const delegatedContract = new ethers.Contract(agentAddress, REGISTRY_ABI, relayerWallet)
@@ -129,7 +137,9 @@ await directContract.issueDocument(cid)
 ```
 
 ### 2. EIP-7702 Delegation Designator
+
 After delegation is set up, the agent's address has:
+
 ```
 Code: 0xef0100 + registryAddress (20 bytes)
 ```
@@ -137,6 +147,7 @@ Code: 0xef0100 + registryAddress (20 bytes)
 This tells the EVM to execute the registry's code when the agent's address is called.
 
 ### 3. Authorization Is One-Time
+
 Once an agent sets up delegation, it persists on-chain. They don't need to sign authorization again for future documents (unless they want to change the delegation target).
 
 ## Testing Checklist
@@ -158,11 +169,11 @@ Once an agent sets up delegation, it persists on-chain. They don't need to sign 
 
 On OP Mainnet (extremely low gas costs):
 
-| Operation | Gas Limit | Approx Cost |
-|-----------|-----------|-------------|
-| addAgent() | 100,000 | ~$0.0001 |
-| Setup Delegation | 100,000 | ~$0.0001 |
-| Issue Document | 300,000 | ~$0.0003 |
+| Operation        | Gas Limit | Approx Cost |
+| ---------------- | --------- | ----------- |
+| addAgent()       | 100,000   | ~$0.0001    |
+| Setup Delegation | 100,000   | ~$0.0001    |
+| Issue Document   | 300,000   | ~$0.0003    |
 
 **Total cost per agent:** ~$0.0004 for setup, then ~$0.0003 per document issued.
 
@@ -178,11 +189,13 @@ On OP Mainnet (extremely low gas costs):
 ## Limitations & Future Improvements
 
 ### Current Limitations
+
 - Delegation is permanent (agent can't easily change it)
 - Relayer must be trusted to have funds
 - Requires OP Mainnet (Pectra upgrade)
 
 ### Potential Improvements
+
 1. **Revocable delegation**: Allow agents to cancel delegation
 2. **Multiple registries**: Support agents working with multiple registries
 3. **Rate limiting**: Limit sponsored transactions per agent
