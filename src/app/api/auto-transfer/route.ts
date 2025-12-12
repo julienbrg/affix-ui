@@ -25,8 +25,8 @@ export async function POST(request: NextRequest) {
     }
     console.log('✅ Admin private key found')
 
-    // Connect to Filecoin Calibration network
-    const provider = new ethers.JsonRpcProvider('https://api.calibration.node.glif.io/rpc/v1')
+    // Connect to OP Mainnet
+    const provider = new ethers.JsonRpcProvider('https://mainnet.optimism.io')
     console.log('🌐 Connected to provider')
 
     const adminWallet = new ethers.Wallet(adminPrivateKey, provider)
@@ -35,11 +35,11 @@ export async function POST(request: NextRequest) {
     // Check admin balance first
     const adminBalance = await provider.getBalance(adminWallet.address)
     const adminBalanceEth = ethers.formatEther(adminBalance)
-    console.log('💰 Admin balance:', adminBalanceEth, 'FIL')
+    console.log('💰 Admin balance:', adminBalanceEth, 'ETH')
 
-    // Check if admin has enough balance (at least 0.002 FIL to be safe)
-    const transferAmount = ethers.parseEther('0.001') // 0.001 tFIL
-    const minRequiredBalance = ethers.parseEther('0.002') // 0.002 tFIL minimum
+    // Check if admin has enough balance (at least 0.002 ETH to be safe)
+    const transferAmount = ethers.parseEther('0.001') // 0.001 ETH
+    const minRequiredBalance = ethers.parseEther('0.002') // 0.002 ETH minimum
 
     if (adminBalance < minRequiredBalance) {
       console.error('❌ Admin wallet has insufficient balance')
@@ -52,9 +52,9 @@ export async function POST(request: NextRequest) {
     // Check user's current balance to confirm they need funds
     const userBalance = await provider.getBalance(userAddress)
     const userBalanceEth = ethers.formatEther(userBalance)
-    console.log('👤 User current balance:', userBalanceEth, 'FIL')
+    console.log('👤 User current balance:', userBalanceEth, 'ETH')
 
-    // If user already has balance > 0.0001 FIL, don't transfer
+    // If user already has balance > 0.0001 ETH, don't transfer
     if (userBalance > ethers.parseEther('0.0001')) {
       console.log('✅ User already has sufficient balance')
       return NextResponse.json({
@@ -65,9 +65,9 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    console.log('💸 Starting transfer of 0.001 tFIL to user...')
+    console.log('💸 Starting transfer of 0.001 ETH to user...')
 
-    // Get current gas price and estimate gas limit for Filecoin network
+    // Get current gas price and estimate gas limit for OP Mainnet
     const gasPrice = await provider.getFeeData()
     console.log('⛽ Current gas price:', gasPrice.gasPrice?.toString())
 
@@ -84,12 +84,10 @@ export async function POST(request: NextRequest) {
       // Continue anyway, but this gives us a warning
     }
 
-    // Create transaction with proper gas limit for Filecoin
+    // Create transaction with proper gas limit for OP Mainnet
     const tx = await adminWallet.sendTransaction({
       to: userAddress,
       value: transferAmount,
-      //   gasLimit: 10000000, // Higher gas limit for Filecoin Calibration (1M gas)
-      //   gasPrice: gasPrice.gasPrice, // Use network's current gas price
     })
 
     console.log('⏳ Transaction sent:', tx.hash)
@@ -109,8 +107,8 @@ export async function POST(request: NextRequest) {
     const newAdminBalance = await provider.getBalance(adminWallet.address)
     const newUserBalance = await provider.getBalance(userAddress)
 
-    console.log('💰 New admin balance:', ethers.formatEther(newAdminBalance), 'FIL')
-    console.log('👤 New user balance:', ethers.formatEther(newUserBalance), 'FIL')
+    console.log('💰 New admin balance:', ethers.formatEther(newAdminBalance), 'ETH')
+    console.log('👤 New user balance:', ethers.formatEther(newUserBalance), 'ETH')
 
     return NextResponse.json({
       success: true,
@@ -119,7 +117,7 @@ export async function POST(request: NextRequest) {
       newUserBalance: ethers.formatEther(newUserBalance),
       newAdminBalance: ethers.formatEther(newAdminBalance),
       blockNumber: receipt?.blockNumber,
-      message: 'Successfully transferred 0.001 tFIL to user',
+      message: 'Successfully transferred 0.001 ETH to user',
     })
   } catch (error: any) {
     console.error('❌ Error in auto-transfer:', error)
