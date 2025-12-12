@@ -53,13 +53,26 @@ export async function POST(request: NextRequest) {
     // This is a "no-op" transaction that just establishes the delegation
     console.log('📤 Submitting EIP-7702 delegation transaction...')
 
+    // Convert authorization to ethers.js AuthorizationLike format
+    // Combine r, s, and yParity into a signature string
+    const signature = ethers.Signature.from({
+      r: authorization.r,
+      s: authorization.s,
+      yParity: authorization.yParity as 0 | 1
+    }).serialized
+
     const tx = {
       type: 4, // EIP-7702 transaction type
       to: agentAddress, // Agent's address
       data: '0x', // Empty data - just setting up delegation
       value: 0,
       gasLimit: 100000,
-      authorizationList: [authorization],
+      authorizationList: [{
+        address: authorization.address,
+        nonce: authorization.nonce,
+        chainId: authorization.chainId,
+        signature
+      }],
     }
 
     const txResponse = await relayerWallet.sendTransaction(tx)
