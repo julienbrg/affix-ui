@@ -53,12 +53,14 @@ Step 3: Issue Documents (Ongoing - No ETH Needed!)
 **File**: `/src/app/api/make-agent/route.ts`
 
 When an agent is added:
+
 1. The relayer (not admin) wallet is used to pay for the `addAgent()` transaction
 2. The agent's address is registered in the registry contract
 3. The system prepares for future EIP-7702 delegated transactions
 4. The agent can now have transactions sponsored
 
 **Key Changes**:
+
 - Changed from `ADMIN_PRIVATE_KEY` to `RELAYER_PRIVATE_KEY`
 - Relayer wallet pays gas fees for adding agents
 - Added delegation preparation logic
@@ -80,24 +82,27 @@ const tx = await contract.addAgent(userAddress)
 This endpoint handles **EIP-7702 sponsored transactions**:
 
 **Request Body**:
+
 ```json
 {
-  "agentAddress": "0x...",          // Agent's EOA
-  "registryAddress": "0x...",       // Registry contract
-  "functionName": "issueDocument",  // Function to call
-  "args": ["QmXYZ..."],            // Function arguments
-  "authorization": {                // EIP-7702 authorization
-    "address": "0x...",             // Registry address
-    "nonce": 1,                     // Agent's nonce
-    "chainId": 10,                  // OP Mainnet
-    "yParity": 0,                   // Signature v
-    "r": "0x...",                   // Signature r
-    "s": "0x..."                    // Signature s
+  "agentAddress": "0x...", // Agent's EOA
+  "registryAddress": "0x...", // Registry contract
+  "functionName": "issueDocument", // Function to call
+  "args": ["QmXYZ..."], // Function arguments
+  "authorization": {
+    // EIP-7702 authorization
+    "address": "0x...", // Registry address
+    "nonce": 1, // Agent's nonce
+    "chainId": 10, // OP Mainnet
+    "yParity": 0, // Signature v
+    "r": "0x...", // Signature r
+    "s": "0x..." // Signature s
   }
 }
 ```
 
 **Response**:
+
 ```json
 {
   "success": true,
@@ -108,6 +113,7 @@ This endpoint handles **EIP-7702 sponsored transactions**:
 ```
 
 **How it Works**:
+
 1. Validates agent has permission (`isAgent()`)
 2. Creates EIP-7702 transaction (type 4) with authorization
 3. Relayer wallet signs and broadcasts transaction
@@ -116,11 +122,11 @@ This endpoint handles **EIP-7702 sponsored transactions**:
 ```typescript
 // Create the transaction with type 4 (EIP-7702)
 const tx = {
-  type: 4,                        // EIP-7702 transaction type
-  to: agentAddress,               // Agent's address
-  data: encodedFunctionCall,      // Function call data
+  type: 4, // EIP-7702 transaction type
+  to: agentAddress, // Agent's address
+  data: encodedFunctionCall, // Function call data
   authorizationList: [authorization], // Signed authorization
-  gasLimit: 500000
+  gasLimit: 500000,
 }
 
 // Relayer sends and pays for the transaction
@@ -188,8 +194,8 @@ const response = await fetch('/api/setup-delegation', {
   body: JSON.stringify({
     agentAddress: agentAddress,
     registryAddress: registryAddress,
-    authorization: authorization
-  })
+    authorization: authorization,
+  }),
 })
 ```
 
@@ -205,8 +211,8 @@ const response = await fetch('/api/sponsored-tx', {
     agentAddress: '0xAgentAddress',
     registryAddress: '0xRegistryAddress',
     functionName: 'issueDocument',
-    args: ['QmDocumentCID']
-  })
+    args: ['QmDocumentCID'],
+  }),
 })
 
 const result = await response.json()
@@ -230,6 +236,7 @@ function issueDocument(string memory cid) external {
 **Without EIP-7702:** If the relayer called the registry directly, `msg.sender` would be the relayer's address, not the agent's.
 
 **With EIP-7702:** The agent's address delegates its code to the registry. When the relayer calls the agent's address:
+
 1. The call goes to the agent's address
 2. The agent's address has `0xef0100[registryAddress]` as its code (delegation designator)
 3. The EVM redirects execution to the registry contract
@@ -250,16 +257,19 @@ await directContract.issueDocument(cid) // msg.sender = relayerAddress
 ## Security Considerations
 
 ### 1. Authorization Security
+
 - **Agent must sign**: The authorization MUST be signed by the agent's private key
 - **Nonce management**: Each authorization is single-use (nonce-based)
 - **Chain-specific**: Authorization is bound to a specific chain (OP Mainnet)
 
 ### 2. Relayer Security
+
 - **Private key protection**: Store `RELAYER_PRIVATE_KEY` securely (use environment variables or secret management)
 - **Funding**: Keep relayer wallet funded but not with excessive amounts
 - **Monitoring**: Monitor relayer wallet balance and transaction costs
 
 ### 3. Agent Validation
+
 - **isAgent() check**: Only authorized agents can have transactions sponsored
 - **Permission model**: Agents can only call functions they're authorized for
 - **Revert handling**: Failed transactions don't cost agents anything (relayer pays)
@@ -278,11 +288,7 @@ Add EIP-7702 authorization support to the W3PKSigner class:
 class W3PKSigner extends ethers.AbstractSigner {
   // ... existing code ...
 
-  async signAuthorization(
-    address: string,
-    nonce: number,
-    chainId: number
-  ): Promise<any> {
+  async signAuthorization(address: string, nonce: number, chainId: number): Promise<any> {
     // Create authorization message
     const message = ethers.solidityPackedKeccak256(
       ['address', 'uint256', 'uint256'],
@@ -301,7 +307,7 @@ class W3PKSigner extends ethers.AbstractSigner {
       chainId,
       yParity: sig.yParity,
       r: sig.r,
-      s: sig.s
+      s: sig.s,
     }
   }
 }
@@ -334,8 +340,8 @@ const handleIssueDocument = async () => {
       registryAddress,
       functionName: metadata ? 'issueDocumentWithMetadata' : 'issueDocument',
       args: metadata ? [documentCID, metadata] : [documentCID],
-      authorization
-    })
+      authorization,
+    }),
   })
 
   const result = await response.json()
@@ -357,6 +363,7 @@ curl -X POST http://localhost:3000/api/make-agent \
 ```
 
 Expected response:
+
 ```json
 {
   "success": true,
@@ -390,18 +397,22 @@ cast balance $RELAYER_ADDRESS --rpc-url https://mainnet.optimism.io
 ## Troubleshooting
 
 ### Error: "RELAYER_PRIVATE_KEY not found"
+
 - Ensure `.env` file contains `RELAYER_PRIVATE_KEY`
 - Restart the Next.js development server after adding the key
 
 ### Error: "Insufficient funds for transaction"
+
 - Fund the relayer wallet with ETH on OP Mainnet
 - Recommended minimum: 0.01 ETH for testing
 
 ### Error: "Agent is not authorized"
+
 - Ensure the agent was added via `/api/make-agent`
 - Verify agent status with `isAgent()` contract call
 
 ### Error: "Invalid authorization"
+
 - Check that the authorization was signed by the agent's wallet
 - Verify nonce is correct (current transaction count)
 - Ensure chainId is 10 (OP Mainnet)
@@ -410,17 +421,18 @@ cast balance $RELAYER_ADDRESS --rpc-url https://mainnet.optimism.io
 
 ### Gas Costs (Approximate on OP Mainnet)
 
-| Operation | Gas Limit | Cost (@ 0.001 Gwei) |
-|-----------|-----------|---------------------|
-| Add Agent | 100,000 | ~$0.0001 |
-| Issue Document | 300,000 | ~$0.0003 |
-| Issue with Metadata | 350,000 | ~$0.00035 |
+| Operation           | Gas Limit | Cost (@ 0.001 Gwei) |
+| ------------------- | --------- | ------------------- |
+| Add Agent           | 100,000   | ~$0.0001            |
+| Issue Document      | 300,000   | ~$0.0003            |
+| Issue with Metadata | 350,000   | ~$0.00035           |
 
 **Note**: OP Mainnet has extremely low gas costs compared to Ethereum mainnet.
 
 ### Relayer Economics
 
 For sponsoring transactions for agents:
+
 - Each sponsored transaction costs the relayer the gas fee
 - Consider implementing rate limiting or usage caps per agent
 - Monitor relayer wallet balance and set up alerts
@@ -443,6 +455,7 @@ For sponsoring transactions for agents:
 ## Support
 
 For questions or issues related to this implementation:
+
 - Check the [troubleshooting section](#troubleshooting) above
 - Review the [EIP-7702 specification](https://eips.ethereum.org/EIPS/eip-7702)
 - Open an issue in the repository
