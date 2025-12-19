@@ -893,6 +893,53 @@ export default function DashboardPage() {
             </VStack>
           </header>
 
+          {/* Show message for non-admin/non-agent users */}
+          {role === 'nobody' && (
+            <Box
+              bg="blue.900"
+              border="1px solid"
+              borderColor="blue.500"
+              borderRadius="lg"
+              p={6}
+              textAlign="center"
+            >
+              <HStack justify="center" gap={3} mb={3}>
+                <FiAlertCircle size={24} color="blue" />
+                <Heading size="md" color="blue.200">
+                  Access Required
+                </Heading>
+              </HStack>
+              <Text fontSize="md" color="blue.200" mb={4}>
+                Copy-paste your address and send it to your admin so he can make you an agent.
+              </Text>
+              {currentUserAddress && (
+                <Box
+                  bg="whiteAlpha.200"
+                  px={4}
+                  py={3}
+                  borderRadius="md"
+                  border="1px solid"
+                  borderColor="blue.400"
+                  maxW="md"
+                  mx="auto"
+                >
+                  <Text fontSize="sm" fontFamily="mono" color="orange.100" mb={2}>
+                    {currentUserAddress}
+                  </Text>
+                  <Button
+                    size="sm"
+                    bg="blue.500"
+                    color="white"
+                    _hover={{ bg: 'blue.600' }}
+                    onClick={() => copyToClipboard(currentUserAddress)}
+                  >
+                    <FiCopy /> Copy Address
+                  </Button>
+                </Box>
+              )}
+            </Box>
+          )}
+
           <Grid
             templateColumns={{ base: '1fr', lg: role === 'agent' ? '1fr' : 'repeat(2, 1fr)' }}
             gap={8}
