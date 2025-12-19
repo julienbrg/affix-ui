@@ -87,7 +87,7 @@ interface W3pkType {
   login: () => Promise<void>
   register: (username: string) => Promise<void>
   logout: () => void
-  signMessage: (message: string) => Promise<string | null>
+  signMessage: (message: string, options?: { mode?: string; tag?: string; signingMethod?: string }) => Promise<string | null>
   deriveWallet: (mode?: string, tag?: string) => Promise<DerivedWallet>
   getAddress: (mode?: string, tag?: string) => Promise<string>
   getBackupStatus: () => Promise<BackupStatus>
@@ -114,7 +114,6 @@ interface W3pkType {
   clearSocialRecoveryConfig: () => void
   getStealthKeys: () => Promise<any>
   generateStealthAddressFor: (recipientMetaAddress: string) => Promise<StealthAddressResult>
-  w3pkInstance: any
 }
 
 const W3PK = createContext<W3pkType>({
@@ -156,7 +155,6 @@ const W3PK = createContext<W3pkType>({
   generateStealthAddressFor: async () => {
     throw new Error('generateStealthAddressFor not initialized')
   },
-  w3pkInstance: null,
 })
 
 export const useW3PK = () => useContext(W3PK)
@@ -430,7 +428,7 @@ export const W3pkProvider: React.FC<W3pkProviderProps> = ({ children }) => {
     await w3pk.login()
   }, [w3pk])
 
-  const signMessage = async (message: string): Promise<string | null> => {
+  const signMessage = async (message: string, options?: { mode?: string; tag?: string; signingMethod?: string }): Promise<string | null> => {
     if (!user) {
       toaster.create({
         title: 'Not Authenticated',
@@ -443,7 +441,7 @@ export const W3pkProvider: React.FC<W3pkProviderProps> = ({ children }) => {
 
     try {
       await ensureAuthentication()
-      const result = await w3pk.signMessage(message)
+      const result = await w3pk.signMessage(message, options as any)
 
       // Extend session after successful operation for better UX
       w3pk.extendSession()
@@ -1110,7 +1108,6 @@ Thank you for being a trusted guardian!
         clearSocialRecoveryConfig,
         getStealthKeys,
         generateStealthAddressFor,
-        w3pkInstance: w3pk,
       }}
     >
       {children}
