@@ -114,6 +114,7 @@ interface W3pkType {
   clearSocialRecoveryConfig: () => void
   getStealthKeys: () => Promise<any>
   generateStealthAddressFor: (recipientMetaAddress: string) => Promise<StealthAddressResult>
+  w3pkInstance: any
 }
 
 const W3PK = createContext<W3pkType>({
@@ -155,6 +156,7 @@ const W3PK = createContext<W3pkType>({
   generateStealthAddressFor: async () => {
     throw new Error('generateStealthAddressFor not initialized')
   },
+  w3pkInstance: null,
 })
 
 export const useW3PK = () => useContext(W3PK)
@@ -1108,6 +1110,7 @@ Thank you for being a trusted guardian!
         clearSocialRecoveryConfig,
         getStealthKeys,
         generateStealthAddressFor,
+        w3pkInstance: w3pk,
       }}
     >
       {children}

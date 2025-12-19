@@ -732,6 +732,51 @@ export default function DashboardPage() {
                   </HStack>
                 </Box>
               )}
+              {role === 'nobody' && currentUserAddress && (
+                <Box
+                  bg="blue.900"
+                  border="1px solid"
+                  borderColor="blue.500"
+                  borderRadius="md"
+                  p={4}
+                  w="100%"
+                >
+                  <HStack gap={3} align="start">
+                    <FiAlertCircle size={20} color="#45a2f8" />
+                    <VStack align="start" gap={2} flex={1}>
+                      <Text fontSize="sm" color="blue.200" fontWeight="medium">
+                        Copy-paste this address and give to your institution admin so he can add you as a member.
+                      </Text>
+                      <Box
+                        bg="whiteAlpha.100"
+                        px={3}
+                        py={2}
+                        borderRadius="md"
+                        w="100%"
+                      >
+                        <Flex align="center" gap={2}>
+                          <Text
+                            fontSize="xs"
+                            fontFamily="mono"
+                            color="blue.300"
+                            flex={1}
+                            lineClamp={1}
+                          >
+                            {currentUserAddress}
+                          </Text>
+                          <Button
+                            size="xs"
+                            variant="ghost"
+                            onClick={() => copyToClipboard(currentUserAddress)}
+                          >
+                            <FiCopy />
+                          </Button>
+                        </Flex>
+                      </Box>
+                    </VStack>
+                  </HStack>
+                </Box>
+              )}
             </VStack>
           </header>
 
