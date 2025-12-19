@@ -75,9 +75,44 @@ async function verifyUrl(address: string) {
 
   console.log('🔍 Searching for address in content...')
   console.log('🔍 Search address:', searchAddress)
-  console.log('🔍 Content preview (first 200 chars):', content.substring(0, 200))
+  console.log('🔍 Content length:', content.length)
+  console.log('🔍 Content preview (first 500 chars):', content.substring(0, 500))
 
-  const found = content.includes(searchAddress)
+  // Check for different address formats
+  const addressWithoutChecksum = searchAddress
+  const addressWithChecksum = address // original case
+
+  // Try to find any occurrence of the address pattern (with or without 0x)
+  const addressPattern = searchAddress.replace('0x', '')
+  const foundExact = content.includes(searchAddress)
+  const foundWithChecksum = content.includes(addressWithChecksum.toLowerCase())
+  const foundPattern = content.includes(addressPattern)
+
+  console.log('🔍 Search results:')
+  console.log('  - Exact match (lowercase):', foundExact)
+  console.log('  - With checksum:', foundWithChecksum)
+  console.log('  - Pattern without 0x:', foundPattern)
+
+  // Search for any part of the address
+  const addressChunk = searchAddress.substring(2, 20) // Get a chunk from the middle
+  const foundChunk = content.includes(addressChunk)
+  console.log('  - Address chunk found:', foundChunk, `(${addressChunk})`)
+
+  // Find where "0x" appears in the content to see if there are any addresses
+  const ox_indices: number[] = []
+  let idx = content.indexOf('0x')
+  while (idx !== -1 && ox_indices.length < 10) {
+    ox_indices.push(idx)
+    idx = content.indexOf('0x', idx + 1)
+  }
+  console.log('🔍 Found "0x" at indices:', ox_indices)
+  ox_indices.forEach((i) => {
+    console.log(
+      `  -> Content around index ${i}: "${content.substring(Math.max(0, i - 10), Math.min(content.length, i + 50))}"`
+    )
+  })
+
+  const found = foundExact || foundWithChecksum || foundPattern
   console.log(
     `🔍 Registry address ${address} ${found ? '✅ FOUND' : '❌ NOT FOUND'} in webpage content`
   )
