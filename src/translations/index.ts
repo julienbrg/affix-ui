@@ -148,6 +148,7 @@ type TranslationKeys = {
       noRegistry: string
       noRegistryDesc: string
       alreadyAgent: string
+      notAuthenticated: string
       success: string
       failed: string
     }
@@ -413,6 +414,7 @@ export const translations: Translations = {
         noRegistry: 'No registry found',
         noRegistryDesc: 'Cannot add agent without a registry address',
         alreadyAgent: 'Already an Agent',
+        notAuthenticated: 'Not Authenticated',
         success: 'Agent Created',
         failed: 'Failed to Make Agent',
       },
@@ -675,6 +677,7 @@ export const translations: Translations = {
         noRegistry: 'No registry found',
         noRegistryDesc: 'Cannot add agent without a registry address',
         alreadyAgent: 'Already an Agent',
+        notAuthenticated: 'Not Authenticated',
         success: 'Agent Created',
         failed: 'Failed to Make Agent',
       },
@@ -937,6 +940,7 @@ export const translations: Translations = {
         noRegistry: 'No registry found',
         noRegistryDesc: 'Cannot add agent without a registry address',
         alreadyAgent: 'Already an Agent',
+        notAuthenticated: 'Not Authenticated',
         success: 'Agent Created',
         failed: 'Failed to Make Agent',
       },
@@ -1201,6 +1205,7 @@ export const translations: Translations = {
         noRegistry: 'Aucun registre trouvé',
         noRegistryDesc: "Impossible d'ajouter un agent sans adresse de registre",
         alreadyAgent: 'Déjà un agent',
+        notAuthenticated: 'Non authentifié',
         success: 'Agent créé',
         failed: "Échec de la création de l'agent",
       },
@@ -1465,6 +1470,7 @@ export const translations: Translations = {
         noRegistry: 'No registry found',
         noRegistryDesc: 'Cannot add agent without a registry address',
         alreadyAgent: 'Already an Agent',
+        notAuthenticated: 'Not Authenticated',
         success: 'Agent Created',
         failed: 'Failed to Make Agent',
       },
@@ -1727,6 +1733,7 @@ export const translations: Translations = {
         noRegistry: 'No registry found',
         noRegistryDesc: 'Cannot add agent without a registry address',
         alreadyAgent: 'Already an Agent',
+        notAuthenticated: 'Not Authenticated',
         success: 'Agent Created',
         failed: 'Failed to Make Agent',
       },
@@ -1989,6 +1996,7 @@ export const translations: Translations = {
         noRegistry: 'No registry found',
         noRegistryDesc: 'Cannot add agent without a registry address',
         alreadyAgent: 'Already an Agent',
+        notAuthenticated: 'Not Authenticated',
         success: 'Agent Created',
         failed: 'Failed to Make Agent',
       },
@@ -2251,6 +2259,7 @@ export const translations: Translations = {
         noRegistry: 'No registry found',
         noRegistryDesc: 'Cannot add agent without a registry address',
         alreadyAgent: 'Already an Agent',
+        notAuthenticated: 'Not Authenticated',
         success: 'Agent Created',
         failed: 'Failed to Make Agent',
       },
@@ -2513,6 +2522,7 @@ export const translations: Translations = {
         noRegistry: 'No registry found',
         noRegistryDesc: 'Cannot add agent without a registry address',
         alreadyAgent: 'Already an Agent',
+        notAuthenticated: 'Not Authenticated',
         success: 'Agent Created',
         failed: 'Failed to Make Agent',
       },
@@ -2775,6 +2785,7 @@ export const translations: Translations = {
         noRegistry: 'No registry found',
         noRegistryDesc: 'Cannot add agent without a registry address',
         alreadyAgent: 'Already an Agent',
+        notAuthenticated: 'Not Authenticated',
         success: 'Agent Created',
         failed: 'Failed to Make Agent',
       },
