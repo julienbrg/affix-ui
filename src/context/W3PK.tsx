@@ -1,12 +1,5 @@
 'use client'
 
-/**
- * W3PK Context Provider
- *
- * For integration guidelines and detailed documentation,
- * please visit: https://w3pk.w3hc.org/docs#integration-guidelines
- */
-
 import React, {
   createContext,
   useContext,
@@ -103,6 +96,11 @@ interface W3pkType {
     backupData: string,
     password: string
   ) => Promise<{ mnemonic: string; ethereumAddress: string }>
+  registerWithBackupFile: (
+    backupData: string,
+    password: string,
+    username: string
+  ) => Promise<{ address: string; username: string }>
   setupSocialRecovery: (
     guardians: { name: string; email?: string; phone?: string }[],
     threshold: number,
@@ -116,7 +114,6 @@ interface W3pkType {
   clearSocialRecoveryConfig: () => void
   getStealthKeys: () => Promise<any>
   generateStealthAddressFor: (recipientMetaAddress: string) => Promise<StealthAddressResult>
-  w3pkInstance: any // Expose the raw w3pk instance for advanced usage
 }
 
 const W3PK = createContext<W3pkType>({
@@ -138,6 +135,9 @@ const W3PK = createContext<W3pkType>({
   restoreFromBackup: async () => {
     throw new Error('restoreFromBackup not initialized')
   },
+  registerWithBackupFile: async () => {
+    throw new Error('registerWithBackupFile not initialized')
+  },
   setupSocialRecovery: async () => {
     throw new Error('setupSocialRecovery not initialized')
   },
@@ -155,7 +155,6 @@ const W3PK = createContext<W3pkType>({
   generateStealthAddressFor: async () => {
     throw new Error('generateStealthAddressFor not initialized')
   },
-  w3pkInstance: null as any,
 })
 
 export const useW3PK = () => useContext(W3PK)
@@ -711,6 +710,49 @@ export const W3pkProvider: React.FC<W3pkProviderProps> = ({ children }) => {
     }
   }
 
+  const registerWithBackupFile = async (
+    backupData: string,
+    password: string,
+    username: string
+  ): Promise<{ address: string; username: string }> => {
+    if (!w3pk || typeof w3pk.registerWithBackupFile !== 'function') {
+      throw new Error('w3pk SDK does not support registerWithBackupFile.')
+    }
+
+    try {
+      setIsLoading(true)
+      console.log('[W3PK] Registration with backup file initiated for username:', username)
+
+      const result = await w3pk.registerWithBackupFile(backupData, password, username)
+
+      console.log('[W3PK] Registration with backup successful')
+
+      toaster.create({
+        title: 'Wallet Restored & Registered! 🎉',
+        description: `Your wallet has been restored and secured with a new passkey: ${result.address.slice(0, 6)}...${result.address.slice(-4)}`,
+        type: 'success',
+        duration: 5000,
+      })
+
+      return result
+    } catch (error) {
+      console.error('[W3PK] Registration with backup failed:', error)
+
+      const errorMessage =
+        error instanceof Error ? error.message : 'Failed to register with backup file'
+
+      toaster.create({
+        title: 'Registration Failed',
+        description: errorMessage,
+        type: 'error',
+        duration: 5000,
+      })
+      throw error
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   // Simplified inline social recovery using Shamir Secret Sharing
   const splitSecret = useCallback((mnemonic: string, threshold: number, shares: number) => {
     // Use secrets.js for Shamir Secret Sharing
@@ -1058,6 +1100,7 @@ Thank you for being a trusted guardian!
         getBackupStatus,
         createBackup,
         restoreFromBackup,
+        registerWithBackupFile,
         setupSocialRecovery,
         getSocialRecoveryConfig,
         generateGuardianInvite,
@@ -1065,7 +1108,6 @@ Thank you for being a trusted guardian!
         clearSocialRecoveryConfig,
         getStealthKeys,
         generateStealthAddressFor,
-        w3pkInstance: w3pk, // Expose the raw w3pk instance
       }}
     >
       {children}
