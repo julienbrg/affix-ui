@@ -106,7 +106,7 @@ async function verifyUrl(address: string) {
     idx = content.indexOf('0x', idx + 1)
   }
   console.log('🔍 Found "0x" at indices:', ox_indices)
-  ox_indices.forEach((i) => {
+  ox_indices.forEach(i => {
     console.log(
       `  -> Content around index ${i}: "${content.substring(Math.max(0, i - 10), Math.min(content.length, i + 50))}"`
     )
