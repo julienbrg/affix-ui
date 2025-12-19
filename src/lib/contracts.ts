@@ -17,8 +17,8 @@ export const NETWORK_CONFIGS = {
   },
   10: {
     name: 'OP Mainnet',
-    factoryAddress: '0xCE5F5b5B5E4A6be548aE2eB38cE63b5D6cd770b8',
-    registryAddress: '0x5A4b81Fb55985a5294326092099F1588ED5B0920',
+    factoryAddress: '0x496E7ba233d66F1bA46D2783029795d46b551AD9',
+    registryAddress: '0x69d3EC4632aD974B6755EACF9eC02D8093Bc341a',
     rpcUrl: 'https://mainnet.optimism.io',
     blockExplorer: 'https://optimistic.etherscan.io',
     explorerName: 'Optimistic Etherscan',
@@ -55,6 +55,7 @@ export const AFFIX_REGISTRY_ABI = [
   'function issueDocumentWithMetadata(string memory cid, string memory metadata) external',
   'function addAgent(address agent) external',
   'function revokeAgent(address agent) external',
+  'function transferOwnership(address newOwner) external',
 ]
 
 export interface RegistryInfo {
