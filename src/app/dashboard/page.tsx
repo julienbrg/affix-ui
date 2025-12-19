@@ -389,7 +389,9 @@ export default function DashboardPage() {
       console.log('Can issue documents?', canIssue)
 
       if (!canIssue) {
-        throw new Error(`Address ${userAddress} is not authorized to issue documents on this registry.`)
+        throw new Error(
+          `Address ${userAddress} is not authorized to issue documents on this registry.`
+        )
       }
 
       console.log('Issuing document with CID:', documentCID)
@@ -701,7 +703,7 @@ export default function DashboardPage() {
 
   return (
     <main>
-      <Container maxW="container.xl" py={20}>
+      <Container maxW="container.lg" py={20}>
         <VStack gap={8} align="stretch">
           <header>
             <Flex justify="space-between" align="center" mb={2}></Flex>
@@ -1055,7 +1057,11 @@ export default function DashboardPage() {
                                 >
                                   {agent}
                                 </Text>
-                                <Button size="xs" variant="ghost" onClick={() => copyToClipboard(agent)}>
+                                <Button
+                                  size="xs"
+                                  variant="ghost"
+                                  onClick={() => copyToClipboard(agent)}
+                                >
                                   <FiCopy />
                                 </Button>
                                 <ChakraLink

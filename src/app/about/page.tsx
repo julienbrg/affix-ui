@@ -1,13 +1,6 @@
 'use client'
 
-import {
-  Text,
-  VStack,
-  Box,
-  Heading,
-  Container,
-  HStack,
-} from '@chakra-ui/react'
+import { Text, VStack, Box, Heading, Container, HStack } from '@chakra-ui/react'
 import { Button } from '@/components/ui/button'
 import { FiCopy, FiExternalLink } from 'react-icons/fi'
 import { toaster } from '@/components/ui/toaster'
@@ -25,10 +18,7 @@ export default function AboutPage() {
   }
 
   const openInExplorer = () => {
-    window.open(
-      `https://optimistic.etherscan.io/address/${AFFIX_OFFICIAL_CONTRACT}`,
-      '_blank'
-    )
+    window.open(`https://optimistic.etherscan.io/address/${AFFIX_OFFICIAL_CONTRACT}`, '_blank')
   }
 
   return (
@@ -44,13 +34,7 @@ export default function AboutPage() {
             </Text>
           </header>
 
-          <Box
-            bg="whiteAlpha.50"
-            p={8}
-            borderRadius="lg"
-            border="1px solid"
-            borderColor="gray.700"
-          >
+          <Box bg="whiteAlpha.50" p={8} borderRadius="lg" border="1px solid" borderColor="gray.700">
             <VStack gap={6} align="stretch">
               <VStack align="start" gap={2}>
                 <Text fontSize="md" fontWeight="medium" color="gray.300">
@@ -68,13 +52,7 @@ export default function AboutPage() {
                 border="1px solid"
                 borderColor="gray.600"
               >
-                <Text
-                  fontSize="md"
-                  fontFamily="mono"
-                  color="gray.200"
-                  wordBreak="break-all"
-                  mb={4}
-                >
+                <Text fontSize="md" fontFamily="mono" color="gray.200" wordBreak="break-all" mb={4}>
                   {AFFIX_OFFICIAL_CONTRACT}
                 </Text>
 
