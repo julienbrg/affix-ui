@@ -1,11 +1,11 @@
 'use client'
 
-import { Text, VStack, Box, Heading, Container, HStack } from '@chakra-ui/react'
+import { Text, VStack, Box, Heading, Container } from '@chakra-ui/react'
 import { Button } from '@/components/ui/button'
 import { FiCopy, FiExternalLink } from 'react-icons/fi'
 import { toaster } from '@/components/ui/toaster'
 
-const AFFIX_OFFICIAL_CONTRACT = '0x5A4b81Fb55985a5294326092099F1588ED5B0920'
+const AFFIX_OFFICIAL_CONTRACT = '0x69d3EC4632aD974B6755EACF9eC02D8093Bc341a'
 
 export default function AboutPage() {
   const copyToClipboard = (text: string) => {
@@ -23,6 +23,11 @@ export default function AboutPage() {
 
   return (
     <main>
+      {/* Hidden div for verification purposes - will be in the static HTML */}
+      <div style={{ display: 'none' }} data-contract-address={AFFIX_OFFICIAL_CONTRACT}>
+        Affix Official Contract Address: {AFFIX_OFFICIAL_CONTRACT}
+      </div>
+
       <Container maxW="container.md" py={20}>
         <VStack gap={8} align="stretch">
           <header>
@@ -56,13 +61,14 @@ export default function AboutPage() {
                   {AFFIX_OFFICIAL_CONTRACT}
                 </Text>
 
-                <HStack gap={3} justify="center">
+                <VStack gap={3} justify="center" width="100%">
                   <Button
                     onClick={() => copyToClipboard(AFFIX_OFFICIAL_CONTRACT)}
                     bg="#45a2f8"
                     color="white"
                     _hover={{ bg: '#3182ce' }}
                     size="sm"
+                    width="100%"
                   >
                     <FiCopy /> Copy Address
                   </Button>
@@ -74,10 +80,11 @@ export default function AboutPage() {
                     color="gray.300"
                     _hover={{ bg: 'whiteAlpha.100', borderColor: 'gray.500' }}
                     size="sm"
+                    width="100%"
                   >
                     <FiExternalLink /> View on Explorer
                   </Button>
-                </HStack>
+                </VStack>
               </Box>
             </VStack>
           </Box>
