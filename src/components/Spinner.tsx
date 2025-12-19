@@ -5,24 +5,24 @@ interface SpinnerProps {
   size?: string | number
 }
 
-export default function Spinner({ size = '20px' }: SpinnerProps) {
+export default function Spinner({ size = '32px' }: SpinnerProps) {
   // Convert size to a numeric value
   const getSizeNum = (s: string | number): number => {
     if (typeof s === 'number') return s
 
     // Handle named sizes
     const namedSizes: Record<string, number> = {
-      sm: 16,
-      md: 24,
-      lg: 32,
-      xl: 40,
+      sm: 24,
+      md: 32,
+      lg: 48,
+      xl: 64,
     }
 
     if (namedSizes[s]) return namedSizes[s]
 
     // Parse pixel values (e.g., "16px" or "16")
     const parsed = parseInt(s, 10)
-    return isNaN(parsed) ? 20 : parsed // fallback to 20 if parsing fails
+    return isNaN(parsed) ? 32 : parsed // fallback to 32 if parsing fails
   }
 
   const sizeNum = getSizeNum(size)
