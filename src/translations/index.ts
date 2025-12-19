@@ -152,6 +152,24 @@ type TranslationKeys = {
       success: string
       failed: string
     }
+    transferOwnership: {
+      title: string
+      newOwnerAddress: string
+      placeholder: string
+      transferButton: string
+      warning: string
+      warningDesc: string
+      noAddress: string
+      noAddressDesc: string
+      invalidAddress: string
+      invalidAddressDesc: string
+      sameAddress: string
+      sameAddressDesc: string
+      confirmTitle: string
+      confirmDesc: string
+      success: string
+      failed: string
+    }
   }
   verify: {
     title: string
@@ -418,6 +436,24 @@ export const translations: Translations = {
         success: 'Agent Created',
         failed: 'Failed to Make Agent',
       },
+      transferOwnership: {
+        title: 'Transfer Ownership',
+        newOwnerAddress: 'New Owner Address',
+        placeholder: 'Enter the Ethereum address of the new owner',
+        transferButton: 'Transfer Ownership',
+        warning: 'Warning',
+        warningDesc: 'Transferring ownership is permanent and cannot be undone. You will lose admin access.',
+        noAddress: 'No address provided',
+        noAddressDesc: 'Please enter an address',
+        invalidAddress: 'Invalid address',
+        invalidAddressDesc: 'Please enter a valid Ethereum address',
+        sameAddress: 'Same address',
+        sameAddressDesc: 'New owner cannot be the current owner',
+        confirmTitle: 'Confirm Ownership Transfer',
+        confirmDesc: 'Are you sure you want to transfer ownership? This action is irreversible.',
+        success: 'Ownership Transferred Successfully',
+        failed: 'Failed to Transfer Ownership',
+      },
     },
     verify: {
       title: 'Verify Documents',
@@ -681,6 +717,24 @@ export const translations: Translations = {
         success: 'Agent Created',
         failed: 'Failed to Make Agent',
       },
+      transferOwnership: {
+        title: 'Transfer Ownership',
+        newOwnerAddress: 'New Owner Address',
+        placeholder: 'Enter the Ethereum address of the new owner',
+        transferButton: 'Transfer Ownership',
+        warning: 'Warning',
+        warningDesc: 'Transferring ownership is permanent and cannot be undone. You will lose admin access.',
+        noAddress: 'No address provided',
+        noAddressDesc: 'Please enter an address',
+        invalidAddress: 'Invalid address',
+        invalidAddressDesc: 'Please enter a valid Ethereum address',
+        sameAddress: 'Same address',
+        sameAddressDesc: 'New owner cannot be the current owner',
+        confirmTitle: 'Confirm Ownership Transfer',
+        confirmDesc: 'Are you sure you want to transfer ownership? This action is irreversible.',
+        success: 'Ownership Transferred Successfully',
+        failed: 'Failed to Transfer Ownership',
+      },
     },
     verify: {
       title: 'Verify Documents',
@@ -943,6 +997,24 @@ export const translations: Translations = {
         notAuthenticated: 'Not Authenticated',
         success: 'Agent Created',
         failed: 'Failed to Make Agent',
+      },
+      transferOwnership: {
+        title: 'Transfer Ownership',
+        newOwnerAddress: 'New Owner Address',
+        placeholder: 'Enter the Ethereum address of the new owner',
+        transferButton: 'Transfer Ownership',
+        warning: 'Warning',
+        warningDesc: 'Transferring ownership is permanent and cannot be undone. You will lose admin access.',
+        noAddress: 'No address provided',
+        noAddressDesc: 'Please enter an address',
+        invalidAddress: 'Invalid address',
+        invalidAddressDesc: 'Please enter a valid Ethereum address',
+        sameAddress: 'Same address',
+        sameAddressDesc: 'New owner cannot be the current owner',
+        confirmTitle: 'Confirm Ownership Transfer',
+        confirmDesc: 'Are you sure you want to transfer ownership? This action is irreversible.',
+        success: 'Ownership Transferred Successfully',
+        failed: 'Failed to Transfer Ownership',
       },
     },
     verify: {
@@ -1209,6 +1281,24 @@ export const translations: Translations = {
         success: 'Agent créé',
         failed: "Échec de la création de l'agent",
       },
+      transferOwnership: {
+        title: 'Transférer la propriété',
+        newOwnerAddress: 'Adresse du nouveau propriétaire',
+        placeholder: 'Entrez l\'adresse Ethereum du nouveau propriétaire',
+        transferButton: 'Transférer la propriété',
+        warning: 'Attention',
+        warningDesc: 'Le transfert de propriété est permanent et ne peut pas être annulé. Vous perdrez l\'accès administrateur.',
+        noAddress: 'Aucune adresse fournie',
+        noAddressDesc: 'Veuillez entrer une adresse',
+        invalidAddress: 'Adresse invalide',
+        invalidAddressDesc: 'Veuillez entrer une adresse Ethereum valide',
+        sameAddress: 'Même adresse',
+        sameAddressDesc: 'Le nouveau propriétaire ne peut pas être le propriétaire actuel',
+        confirmTitle: 'Confirmer le transfert de propriété',
+        confirmDesc: 'Êtes-vous sûr de vouloir transférer la propriété ? Cette action est irréversible.',
+        success: 'Propriété transférée avec succès',
+        failed: 'Échec du transfert de propriété',
+      },
     },
     verify: {
       title: 'Vérifier un document',
@@ -1474,6 +1564,24 @@ export const translations: Translations = {
         success: 'Agent Created',
         failed: 'Failed to Make Agent',
       },
+      transferOwnership: {
+        title: 'Transfer Ownership',
+        newOwnerAddress: 'New Owner Address',
+        placeholder: 'Enter the Ethereum address of the new owner',
+        transferButton: 'Transfer Ownership',
+        warning: 'Warning',
+        warningDesc: 'Transferring ownership is permanent and cannot be undone. You will lose admin access.',
+        noAddress: 'No address provided',
+        noAddressDesc: 'Please enter an address',
+        invalidAddress: 'Invalid address',
+        invalidAddressDesc: 'Please enter a valid Ethereum address',
+        sameAddress: 'Same address',
+        sameAddressDesc: 'New owner cannot be the current owner',
+        confirmTitle: 'Confirm Ownership Transfer',
+        confirmDesc: 'Are you sure you want to transfer ownership? This action is irreversible.',
+        success: 'Ownership Transferred Successfully',
+        failed: 'Failed to Transfer Ownership',
+      },
     },
     verify: {
       title: 'Verify Documents',
@@ -1736,6 +1844,24 @@ export const translations: Translations = {
         notAuthenticated: 'Not Authenticated',
         success: 'Agent Created',
         failed: 'Failed to Make Agent',
+      },
+      transferOwnership: {
+        title: 'Transfer Ownership',
+        newOwnerAddress: 'New Owner Address',
+        placeholder: 'Enter the Ethereum address of the new owner',
+        transferButton: 'Transfer Ownership',
+        warning: 'Warning',
+        warningDesc: 'Transferring ownership is permanent and cannot be undone. You will lose admin access.',
+        noAddress: 'No address provided',
+        noAddressDesc: 'Please enter an address',
+        invalidAddress: 'Invalid address',
+        invalidAddressDesc: 'Please enter a valid Ethereum address',
+        sameAddress: 'Same address',
+        sameAddressDesc: 'New owner cannot be the current owner',
+        confirmTitle: 'Confirm Ownership Transfer',
+        confirmDesc: 'Are you sure you want to transfer ownership? This action is irreversible.',
+        success: 'Ownership Transferred Successfully',
+        failed: 'Failed to Transfer Ownership',
       },
     },
     verify: {
@@ -2000,6 +2126,24 @@ export const translations: Translations = {
         success: 'Agent Created',
         failed: 'Failed to Make Agent',
       },
+      transferOwnership: {
+        title: 'Transfer Ownership',
+        newOwnerAddress: 'New Owner Address',
+        placeholder: 'Enter the Ethereum address of the new owner',
+        transferButton: 'Transfer Ownership',
+        warning: 'Warning',
+        warningDesc: 'Transferring ownership is permanent and cannot be undone. You will lose admin access.',
+        noAddress: 'No address provided',
+        noAddressDesc: 'Please enter an address',
+        invalidAddress: 'Invalid address',
+        invalidAddressDesc: 'Please enter a valid Ethereum address',
+        sameAddress: 'Same address',
+        sameAddressDesc: 'New owner cannot be the current owner',
+        confirmTitle: 'Confirm Ownership Transfer',
+        confirmDesc: 'Are you sure you want to transfer ownership? This action is irreversible.',
+        success: 'Ownership Transferred Successfully',
+        failed: 'Failed to Transfer Ownership',
+      },
     },
     verify: {
       title: 'Verify Documents',
@@ -2262,6 +2406,24 @@ export const translations: Translations = {
         notAuthenticated: 'Not Authenticated',
         success: 'Agent Created',
         failed: 'Failed to Make Agent',
+      },
+      transferOwnership: {
+        title: 'Transfer Ownership',
+        newOwnerAddress: 'New Owner Address',
+        placeholder: 'Enter the Ethereum address of the new owner',
+        transferButton: 'Transfer Ownership',
+        warning: 'Warning',
+        warningDesc: 'Transferring ownership is permanent and cannot be undone. You will lose admin access.',
+        noAddress: 'No address provided',
+        noAddressDesc: 'Please enter an address',
+        invalidAddress: 'Invalid address',
+        invalidAddressDesc: 'Please enter a valid Ethereum address',
+        sameAddress: 'Same address',
+        sameAddressDesc: 'New owner cannot be the current owner',
+        confirmTitle: 'Confirm Ownership Transfer',
+        confirmDesc: 'Are you sure you want to transfer ownership? This action is irreversible.',
+        success: 'Ownership Transferred Successfully',
+        failed: 'Failed to Transfer Ownership',
       },
     },
     verify: {
@@ -2526,6 +2688,24 @@ export const translations: Translations = {
         success: 'Agent Created',
         failed: 'Failed to Make Agent',
       },
+      transferOwnership: {
+        title: 'Transfer Ownership',
+        newOwnerAddress: 'New Owner Address',
+        placeholder: 'Enter the Ethereum address of the new owner',
+        transferButton: 'Transfer Ownership',
+        warning: 'Warning',
+        warningDesc: 'Transferring ownership is permanent and cannot be undone. You will lose admin access.',
+        noAddress: 'No address provided',
+        noAddressDesc: 'Please enter an address',
+        invalidAddress: 'Invalid address',
+        invalidAddressDesc: 'Please enter a valid Ethereum address',
+        sameAddress: 'Same address',
+        sameAddressDesc: 'New owner cannot be the current owner',
+        confirmTitle: 'Confirm Ownership Transfer',
+        confirmDesc: 'Are you sure you want to transfer ownership? This action is irreversible.',
+        success: 'Ownership Transferred Successfully',
+        failed: 'Failed to Transfer Ownership',
+      },
     },
     verify: {
       title: 'Verify Documents',
@@ -2788,6 +2968,24 @@ export const translations: Translations = {
         notAuthenticated: 'Not Authenticated',
         success: 'Agent Created',
         failed: 'Failed to Make Agent',
+      },
+      transferOwnership: {
+        title: 'Transfer Ownership',
+        newOwnerAddress: 'New Owner Address',
+        placeholder: 'Enter the Ethereum address of the new owner',
+        transferButton: 'Transfer Ownership',
+        warning: 'Warning',
+        warningDesc: 'Transferring ownership is permanent and cannot be undone. You will lose admin access.',
+        noAddress: 'No address provided',
+        noAddressDesc: 'Please enter an address',
+        invalidAddress: 'Invalid address',
+        invalidAddressDesc: 'Please enter a valid Ethereum address',
+        sameAddress: 'Same address',
+        sameAddressDesc: 'New owner cannot be the current owner',
+        confirmTitle: 'Confirm Ownership Transfer',
+        confirmDesc: 'Are you sure you want to transfer ownership? This action is irreversible.',
+        success: 'Ownership Transferred Successfully',
+        failed: 'Failed to Transfer Ownership',
       },
     },
     verify: {

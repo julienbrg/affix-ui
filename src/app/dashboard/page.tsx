@@ -33,6 +33,7 @@ import {
   FiAlertCircle,
   FiCopy,
   FiExternalLink,
+  FiKey,
 } from 'react-icons/fi'
 import { getDocumentCID } from '@/lib/documentHash'
 import { ethers } from 'ethers'
@@ -147,6 +148,8 @@ export default function DashboardPage() {
   const [registryAddress, setRegistryAddress] = useState<string>('')
   const [agentList, setAgentList] = useState<string[]>([])
   const [isLoadingAgents, setIsLoadingAgents] = useState(false)
+  const [isTransferringOwnership, setIsTransferringOwnership] = useState(false)
+  const [newOwnerAddress, setNewOwnerAddress] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -607,6 +610,148 @@ export default function DashboardPage() {
       })
     } finally {
       setIsMakingAgent(false)
+    }
+  }
+
+  const handleTransferOwnership = async () => {
+    if (!newOwnerAddress.trim()) {
+      toaster.create({
+        title: t.dashboard.transferOwnership.noAddress,
+        description: t.dashboard.transferOwnership.noAddressDesc,
+        type: 'warning',
+        duration: 5000,
+      })
+      return
+    }
+
+    if (!ethers.isAddress(newOwnerAddress)) {
+      toaster.create({
+        title: t.dashboard.transferOwnership.invalidAddress,
+        description: t.dashboard.transferOwnership.invalidAddressDesc,
+        type: 'error',
+        duration: 5000,
+      })
+      return
+    }
+
+    // Check if new owner is same as current owner
+    if (newOwnerAddress.toLowerCase() === currentUserAddress.toLowerCase()) {
+      toaster.create({
+        title: t.dashboard.transferOwnership.sameAddress,
+        description: t.dashboard.transferOwnership.sameAddressDesc,
+        type: 'error',
+        duration: 5000,
+      })
+      return
+    }
+
+    if (!registryAddress) {
+      toaster.create({
+        title: 'No registry found',
+        description: 'Cannot transfer ownership without a registry address',
+        type: 'error',
+        duration: 5000,
+      })
+      return
+    }
+
+    // Confirm with user before proceeding
+    const confirmed = window.confirm(
+      `${t.dashboard.transferOwnership.confirmTitle}\n\n${t.dashboard.transferOwnership.confirmDesc}`
+    )
+
+    if (!confirmed) {
+      return
+    }
+
+    setIsTransferringOwnership(true)
+    try {
+      // 1. Get user address
+      const userAddress = currentUserAddress || (await getAddress('STANDARD', 'MAIN'))
+      console.log('Admin address:', userAddress)
+
+      // 2. Create provider and signer
+      const provider = new ethers.JsonRpcProvider(RPC_URL)
+      const signer = new W3PKSigner(userAddress, provider, { signMessage })
+
+      // 3. Connect to registry contract
+      const registryContract = new ethers.Contract(registryAddress, AFFIX_REGISTRY_ABI, signer)
+
+      // 4. Build and send transaction
+      toaster.create({
+        title: 'Transferring ownership',
+        description: 'Please sign the transaction',
+        type: 'info',
+        duration: 3000,
+      })
+
+      const tx = await registryContract.transferOwnership(newOwnerAddress)
+      console.log('Transaction submitted:', tx.hash)
+
+      toaster.create({
+        title: 'Transaction submitted',
+        description: `Hash: ${tx.hash.slice(0, 10)}...`,
+        type: 'info',
+        duration: 3000,
+      })
+
+      // 5. Wait for confirmation
+      const receipt = await tx.wait()
+
+      console.log('Transaction confirmed in block:', receipt.blockNumber)
+
+      // Check if transaction was successful
+      if (receipt.status === 0) {
+        throw new Error('Transaction reverted onchain.')
+      }
+
+      toaster.create({
+        title: t.dashboard.transferOwnership.success,
+        description: `Ownership transferred to ${newOwnerAddress.slice(0, 6)}...${newOwnerAddress.slice(-4)}`,
+        type: 'success',
+        duration: 10000,
+        action: {
+          label: 'View Transaction',
+          onClick: () => {
+            window.open(`${currentNetwork.blockExplorer}/tx/${tx.hash}`, '_blank')
+          },
+        },
+      })
+
+      setNewOwnerAddress('')
+
+      // Update role since user is no longer admin
+      setTimeout(() => {
+        setRole('nobody')
+        setRegistryAddress('')
+        setEntityName('')
+      }, 2000)
+    } catch (error: any) {
+      console.error('Error transferring ownership:', error)
+
+      let errorMessage = 'An error occurred'
+
+      if (error.message?.includes('user rejected') || error.message?.includes('cancelled')) {
+        errorMessage = 'Transaction was cancelled by user'
+      } else if (error.message?.includes('nonce')) {
+        errorMessage = 'Transaction nonce error. Please try again.'
+      } else if (
+        error.message?.includes('revert') ||
+        error.message?.includes('execution reverted')
+      ) {
+        errorMessage = 'Transaction reverted. You may not have permission to transfer ownership.'
+      } else if (error.message) {
+        errorMessage = error.message
+      }
+
+      toaster.create({
+        title: t.dashboard.transferOwnership.failed,
+        description: errorMessage,
+        type: 'error',
+        duration: 7000,
+      })
+    } finally {
+      setIsTransferringOwnership(false)
     }
   }
 
@@ -1091,6 +1236,105 @@ export default function DashboardPage() {
                         </Box>
                       )}
                     </Box>
+                  </VStack>
+                </Box>
+              </section>
+            )}
+
+            {/* Transfer Ownership Section */}
+            {role === 'admin' && (
+              <section aria-label="Transfer Ownership">
+                <Box
+                  bg="whiteAlpha.50"
+                  p={6}
+                  borderRadius="lg"
+                  border="1px solid"
+                  borderColor="gray.700"
+                >
+                  <VStack gap={6} align="stretch">
+                    <HStack>
+                      <FiKey size={20} color="#f56565" />
+                      <Heading size="md">{t.dashboard.transferOwnership.title}</Heading>
+                    </HStack>
+
+                    {/* Warning Box */}
+                    <Box
+                      bg="red.900"
+                      border="1px solid"
+                      borderColor="red.500"
+                      borderRadius="md"
+                      p={4}
+                    >
+                      <HStack gap={3} mb={2}>
+                        <FiAlertCircle size={20} color="red" />
+                        <Text fontSize="sm" color="red.200" fontWeight="medium">
+                          {t.dashboard.transferOwnership.warning}
+                        </Text>
+                      </HStack>
+                      <Text fontSize="xs" color="red.300">
+                        {t.dashboard.transferOwnership.warningDesc}
+                      </Text>
+                    </Box>
+
+                    <Box>
+                      <Text fontSize="sm" fontWeight="medium" mb={2}>
+                        {t.dashboard.transferOwnership.newOwnerAddress}
+                      </Text>
+                      <Input
+                        value={newOwnerAddress}
+                        onChange={e => setNewOwnerAddress(e.target.value)}
+                        placeholder="0x..."
+                        fontFamily="mono"
+                      />
+                      <Text fontSize="xs" color="gray.500" mt={1}>
+                        {t.dashboard.transferOwnership.placeholder}
+                      </Text>
+                    </Box>
+
+                    <Button
+                      onClick={handleTransferOwnership}
+                      bg="red.600"
+                      color="white"
+                      _hover={{ bg: 'red.700' }}
+                      disabled={!newOwnerAddress.trim()}
+                      loading={isTransferringOwnership}
+                      w="100%"
+                    >
+                      <FiKey /> {t.dashboard.transferOwnership.transferButton}
+                    </Button>
+
+                    {/* Registry Info */}
+                    {registryAddress && (
+                      <Box
+                        bg="whiteAlpha.100"
+                        p={3}
+                        borderRadius="md"
+                        border="1px solid"
+                        borderColor="gray.600"
+                      >
+                        <Text fontSize="xs" color="gray.400" mb={1}>
+                          Registry Contract
+                        </Text>
+                        <Flex align="center" gap={2}>
+                          <Text
+                            fontSize="xs"
+                            fontFamily="mono"
+                            color="gray.300"
+                            flex={1}
+                            lineClamp={1}
+                          >
+                            {registryAddress}
+                          </Text>
+                          <Button
+                            size="xs"
+                            variant="ghost"
+                            onClick={() => copyToClipboard(registryAddress)}
+                          >
+                            <FiCopy />
+                          </Button>
+                        </Flex>
+                      </Box>
+                    )}
                   </VStack>
                 </Box>
               </section>
