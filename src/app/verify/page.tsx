@@ -167,13 +167,20 @@ export default function VerifyPage() {
 
         // Try AI verification
         try {
+          console.log('🔍 Attempting AI verification for address:', registryAddress)
           const response = await fetch(`/api/verify-url?address=${registryAddress}`)
+          console.log('📡 AI verification response status:', response.status, response.statusText)
+
           if (response.ok) {
             const data = await response.json()
+            console.log('📄 AI verification response data:', data)
             setUrlVerificationResult(data)
+          } else {
+            const errorData = await response.text()
+            console.error('❌ AI verification failed with status:', response.status, errorData)
           }
         } catch (error) {
-          console.log('AI verification not available:', error)
+          console.error('❌ AI verification error:', error)
         }
 
         setProgress(100)
@@ -574,6 +581,18 @@ export default function VerifyPage() {
                               ? `✓ ${t.verify.results.registryVerified}`
                               : `✗ ${t.verify.results.registryNotVerified}`}
                           </Text>
+                          {/* Debug info */}
+                          <Box mt={2} p={2} bg="blackAlpha.300" borderRadius="sm">
+                            <Text fontSize="xs" color="yellow.300" fontFamily="mono">
+                              Debug: verified={String(urlVerificationResult.verified)}
+                            </Text>
+                            <Text fontSize="xs" color="yellow.300" fontFamily="mono">
+                              registryUrl: {urlVerificationResult.registryUrl}
+                            </Text>
+                            <Text fontSize="xs" color="yellow.300" fontFamily="mono">
+                              message: {urlVerificationResult.message}
+                            </Text>
+                          </Box>
                         </Box>
                       )}
                     </VStack>
