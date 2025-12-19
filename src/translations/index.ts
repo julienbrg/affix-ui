@@ -442,7 +442,8 @@ export const translations: Translations = {
         placeholder: 'Enter the Ethereum address of the new owner',
         transferButton: 'Transfer Ownership',
         warning: 'Warning',
-        warningDesc: 'Transferring ownership is permanent and cannot be undone. You will lose admin access.',
+        warningDesc:
+          'Transferring ownership is permanent and cannot be undone. You will lose admin access.',
         noAddress: 'No address provided',
         noAddressDesc: 'Please enter an address',
         invalidAddress: 'Invalid address',
@@ -723,7 +724,8 @@ export const translations: Translations = {
         placeholder: 'Enter the Ethereum address of the new owner',
         transferButton: 'Transfer Ownership',
         warning: 'Warning',
-        warningDesc: 'Transferring ownership is permanent and cannot be undone. You will lose admin access.',
+        warningDesc:
+          'Transferring ownership is permanent and cannot be undone. You will lose admin access.',
         noAddress: 'No address provided',
         noAddressDesc: 'Please enter an address',
         invalidAddress: 'Invalid address',
@@ -1004,7 +1006,8 @@ export const translations: Translations = {
         placeholder: 'Enter the Ethereum address of the new owner',
         transferButton: 'Transfer Ownership',
         warning: 'Warning',
-        warningDesc: 'Transferring ownership is permanent and cannot be undone. You will lose admin access.',
+        warningDesc:
+          'Transferring ownership is permanent and cannot be undone. You will lose admin access.',
         noAddress: 'No address provided',
         noAddressDesc: 'Please enter an address',
         invalidAddress: 'Invalid address',
@@ -1284,10 +1287,11 @@ export const translations: Translations = {
       transferOwnership: {
         title: 'Transférer la propriété',
         newOwnerAddress: 'Adresse du nouveau propriétaire',
-        placeholder: 'Entrez l\'adresse Ethereum du nouveau propriétaire',
+        placeholder: "Entrez l'adresse Ethereum du nouveau propriétaire",
         transferButton: 'Transférer la propriété',
         warning: 'Attention',
-        warningDesc: 'Le transfert de propriété est permanent et ne peut pas être annulé. Vous perdrez l\'accès administrateur.',
+        warningDesc:
+          "Le transfert de propriété est permanent et ne peut pas être annulé. Vous perdrez l'accès administrateur.",
         noAddress: 'Aucune adresse fournie',
         noAddressDesc: 'Veuillez entrer une adresse',
         invalidAddress: 'Adresse invalide',
@@ -1295,7 +1299,8 @@ export const translations: Translations = {
         sameAddress: 'Même adresse',
         sameAddressDesc: 'Le nouveau propriétaire ne peut pas être le propriétaire actuel',
         confirmTitle: 'Confirmer le transfert de propriété',
-        confirmDesc: 'Êtes-vous sûr de vouloir transférer la propriété ? Cette action est irréversible.',
+        confirmDesc:
+          'Êtes-vous sûr de vouloir transférer la propriété ? Cette action est irréversible.',
         success: 'Propriété transférée avec succès',
         failed: 'Échec du transfert de propriété',
       },
@@ -1570,7 +1575,8 @@ export const translations: Translations = {
         placeholder: 'Enter the Ethereum address of the new owner',
         transferButton: 'Transfer Ownership',
         warning: 'Warning',
-        warningDesc: 'Transferring ownership is permanent and cannot be undone. You will lose admin access.',
+        warningDesc:
+          'Transferring ownership is permanent and cannot be undone. You will lose admin access.',
         noAddress: 'No address provided',
         noAddressDesc: 'Please enter an address',
         invalidAddress: 'Invalid address',
@@ -1851,7 +1857,8 @@ export const translations: Translations = {
         placeholder: 'Enter the Ethereum address of the new owner',
         transferButton: 'Transfer Ownership',
         warning: 'Warning',
-        warningDesc: 'Transferring ownership is permanent and cannot be undone. You will lose admin access.',
+        warningDesc:
+          'Transferring ownership is permanent and cannot be undone. You will lose admin access.',
         noAddress: 'No address provided',
         noAddressDesc: 'Please enter an address',
         invalidAddress: 'Invalid address',
@@ -2132,7 +2139,8 @@ export const translations: Translations = {
         placeholder: 'Enter the Ethereum address of the new owner',
         transferButton: 'Transfer Ownership',
         warning: 'Warning',
-        warningDesc: 'Transferring ownership is permanent and cannot be undone. You will lose admin access.',
+        warningDesc:
+          'Transferring ownership is permanent and cannot be undone. You will lose admin access.',
         noAddress: 'No address provided',
         noAddressDesc: 'Please enter an address',
         invalidAddress: 'Invalid address',
@@ -2413,7 +2421,8 @@ export const translations: Translations = {
         placeholder: 'Enter the Ethereum address of the new owner',
         transferButton: 'Transfer Ownership',
         warning: 'Warning',
-        warningDesc: 'Transferring ownership is permanent and cannot be undone. You will lose admin access.',
+        warningDesc:
+          'Transferring ownership is permanent and cannot be undone. You will lose admin access.',
         noAddress: 'No address provided',
         noAddressDesc: 'Please enter an address',
         invalidAddress: 'Invalid address',
@@ -2694,7 +2703,8 @@ export const translations: Translations = {
         placeholder: 'Enter the Ethereum address of the new owner',
         transferButton: 'Transfer Ownership',
         warning: 'Warning',
-        warningDesc: 'Transferring ownership is permanent and cannot be undone. You will lose admin access.',
+        warningDesc:
+          'Transferring ownership is permanent and cannot be undone. You will lose admin access.',
         noAddress: 'No address provided',
         noAddressDesc: 'Please enter an address',
         invalidAddress: 'Invalid address',
@@ -2975,7 +2985,8 @@ export const translations: Translations = {
         placeholder: 'Enter the Ethereum address of the new owner',
         transferButton: 'Transfer Ownership',
         warning: 'Warning',
-        warningDesc: 'Transferring ownership is permanent and cannot be undone. You will lose admin access.',
+        warningDesc:
+          'Transferring ownership is permanent and cannot be undone. You will lose admin access.',
         noAddress: 'No address provided',
         noAddressDesc: 'Please enter an address',
         invalidAddress: 'Invalid address',
