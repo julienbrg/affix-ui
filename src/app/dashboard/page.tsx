@@ -33,6 +33,7 @@ import {
   FiAlertCircle,
   FiCopy,
   FiExternalLink,
+  FiKey,
 } from 'react-icons/fi'
 import { getDocumentCID } from '@/lib/documentHash'
 import { ethers } from 'ethers'
@@ -51,7 +52,7 @@ class W3PKSigner extends ethers.AbstractSigner {
   constructor(
     public address: string,
     provider: ethers.Provider,
-    private w3pk: any
+    private w3pkHelpers: { signMessage: (message: string, options?: any) => Promise<string | null> }
   ) {
     super(provider)
   }
@@ -97,16 +98,20 @@ class W3PKSigner extends ethers.AbstractSigner {
     console.log('Signing transaction hash:', txHash)
 
     // Sign with w3pk using STANDARD mode + rawHash
-    const signResult = await this.w3pk.signMessage(txHash, {
+    const signature = await this.w3pkHelpers.signMessage(txHash, {
       mode: 'STANDARD',
       tag: 'MAIN',
       signingMethod: 'rawHash',
     })
 
-    console.log('Signature received:', signResult.signature.slice(0, 20) + '...')
+    if (!signature) {
+      throw new Error('Failed to sign transaction - signature is null')
+    }
+
+    console.log('Signature received:', signature.slice(0, 20) + '...')
 
     // Attach signature
-    transaction.signature = ethers.Signature.from(signResult.signature)
+    transaction.signature = ethers.Signature.from(signature)
 
     console.log('Serialized transaction length:', transaction.serialized.length)
 
@@ -115,7 +120,7 @@ class W3PKSigner extends ethers.AbstractSigner {
   }
 
   connect(provider: ethers.Provider): ethers.Signer {
-    return new W3PKSigner(this.address, provider, this.w3pk)
+    return new W3PKSigner(this.address, provider, this.w3pkHelpers)
   }
 
   async signMessage(message: string | Uint8Array): Promise<string> {
@@ -128,7 +133,7 @@ class W3PKSigner extends ethers.AbstractSigner {
 }
 
 export default function DashboardPage() {
-  const { isAuthenticated, user, login, getAddress, w3pkInstance } = useW3PK()
+  const { isAuthenticated, user, login, getAddress, signMessage } = useW3PK()
   const t = useTranslation()
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [documentCID, setDocumentCID] = useState<string | null>(null)
@@ -141,6 +146,10 @@ export default function DashboardPage() {
   const [role, setRole] = useState<Role>('nobody')
   const [entityName, setEntityName] = useState<string>('')
   const [registryAddress, setRegistryAddress] = useState<string>('')
+  const [agentList, setAgentList] = useState<string[]>([])
+  const [isLoadingAgents, setIsLoadingAgents] = useState(false)
+  const [isTransferringOwnership, setIsTransferringOwnership] = useState(false)
+  const [newOwnerAddress, setNewOwnerAddress] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -208,10 +217,10 @@ export default function DashboardPage() {
               if (canIssue) {
                 // Check if user is admin
                 try {
-                  const adminAddress = await registryContract.admin()
-                  const isAdmin = adminAddress.toLowerCase() === currentUserAddress.toLowerCase()
+                  const ownerAddress = await registryContract.owner()
+                  const isAdmin = ownerAddress.toLowerCase() === currentUserAddress.toLowerCase()
 
-                  console.log('👑 Admin address:', adminAddress)
+                  console.log('👑 Owner address:', ownerAddress)
                   console.log('🔑 Your address:', currentUserAddress)
                   console.log('👑 Is admin:', isAdmin)
 
@@ -269,6 +278,33 @@ export default function DashboardPage() {
 
     fetchUserAddress()
   }, [isAuthenticated, getAddress])
+
+  // Fetch agents when registry address changes
+  useEffect(() => {
+    const fetchAgents = async () => {
+      if (!registryAddress || role !== 'admin') {
+        setAgentList([])
+        return
+      }
+
+      setIsLoadingAgents(true)
+      try {
+        const provider = new ethers.JsonRpcProvider(RPC_URL)
+        const registryContract = new ethers.Contract(registryAddress, AFFIX_REGISTRY_ABI, provider)
+
+        const agents = await registryContract.getActiveAgents()
+        console.log('Fetched agents:', agents)
+        setAgentList(agents)
+      } catch (error) {
+        console.error('Error fetching agents:', error)
+        setAgentList([])
+      } finally {
+        setIsLoadingAgents(false)
+      }
+    }
+
+    fetchAgents()
+  }, [registryAddress, role])
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -342,134 +378,51 @@ export default function DashboardPage() {
       const userAddress = currentUserAddress || (await getAddress('STANDARD', 'MAIN'))
       console.log('User address:', userAddress)
 
-      // 2. Create provider
+      // 2. Create provider and signer
       const provider = new ethers.JsonRpcProvider(RPC_URL)
+      const signer = new W3PKSigner(userAddress, provider, { signMessage })
 
-      // 3. Verify user is an agent and registry is set
+      // 3. Verify user can issue documents (owner or agent) and registry is set
       if (!registryAddress) {
         throw new Error('No registry address found. Please ensure you have proper permissions.')
       }
 
-      const registryContract = new ethers.Contract(registryAddress, AFFIX_REGISTRY_ABI, provider)
-      const isAgent = await registryContract.isAgent(userAddress)
-      console.log('Is agent?', isAgent)
+      const registryContract = new ethers.Contract(registryAddress, AFFIX_REGISTRY_ABI, signer)
+      const canIssue = await registryContract.canIssueDocuments(userAddress)
+      console.log('Can issue documents?', canIssue)
 
-      if (!isAgent) {
-        throw new Error(`Address ${userAddress} is not authorized as an agent on this registry.`)
+      if (!canIssue) {
+        throw new Error(
+          `Address ${userAddress} is not authorized to issue documents on this registry.`
+        )
       }
 
       console.log('Issuing document with CID:', documentCID)
       console.log('Metadata:', metadata || '(none)')
 
-      // 4. Check if agent has set up delegation, if not, do it now
-      // We check if the agent's code has been set (EIP-7702 delegation)
-      const agentCode = await provider.getCode(userAddress)
-      const hasDelegation = agentCode !== '0x' && agentCode.startsWith('0xef0100')
-
-      if (!hasDelegation) {
-        console.log('🔗 Agent has not set up delegation yet, setting it up now...')
-
-        toaster.create({
-          title: 'Setting up delegation',
-          description: 'Please sign the delegation authorization. You only need to do this once.',
-          type: 'info',
-          duration: 5000,
-        })
-
-        // Get current nonce for authorization
-        const nonce = await provider.getTransactionCount(userAddress)
-
-        // Create EIP-7702 authorization
-        const { createW3PKAuthorization } = await import('@/lib/eip7702')
-        const authorization = await createW3PKAuthorization(
-          w3pkInstance,
-          registryAddress,
-          nonce,
-          DEFAULT_NETWORK
-        )
-
-        // Submit delegation setup
-        const delegationResponse = await fetch('/api/setup-delegation', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            agentAddress: userAddress,
-            registryAddress,
-            authorization,
-          }),
-        })
-
-        const delegationResult = await delegationResponse.json()
-
-        if (!delegationResponse.ok || !delegationResult.success) {
-          throw new Error(delegationResult.error || 'Failed to set up delegation')
-        }
-
-        console.log('✅ Delegation set up successfully:', delegationResult.transactionHash)
-
-        toaster.create({
-          title: 'Delegation Active!',
-          description: 'You can now issue documents without paying gas fees.',
-          type: 'success',
-          duration: 5000,
-        })
-      } else {
-        console.log('✅ Agent already has delegation set up')
-      }
-
-      // 5. Submit sponsored transaction
+      // 4. Build and send transaction
       const functionName = metadata ? 'issueDocumentWithMetadata' : 'issueDocument'
       const args = metadata ? [documentCID, metadata] : [documentCID]
 
-      const response = await fetch('/api/sponsored-tx', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          agentAddress: userAddress,
-          registryAddress,
-          functionName,
-          args,
-        }),
-      })
-
-      const result = await response.json()
-
-      if (!response.ok || !result.success) {
-        throw new Error(result.error || 'Failed to submit sponsored transaction')
-      }
-
       toaster.create({
         title: t.dashboard.issueDocument.txSubmitted,
-        description: `${t.dashboard.issueDocument.txHash}: ${result.transactionHash.slice(0, 10)}... (Sponsored by relayer)`,
+        description: 'Please sign the transaction',
         type: 'info',
         duration: 3000,
       })
 
-      console.log('Transaction submitted:', result.transactionHash)
+      const tx = await registryContract[functionName](...args)
+      console.log('Transaction submitted:', tx.hash)
 
-      // 6. Wait for confirmation by polling the transaction
-      let receipt = null
-      let attempts = 0
-      const maxAttempts = 60 // 60 seconds timeout
+      toaster.create({
+        title: t.dashboard.issueDocument.txSubmitted,
+        description: `${t.dashboard.issueDocument.txHash}: ${tx.hash.slice(0, 10)}...`,
+        type: 'info',
+        duration: 3000,
+      })
 
-      while (!receipt && attempts < maxAttempts) {
-        try {
-          receipt = await provider.getTransactionReceipt(result.transactionHash)
-          if (receipt) break
-        } catch (e) {
-          // Transaction not yet mined
-        }
-        await new Promise(resolve => setTimeout(resolve, 1000))
-        attempts++
-      }
-
-      if (!receipt) {
-        throw new Error('Transaction timeout - please check block explorer')
-      }
+      // 5. Wait for confirmation
+      const receipt = await tx.wait()
 
       console.log('Transaction confirmed in block:', receipt.blockNumber)
 
@@ -480,13 +433,13 @@ export default function DashboardPage() {
 
       toaster.create({
         title: t.dashboard.issueDocument.success,
-        description: `${t.dashboard.issueDocument.viewTxOn} ${currentNetwork.explorerName} (No gas fees paid!)`,
+        description: `${t.dashboard.issueDocument.viewTxOn} ${currentNetwork.explorerName}`,
         type: 'success',
         duration: 10000,
         action: {
           label: t.dashboard.issueDocument.viewTx,
           onClick: () => {
-            window.open(`${currentNetwork.blockExplorer}/tx/${result.transactionHash}`, '_blank')
+            window.open(`${currentNetwork.blockExplorer}/tx/${tx.hash}`, '_blank')
           },
         },
       })
@@ -509,8 +462,6 @@ export default function DashboardPage() {
       ) {
         errorMessage =
           'Transaction reverted. You may not have permission to issue documents on this registry.'
-      } else if (error.message?.includes('Relayer has insufficient funds')) {
-        errorMessage = 'Relayer wallet has insufficient funds. Please contact administrator.'
       } else if (error.message) {
         errorMessage = error.message
       }
@@ -559,41 +510,248 @@ export default function DashboardPage() {
 
     setIsMakingAgent(true)
     try {
-      const response = await fetch('/api/make-agent', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userAddress: newAgentAddress,
-          registryAddress: registryAddress,
-        }),
+      // 1. Get user address
+      const userAddress = currentUserAddress || (await getAddress('STANDARD', 'MAIN'))
+      console.log('Admin address:', userAddress)
+
+      // 2. Create provider and signer
+      const provider = new ethers.JsonRpcProvider(RPC_URL)
+      const signer = new W3PKSigner(userAddress, provider, { signMessage })
+
+      // 3. Connect to registry contract
+      const registryContract = new ethers.Contract(registryAddress, AFFIX_REGISTRY_ABI, signer)
+
+      // Check if already an agent
+      const isAlreadyAgent = await registryContract.isAgent(newAgentAddress)
+
+      if (isAlreadyAgent) {
+        toaster.create({
+          title: t.dashboard.addAgent.alreadyAgent,
+          description: `${newAgentAddress.slice(0, 6)}...${newAgentAddress.slice(-4)} is already an agent`,
+          type: 'success',
+          duration: 5000,
+        })
+        setNewAgentAddress('')
+        return
+      }
+
+      // 4. Build and send transaction
+      toaster.create({
+        title: 'Adding agent',
+        description: 'Please sign the transaction',
+        type: 'info',
+        duration: 3000,
       })
 
-      const data = await response.json()
+      // Send 0.000001 ETH as required by the contract
+      const tx = await registryContract.addAgent(newAgentAddress, {
+        value: ethers.parseEther('0.000001'),
+      })
+      console.log('Transaction submitted:', tx.hash)
 
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to make agent')
+      toaster.create({
+        title: 'Transaction submitted',
+        description: `Hash: ${tx.hash.slice(0, 10)}...`,
+        type: 'info',
+        duration: 3000,
+      })
+
+      // 5. Wait for confirmation
+      const receipt = await tx.wait()
+
+      console.log('Transaction confirmed in block:', receipt.blockNumber)
+
+      // Check if transaction was successful
+      if (receipt.status === 0) {
+        throw new Error('Transaction reverted onchain.')
       }
 
       toaster.create({
-        title: data.alreadyAgent ? t.dashboard.addAgent.alreadyAgent : t.dashboard.addAgent.success,
-        description: data.message,
+        title: t.dashboard.addAgent.success,
+        description: `${newAgentAddress.slice(0, 6)}...${newAgentAddress.slice(-4)} is now an agent`,
         type: 'success',
         duration: 5000,
       })
 
       setNewAgentAddress('')
+
+      // Refresh agent list
+      try {
+        const provider = new ethers.JsonRpcProvider(RPC_URL)
+        const registryContract = new ethers.Contract(registryAddress, AFFIX_REGISTRY_ABI, provider)
+        const agents = await registryContract.getActiveAgents()
+        setAgentList(agents)
+      } catch (error) {
+        console.error('Error refreshing agent list:', error)
+      }
     } catch (error: any) {
       console.error('Error making agent:', error)
+
+      let errorMessage = 'An error occurred'
+
+      if (error.message?.includes('user rejected') || error.message?.includes('cancelled')) {
+        errorMessage = 'Transaction was cancelled by user'
+      } else if (error.message?.includes('nonce')) {
+        errorMessage = 'Transaction nonce error. Please try again.'
+      } else if (
+        error.message?.includes('revert') ||
+        error.message?.includes('execution reverted')
+      ) {
+        errorMessage = 'Transaction reverted. You may not have permission to add agents.'
+      } else if (error.message) {
+        errorMessage = error.message
+      }
+
       toaster.create({
         title: t.dashboard.addAgent.failed,
-        description: error.message || 'An error occurred',
+        description: errorMessage,
         type: 'error',
         duration: 7000,
       })
     } finally {
       setIsMakingAgent(false)
+    }
+  }
+
+  const handleTransferOwnership = async () => {
+    if (!newOwnerAddress.trim()) {
+      toaster.create({
+        title: t.dashboard.transferOwnership.noAddress,
+        description: t.dashboard.transferOwnership.noAddressDesc,
+        type: 'warning',
+        duration: 5000,
+      })
+      return
+    }
+
+    if (!ethers.isAddress(newOwnerAddress)) {
+      toaster.create({
+        title: t.dashboard.transferOwnership.invalidAddress,
+        description: t.dashboard.transferOwnership.invalidAddressDesc,
+        type: 'error',
+        duration: 5000,
+      })
+      return
+    }
+
+    // Check if new owner is same as current owner
+    if (newOwnerAddress.toLowerCase() === currentUserAddress.toLowerCase()) {
+      toaster.create({
+        title: t.dashboard.transferOwnership.sameAddress,
+        description: t.dashboard.transferOwnership.sameAddressDesc,
+        type: 'error',
+        duration: 5000,
+      })
+      return
+    }
+
+    if (!registryAddress) {
+      toaster.create({
+        title: 'No registry found',
+        description: 'Cannot transfer ownership without a registry address',
+        type: 'error',
+        duration: 5000,
+      })
+      return
+    }
+
+    // Confirm with user before proceeding
+    const confirmed = window.confirm(
+      `${t.dashboard.transferOwnership.confirmTitle}\n\n${t.dashboard.transferOwnership.confirmDesc}`
+    )
+
+    if (!confirmed) {
+      return
+    }
+
+    setIsTransferringOwnership(true)
+    try {
+      // 1. Get user address
+      const userAddress = currentUserAddress || (await getAddress('STANDARD', 'MAIN'))
+      console.log('Admin address:', userAddress)
+
+      // 2. Create provider and signer
+      const provider = new ethers.JsonRpcProvider(RPC_URL)
+      const signer = new W3PKSigner(userAddress, provider, { signMessage })
+
+      // 3. Connect to registry contract
+      const registryContract = new ethers.Contract(registryAddress, AFFIX_REGISTRY_ABI, signer)
+
+      // 4. Build and send transaction
+      toaster.create({
+        title: 'Transferring ownership',
+        description: 'Please sign the transaction',
+        type: 'info',
+        duration: 3000,
+      })
+
+      const tx = await registryContract.transferOwnership(newOwnerAddress)
+      console.log('Transaction submitted:', tx.hash)
+
+      toaster.create({
+        title: 'Transaction submitted',
+        description: `Hash: ${tx.hash.slice(0, 10)}...`,
+        type: 'info',
+        duration: 3000,
+      })
+
+      // 5. Wait for confirmation
+      const receipt = await tx.wait()
+
+      console.log('Transaction confirmed in block:', receipt.blockNumber)
+
+      // Check if transaction was successful
+      if (receipt.status === 0) {
+        throw new Error('Transaction reverted onchain.')
+      }
+
+      toaster.create({
+        title: t.dashboard.transferOwnership.success,
+        description: `Ownership transferred to ${newOwnerAddress.slice(0, 6)}...${newOwnerAddress.slice(-4)}`,
+        type: 'success',
+        duration: 10000,
+        action: {
+          label: 'View Transaction',
+          onClick: () => {
+            window.open(`${currentNetwork.blockExplorer}/tx/${tx.hash}`, '_blank')
+          },
+        },
+      })
+
+      setNewOwnerAddress('')
+
+      // Update role since user is no longer admin
+      setTimeout(() => {
+        setRole('nobody')
+        setRegistryAddress('')
+        setEntityName('')
+      }, 2000)
+    } catch (error: any) {
+      console.error('Error transferring ownership:', error)
+
+      let errorMessage = 'An error occurred'
+
+      if (error.message?.includes('user rejected') || error.message?.includes('cancelled')) {
+        errorMessage = 'Transaction was cancelled by user'
+      } else if (error.message?.includes('nonce')) {
+        errorMessage = 'Transaction nonce error. Please try again.'
+      } else if (
+        error.message?.includes('revert') ||
+        error.message?.includes('execution reverted')
+      ) {
+        errorMessage = 'Transaction reverted. You may not have permission to transfer ownership.'
+      } else if (error.message) {
+        errorMessage = error.message
+      }
+
+      toaster.create({
+        title: t.dashboard.transferOwnership.failed,
+        description: errorMessage,
+        type: 'error',
+        duration: 7000,
+      })
+    } finally {
+      setIsTransferringOwnership(false)
     }
   }
 
@@ -690,7 +848,7 @@ export default function DashboardPage() {
 
   return (
     <main>
-      <Container maxW="container.xl" py={20}>
+      <Container maxW="container.lg" py={20}>
         <VStack gap={8} align="stretch">
           <header>
             <Flex justify="space-between" align="center" mb={2}></Flex>
@@ -986,6 +1144,176 @@ export default function DashboardPage() {
                       >
                         <Text fontSize="xs" color="gray.400" mb={1}>
                           {t.dashboard.addAgent.registryContract}
+                        </Text>
+                        <Flex align="center" gap={2}>
+                          <Text
+                            fontSize="xs"
+                            fontFamily="mono"
+                            color="gray.300"
+                            flex={1}
+                            lineClamp={1}
+                          >
+                            {registryAddress}
+                          </Text>
+                          <Button
+                            size="xs"
+                            variant="ghost"
+                            onClick={() => copyToClipboard(registryAddress)}
+                          >
+                            <FiCopy />
+                          </Button>
+                        </Flex>
+                      </Box>
+                    )}
+
+                    {/* Current Agents List */}
+                    <Box>
+                      <Text fontSize="sm" fontWeight="medium" mb={3} color="gray.300">
+                        Current Agents ({agentList.length})
+                      </Text>
+                      {isLoadingAgents ? (
+                        <Box textAlign="center" py={4}>
+                          <Spinner size="sm" />
+                          <Text fontSize="xs" color="gray.500" mt={2}>
+                            Loading agents...
+                          </Text>
+                        </Box>
+                      ) : agentList.length > 0 ? (
+                        <VStack gap={2} align="stretch">
+                          {agentList.map((agent, index) => (
+                            <Box
+                              key={agent}
+                              bg="whiteAlpha.100"
+                              p={3}
+                              borderRadius="md"
+                              border="1px solid"
+                              borderColor="gray.600"
+                            >
+                              <Flex align="center" gap={2}>
+                                <Badge colorPalette="blue" size="sm">
+                                  #{index + 1}
+                                </Badge>
+                                <Text
+                                  fontSize="xs"
+                                  fontFamily="mono"
+                                  color="gray.300"
+                                  flex={1}
+                                  lineClamp={1}
+                                >
+                                  {agent}
+                                </Text>
+                                <Button
+                                  size="xs"
+                                  variant="ghost"
+                                  onClick={() => copyToClipboard(agent)}
+                                >
+                                  <FiCopy />
+                                </Button>
+                                <ChakraLink
+                                  href={`${currentNetwork.blockExplorer}/address/${agent}`}
+                                  target="_blank"
+                                >
+                                  <Button size="xs" variant="ghost">
+                                    <FiExternalLink />
+                                  </Button>
+                                </ChakraLink>
+                              </Flex>
+                            </Box>
+                          ))}
+                        </VStack>
+                      ) : (
+                        <Box
+                          bg="whiteAlpha.50"
+                          p={4}
+                          borderRadius="md"
+                          border="1px dashed"
+                          borderColor="gray.600"
+                          textAlign="center"
+                        >
+                          <Text fontSize="xs" color="gray.500">
+                            No agents added yet
+                          </Text>
+                        </Box>
+                      )}
+                    </Box>
+                  </VStack>
+                </Box>
+              </section>
+            )}
+
+            {/* Transfer Ownership Section */}
+            {role === 'admin' && (
+              <section aria-label="Transfer Ownership">
+                <Box
+                  bg="whiteAlpha.50"
+                  p={6}
+                  borderRadius="lg"
+                  border="1px solid"
+                  borderColor="gray.700"
+                >
+                  <VStack gap={6} align="stretch">
+                    <HStack>
+                      <FiKey size={20} color="#f56565" />
+                      <Heading size="md">{t.dashboard.transferOwnership.title}</Heading>
+                    </HStack>
+
+                    {/* Warning Box */}
+                    <Box
+                      bg="red.900"
+                      border="1px solid"
+                      borderColor="red.500"
+                      borderRadius="md"
+                      p={4}
+                    >
+                      <HStack gap={3} mb={2}>
+                        <FiAlertCircle size={20} color="red" />
+                        <Text fontSize="sm" color="red.200" fontWeight="medium">
+                          {t.dashboard.transferOwnership.warning}
+                        </Text>
+                      </HStack>
+                      <Text fontSize="xs" color="red.300">
+                        {t.dashboard.transferOwnership.warningDesc}
+                      </Text>
+                    </Box>
+
+                    <Box>
+                      <Text fontSize="sm" fontWeight="medium" mb={2}>
+                        {t.dashboard.transferOwnership.newOwnerAddress}
+                      </Text>
+                      <Input
+                        value={newOwnerAddress}
+                        onChange={e => setNewOwnerAddress(e.target.value)}
+                        placeholder="0x..."
+                        fontFamily="mono"
+                      />
+                      <Text fontSize="xs" color="gray.500" mt={1}>
+                        {t.dashboard.transferOwnership.placeholder}
+                      </Text>
+                    </Box>
+
+                    <Button
+                      onClick={handleTransferOwnership}
+                      bg="red.600"
+                      color="white"
+                      _hover={{ bg: 'red.700' }}
+                      disabled={!newOwnerAddress.trim()}
+                      loading={isTransferringOwnership}
+                      w="100%"
+                    >
+                      <FiKey /> {t.dashboard.transferOwnership.transferButton}
+                    </Button>
+
+                    {/* Registry Info */}
+                    {registryAddress && (
+                      <Box
+                        bg="whiteAlpha.100"
+                        p={3}
+                        borderRadius="md"
+                        border="1px solid"
+                        borderColor="gray.600"
+                      >
+                        <Text fontSize="xs" color="gray.400" mb={1}>
+                          Registry Contract
                         </Text>
                         <Flex align="center" gap={2}>
                           <Text

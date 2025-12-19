@@ -17,7 +17,7 @@ import { brandColors } from '@/theme'
 import Spinner from '@/components/Spinner'
 import { verifyBuildHash, getCurrentBuildHash } from 'w3pk'
 
-const TRUSTED_BUILD_HASH = 'bafybeig3zio47awahzmqzg6aiezzhp5awao27mze5j2jsrebka4jupmgxm' // w3pk v0.8.7
+const TRUSTED_BUILD_HASH = 'bafybeig2xoiu2hfcjexz6cwtjcjf4u4vwxzcm66zhnqivhh6jvi7nx2qa4' // w3pk v0.8.8
 
 export const BuildVerification = () => {
   const [isVerifying, setIsVerifying] = useState(true)

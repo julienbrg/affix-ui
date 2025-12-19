@@ -4,7 +4,7 @@ import Spinner from '@/components/Spinner'
 export default function Loading() {
   return (
     <Flex align="center" justify="center" minH="60vh">
-      <Spinner size="lg" />
+      <Spinner size={200} />
     </Flex>
   )
 }

@@ -88,6 +88,9 @@ const SettingsPage = () => {
   const [showRestorePasswordModal, setShowRestorePasswordModal] = useState(false)
   const [selectedBackupFile, setSelectedBackupFile] = useState<string | null>(null)
   const [isRestoring, setIsRestoring] = useState(false)
+  const [restoreUsername, setRestoreUsername] = useState('')
+  const [needsUsernameForRestore, setNeedsUsernameForRestore] = useState(false)
+  const [isRestoreUsernameInvalid, setIsRestoreUsernameInvalid] = useState(false)
   const [accounts, setAccounts] = useState<StoredAccount[]>([])
   const [accountToDelete, setAccountToDelete] = useState<StoredAccount | null>(null)
   const { open: isOpen, onOpen, onClose } = useDisclosure()
@@ -168,6 +171,7 @@ const SettingsPage = () => {
     getBackupStatus,
     createBackup,
     restoreFromBackup,
+    registerWithBackupFile,
     login,
     logout,
     register,
@@ -602,11 +606,23 @@ const SettingsPage = () => {
         }
       } catch (e) {}
 
+      // If NOT authenticated, prompt for username to register with backup file
+      if (!isAuthenticated) {
+        setNeedsUsernameForRestore(true)
+        setIsRestoring(false)
+
+        // Store password for later use
+        ;(window as any)._restorePassword = password
+        ;(window as any)._restoreBackup = backupToRestore
+        return
+      }
+
+      // If authenticated, restore and overwrite existing credentials
       const result = await restoreFromBackup(backupToRestore, password)
 
       toaster.create({
         title: 'Wallet Restored!',
-        description: `Successfully restored wallet: ${result.ethereumAddress.slice(0, 6)}...${result.ethereumAddress.slice(-4)}`,
+        description: `Successfully restored and overwrote wallet: ${result.ethereumAddress.slice(0, 6)}...${result.ethereumAddress.slice(-4)}`,
         type: 'success',
         duration: 5000,
       })
@@ -614,6 +630,55 @@ const SettingsPage = () => {
       setSelectedBackupFile(null)
     } catch (error) {
       // Error toast shown in restoreFromBackup
+    } finally {
+      setIsRestoring(false)
+    }
+  }
+
+  const handleRestoreWithUsername = async () => {
+    if (!restoreUsername.trim()) {
+      toaster.create({
+        title: 'Username Required',
+        description: 'Please enter a username to register with the restored wallet.',
+        type: 'warning',
+        duration: 3000,
+      })
+      setIsRestoreUsernameInvalid(true)
+      return
+    }
+
+    if (!validateUsername(restoreUsername)) {
+      setIsRestoreUsernameInvalid(true)
+      return
+    }
+
+    setIsRestoring(true)
+    setNeedsUsernameForRestore(false)
+
+    try {
+      const password = (window as any)._restorePassword
+      const backupData = (window as any)._restoreBackup
+
+      if (!password || !backupData) {
+        throw new Error('Missing restore data')
+      }
+
+      const result = await registerWithBackupFile(backupData, password, restoreUsername.trim())
+
+      toaster.create({
+        title: 'Wallet Restored & Registered!',
+        description: `Successfully restored and registered wallet: ${result.address.slice(0, 6)}...${result.address.slice(-4)}`,
+        type: 'success',
+        duration: 5000,
+      })
+
+      // Clear temporary data
+      delete (window as any)._restorePassword
+      delete (window as any)._restoreBackup
+      setSelectedBackupFile(null)
+      setRestoreUsername('')
+    } catch (error) {
+      // Error toast shown in registerWithBackupFile
     } finally {
       setIsRestoring(false)
     }
@@ -832,7 +897,7 @@ const SettingsPage = () => {
           </Box>
 
           {/* Register a new account */}
-          <Box bg="gray.900" p={6} borderRadius="lg" border="1px solid" borderColor="gray.700">
+          {/* <Box bg="gray.900" p={6} borderRadius="lg" border="1px solid" borderColor="gray.700">
             <HStack mb={4}>
               <Icon as={FiUserPlus} color={brandColors.primary} boxSize={6} />
               <Heading size="md">Register a new account</Heading>
@@ -853,7 +918,7 @@ const SettingsPage = () => {
               <Icon as={FiUserPlus} />
               Register
             </Button>
-          </Box>
+          </Box> */}
 
           <Box bg="gray.900" p={6} borderRadius="lg" border="1px solid" borderColor="gray.700">
             <Heading size="sm" mb={3} color={brandColors.primary}>
@@ -1121,6 +1186,107 @@ const SettingsPage = () => {
                 <Dialog.CloseTrigger asChild>
                   <CloseButton size="sm" />
                 </Dialog.CloseTrigger>
+              </Dialog.Content>
+            </Dialog.Positioner>
+          </Portal>
+        </Dialog.Root>
+
+        <PasswordModal
+          isOpen={showRestorePasswordModal}
+          onClose={handleRestoreModalClose}
+          onSubmit={handleRestorePasswordSubmit}
+          title={`Enter Password to Restore Backup`}
+          description={`Please enter the password you used when creating this backup file.`}
+        />
+
+        {/* Username Modal for Restore when no credentials exist */}
+        <Dialog.Root
+          open={needsUsernameForRestore}
+          onOpenChange={(e: { open: boolean }) =>
+            e.open
+              ? null
+              : (() => {
+                  setNeedsUsernameForRestore(false)
+                  setRestoreUsername('')
+                  setSelectedBackupFile(null)
+                  delete (window as any)._restorePassword
+                  delete (window as any)._restoreBackup
+                })()
+          }
+        >
+          <Portal>
+            <Dialog.Backdrop />
+            <Dialog.Positioner>
+              <Dialog.Content p={6}>
+                <Dialog.Header>
+                  <Dialog.Title>Choose Username for Restored Wallet</Dialog.Title>
+                </Dialog.Header>
+                <Dialog.Body pt={4}>
+                  <VStack gap={4}>
+                    <Text fontSize="sm" color="gray.400">
+                      No existing credentials found on this device. Please choose a username to
+                      register your restored wallet with a new passkey.
+                    </Text>
+                    <Field invalid={isRestoreUsernameInvalid} label="Username">
+                      <Input
+                        id="restore-username-input"
+                        aria-describedby={
+                          isRestoreUsernameInvalid && restoreUsername.trim()
+                            ? 'restore-username-error'
+                            : undefined
+                        }
+                        placeholder="Enter your username"
+                        value={restoreUsername}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                          setRestoreUsername(e.target.value)
+                          setIsRestoreUsernameInvalid(false)
+                        }}
+                        onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault()
+                            handleRestoreWithUsername()
+                          }
+                        }}
+                        autoFocus
+                        disabled={isRestoring}
+                      />
+                      {isRestoreUsernameInvalid && restoreUsername.trim() && (
+                        <Text id="restore-username-error" fontSize="sm" color="red.400" mt={1}>
+                          Username must be 3-50 characters, alphanumeric with underscores/hyphens,
+                          and start/end with alphanumeric.
+                        </Text>
+                      )}
+                    </Field>
+                  </VStack>
+                </Dialog.Body>
+                <Dialog.Footer pt={4}>
+                  <Dialog.CloseTrigger asChild>
+                    <Button
+                      variant="outline"
+                      disabled={isRestoring}
+                      onClick={() => {
+                        setNeedsUsernameForRestore(false)
+                        setRestoreUsername('')
+                        setSelectedBackupFile(null)
+                        delete (window as any)._restorePassword
+                        delete (window as any)._restoreBackup
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                  </Dialog.CloseTrigger>
+                  <Button
+                    bg={brandColors.primary}
+                    color="white"
+                    _hover={{ bg: brandColors.secondary }}
+                    onClick={handleRestoreWithUsername}
+                    loading={isRestoring}
+                    loadingText="Restoring & Registering..."
+                    disabled={isRestoring || !restoreUsername.trim()}
+                  >
+                    Restore & Register
+                  </Button>
+                </Dialog.Footer>
               </Dialog.Content>
             </Dialog.Positioner>
           </Portal>
@@ -1852,7 +2018,7 @@ const SettingsPage = () => {
               </Box>
 
               {/* Register a new account */}
-              <Box bg="gray.900" p={6} borderRadius="lg" border="1px solid" borderColor="gray.700">
+              {/* <Box bg="gray.900" p={6} borderRadius="lg" border="1px solid" borderColor="gray.700">
                 <HStack mb={4}>
                   <Icon as={FiUserPlus} color={brandColors.primary} boxSize={6} />
                   <Heading size="md">Register a new account</Heading>
@@ -1873,7 +2039,7 @@ const SettingsPage = () => {
                   <Icon as={FiUserPlus} />
                   Register
                 </Button>
-              </Box>
+              </Box> */}
 
               {/* W3PK Build Verification */}
               <BuildVerification />
@@ -2051,9 +2217,7 @@ const SettingsPage = () => {
                     Restore from Backup
                   </Heading>
                   <Text fontSize="sm" color="gray.400" mb={4}>
-                    Restore your wallet from an encrypted backup file
-                    <br />
-                    &nbsp;
+                    Restore your wallet from an encrypted backup file &nbsp;
                   </Text>
                   <Button
                     bg={brandColors.primary}
@@ -2957,6 +3121,99 @@ const SettingsPage = () => {
         title={`Enter Password to Restore Backup`}
         description={`Please enter the password you used when creating this backup file.`}
       />
+
+      {/* Username Modal for Restore when no credentials exist */}
+      <Dialog.Root
+        open={needsUsernameForRestore}
+        onOpenChange={(e: { open: boolean }) =>
+          e.open
+            ? null
+            : (() => {
+                setNeedsUsernameForRestore(false)
+                setRestoreUsername('')
+                setSelectedBackupFile(null)
+                delete (window as any)._restorePassword
+                delete (window as any)._restoreBackup
+              })()
+        }
+      >
+        <Portal>
+          <Dialog.Backdrop />
+          <Dialog.Positioner>
+            <Dialog.Content p={6}>
+              <Dialog.Header>
+                <Dialog.Title>Choose Username for Restored Wallet</Dialog.Title>
+              </Dialog.Header>
+              <Dialog.Body pt={4}>
+                <VStack gap={4}>
+                  <Text fontSize="sm" color="gray.400">
+                    No existing credentials found on this device. Please choose a username to
+                    register your restored wallet with a new passkey.
+                  </Text>
+                  <Field invalid={isRestoreUsernameInvalid} label="Username">
+                    <Input
+                      id="restore-username-input"
+                      aria-describedby={
+                        isRestoreUsernameInvalid && restoreUsername.trim()
+                          ? 'restore-username-error'
+                          : undefined
+                      }
+                      placeholder="Enter your username"
+                      value={restoreUsername}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                        setRestoreUsername(e.target.value)
+                        setIsRestoreUsernameInvalid(false)
+                      }}
+                      onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault()
+                          handleRestoreWithUsername()
+                        }
+                      }}
+                      autoFocus
+                      disabled={isRestoring}
+                    />
+                    {isRestoreUsernameInvalid && restoreUsername.trim() && (
+                      <Text id="restore-username-error" fontSize="sm" color="red.400" mt={1}>
+                        Username must be 3-50 characters, alphanumeric with underscores/hyphens, and
+                        start/end with alphanumeric.
+                      </Text>
+                    )}
+                  </Field>
+                </VStack>
+              </Dialog.Body>
+              <Dialog.Footer pt={4}>
+                <Dialog.CloseTrigger asChild>
+                  <Button
+                    variant="outline"
+                    disabled={isRestoring}
+                    onClick={() => {
+                      setNeedsUsernameForRestore(false)
+                      setRestoreUsername('')
+                      setSelectedBackupFile(null)
+                      delete (window as any)._restorePassword
+                      delete (window as any)._restoreBackup
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                </Dialog.CloseTrigger>
+                <Button
+                  bg={brandColors.primary}
+                  color="white"
+                  _hover={{ bg: brandColors.secondary }}
+                  onClick={handleRestoreWithUsername}
+                  loading={isRestoring}
+                  loadingText="Restoring & Registering..."
+                  disabled={isRestoring || !restoreUsername.trim()}
+                >
+                  Restore & Register
+                </Button>
+              </Dialog.Footer>
+            </Dialog.Content>
+          </Dialog.Positioner>
+        </Portal>
+      </Dialog.Root>
 
       <Dialog.Root
         open={isOpen}

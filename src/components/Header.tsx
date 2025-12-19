@@ -316,6 +316,11 @@ export default function Header() {
                           {t.navigation.sandbox}
                         </MenuItem>
                       </Link>
+                      <Link href="/about" color="white">
+                        <MenuItem value="about" fontSize="md" px={4} py={3}>
+                          About
+                        </MenuItem>
+                      </Link>
                       <Link href="/settings" color="white">
                         <MenuItem value="settings" fontSize="md" px={4} py={3}>
                           {t.navigation.settings}

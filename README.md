@@ -3,7 +3,7 @@
 Affix your onchain seal and let the world verify it.
 
 - Solidity contracts repo: https://github.com/julienbrg/affix-contracts
-- Live demo: https://affix-ui.vercel.app/
+- Live demo: https://affix.w3hc.app/
 - Demo video: https://youtu.be/XoquF4TzP54
 
 ## Motivation
