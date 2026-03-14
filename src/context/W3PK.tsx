@@ -1,5 +1,12 @@
 'use client'
 
+/**
+ * W3PK Context Provider
+ *
+ * For integration guidelines and detailed documentation,
+ * please visit: https://w3pk.w3hc.org/docs#integration-guidelines
+ */
+
 import React, {
   createContext,
   useContext,
@@ -9,8 +16,10 @@ import React, {
   useCallback,
   useEffect,
 } from 'react'
-import { createWeb3Passkey } from 'w3pk'
+import { createWeb3Passkey, getCurrentBuildHash, verifyBuildHash, inspect, inspectNow } from 'w3pk'
 import { toaster } from '@/components/ui/toaster'
+
+type SecurityMode = 'PRIMARY' | 'STRICT' | 'STANDARD' | 'YOLO'
 
 interface SecurityScore {
   total: number
@@ -80,18 +89,59 @@ interface StealthAddressResult {
   viewTag: string
 }
 
+type Transaction = {
+  to: string
+  value?: bigint
+  data?: string
+  chainId: number
+  gasLimit?: bigint
+  maxFeePerGas?: bigint
+  maxPriorityFeePerGas?: bigint
+  nonce?: number
+}
+
+type SignMessageOptions = {
+  mode?: SecurityMode
+  tag?: string
+  requireAuth?: boolean
+  origin?: string
+  signingMethod?: 'EIP191' | 'SIWE' | 'EIP712' | 'rawHash'
+  eip712Domain?: object
+  eip712Types?: object
+  eip712PrimaryType?: string
+}
+
+type TxOptions = {
+  mode?: SecurityMode
+  tag?: string
+  requireAuth?: boolean
+  origin?: string
+  rpcUrl?: string
+}
+
+type TxResponse = {
+  hash: string
+  from: string
+  chainId: number
+  mode: string
+  tag: string
+  origin: string
+}
+
 interface W3pkType {
   isAuthenticated: boolean
   user: W3pkUser | null
   isLoading: boolean
   login: () => Promise<void>
   register: (username: string) => Promise<void>
-  logout: () => void
-  signMessage: (
-    message: string,
-    options?: { mode?: string; tag?: string; signingMethod?: string }
-  ) => Promise<string | null>
-  deriveWallet: (mode?: string, tag?: string) => Promise<DerivedWallet>
+  logout: () => Promise<void>
+  signMessage: (message: string, options?: SignMessageOptions) => Promise<string | null>
+  sendTransaction: (tx: Transaction, options?: TxOptions) => Promise<TxResponse>
+  deriveWallet: (
+    mode?: string,
+    tag?: string,
+    options?: { requireAuth?: boolean; origin?: string }
+  ) => Promise<DerivedWallet>
   getAddress: (mode?: string, tag?: string) => Promise<string>
   getBackupStatus: () => Promise<BackupStatus>
   createBackup: (password: string) => Promise<Blob>
@@ -113,7 +163,7 @@ interface W3pkType {
   generateGuardianInvite: (guardian: Guardian) => Promise<GuardianInvite>
   recoverFromGuardians: (
     shareData: string[]
-  ) => Promise<{ mnemonic: string; ethereumAddress: string }>
+  ) => Promise<{ backupFileJson: string; ethereumAddress: string }>
   clearSocialRecoveryConfig: () => void
   getStealthKeys: () => Promise<any>
   generateStealthAddressFor: (recipientMetaAddress: string) => Promise<StealthAddressResult>
@@ -125,8 +175,11 @@ const W3PK = createContext<W3pkType>({
   isLoading: false,
   login: async () => {},
   register: async () => {},
-  logout: () => {},
+  logout: async () => {},
   signMessage: async () => null,
+  sendTransaction: async () => {
+    throw new Error('sendTransaction not initialized')
+  },
   deriveWallet: async () => ({ address: '', privateKey: '' }),
   getAddress: async () => '',
   getBackupStatus: async () => {
@@ -286,7 +339,25 @@ export const W3pkProvider: React.FC<W3pkProviderProps> = ({ children }) => {
     [handleAuthStateChanged]
   )
 
+  // Expose w3pk instance to window for console inspection
   useEffect(() => {
+    if (typeof window !== 'undefined' && w3pk) {
+      ;(window as any).w3pk = {
+        ...w3pk,
+        getCurrentBuildHash,
+        verifyBuildHash,
+        inspect,
+        inspectNow,
+      }
+    }
+  }, [w3pk])
+
+  useEffect(() => {
+    /**
+     * Login Workflow - Step 1: Check for existing persistent session
+     * This runs automatically on mount to restore the user's session if it exists.
+     * This is the first step in the comprehensive login workflow.
+     */
     const checkExistingAuth = async (): Promise<void> => {
       if (!isMounted || !w3pk) return
 
@@ -433,7 +504,7 @@ export const W3pkProvider: React.FC<W3pkProviderProps> = ({ children }) => {
 
   const signMessage = async (
     message: string,
-    options?: { mode?: string; tag?: string; signingMethod?: string }
+    options?: SignMessageOptions
   ): Promise<string | null> => {
     if (!user) {
       toaster.create({
@@ -469,15 +540,54 @@ export const W3pkProvider: React.FC<W3pkProviderProps> = ({ children }) => {
     }
   }
 
+  const sendTransaction = async (tx: Transaction, options?: TxOptions): Promise<TxResponse> => {
+    if (!user) {
+      throw new Error('Not authenticated. Please log in first.')
+    }
+
+    try {
+      await ensureAuthentication()
+      const result = await w3pk.sendTransaction(tx, options)
+
+      // Extend session after successful operation
+      w3pk.extendSession()
+
+      toaster.create({
+        title: 'Transaction Sent',
+        description: `Transaction hash: ${result.hash.substring(0, 10)}...`,
+        type: 'success',
+        duration: 5000,
+      })
+
+      return result
+    } catch (error) {
+      if (!isUserCancelledError(error)) {
+        const errorMessage = error instanceof Error ? error.message : 'Failed to send transaction'
+
+        toaster.create({
+          title: 'Transaction Failed',
+          description: errorMessage,
+          type: 'error',
+          duration: 5000,
+        })
+      }
+      throw error
+    }
+  }
+
   const deriveWallet = useCallback(
-    async (mode?: string, tag?: string): Promise<DerivedWallet> => {
+    async (
+      mode?: string,
+      tag?: string,
+      options?: { requireAuth?: boolean; origin?: string }
+    ): Promise<DerivedWallet> => {
       if (!user) {
         throw new Error('Not authenticated. Please log in first.')
       }
 
       try {
         await ensureAuthentication()
-        const derivedWallet = await w3pk.deriveWallet(mode as any, tag as any)
+        const derivedWallet = await w3pk.deriveWallet(mode as any, tag as any, options)
 
         // Extend session after successful operation
         w3pk.extendSession()
@@ -492,7 +602,7 @@ export const W3pkProvider: React.FC<W3pkProviderProps> = ({ children }) => {
         ) {
           try {
             await w3pk.login()
-            const derivedWallet = await w3pk.deriveWallet(mode as any, tag as any)
+            const derivedWallet = await w3pk.deriveWallet(mode as any, tag as any, options)
 
             // Extend session after successful retry
             w3pk.extendSession()
@@ -591,9 +701,32 @@ export const W3pkProvider: React.FC<W3pkProviderProps> = ({ children }) => {
     [user, w3pk, isUserCancelledError, ensureAuthentication]
   )
 
-  const logout = (): void => {
+  const logout = async (): Promise<void> => {
     // The SDK's logout() method clears both in-memory and ALL persistent sessions from IndexedDB
     w3pk.logout()
+
+    // Extra cleanup for mobile: explicitly clear persistent session from IndexedDB
+    // This ensures the session is cleared even if the SDK's logout has issues on mobile
+    try {
+      if (typeof window !== 'undefined' && window.indexedDB) {
+        const dbName = 'Web3PasskeyPersistentSessions'
+        const storeName = 'sessions'
+
+        // Open and clear the database
+        const request = indexedDB.open(dbName)
+        request.onsuccess = event => {
+          const db = (event.target as IDBOpenDBRequest).result
+          if (db.objectStoreNames.contains(storeName)) {
+            const transaction = db.transaction([storeName], 'readwrite')
+            const objectStore = transaction.objectStore(storeName)
+            objectStore.clear() // Clear all sessions
+          }
+          db.close()
+        }
+      }
+    } catch (error) {
+      console.error('[W3PK] Error clearing persistent session:', error)
+    }
   }
 
   const getBackupStatus = async (): Promise<BackupStatus> => {
@@ -759,23 +892,8 @@ export const W3pkProvider: React.FC<W3pkProviderProps> = ({ children }) => {
     }
   }
 
-  // Simplified inline social recovery using Shamir Secret Sharing
-  const splitSecret = useCallback((mnemonic: string, threshold: number, shares: number) => {
-    // Use secrets.js for Shamir Secret Sharing
-    const secrets = require('secrets.js-34r7h')
-    // Convert mnemonic to hex
-    const mnemonicHex = Buffer.from(mnemonic, 'utf8').toString('hex')
-    // Split into shares
-    const shareArray = secrets.share(mnemonicHex, shares, threshold)
-    return shareArray
-  }, [])
-
-  const combineSecret = useCallback((shareArray: string[]) => {
-    const secrets = require('secrets.js-34r7h')
-    const mnemonicHex = secrets.combine(shareArray)
-    const mnemonic = Buffer.from(mnemonicHex, 'hex').toString('utf8')
-    return mnemonic
-  }, [])
+  // Social recovery now uses the w3pk library's SocialRecoveryManager
+  // which splits backup files instead of mnemonics for better security
 
   const setupSocialRecovery = async (
     guardians: { name: string; email?: string; phone?: string }[],
@@ -790,44 +908,38 @@ export const W3pkProvider: React.FC<W3pkProviderProps> = ({ children }) => {
       setIsLoading(true)
       await ensureAuthentication()
 
-      // Create a temporary passkey-encrypted backup to access the mnemonic
-      // This will trigger authentication and store mnemonic in session
-      const backupResult = await w3pk.createBackupFile('passkey')
-      const backupJson = await backupResult.blob.text()
-      const backupData = JSON.parse(backupJson)
+      // Prompt user for a password to encrypt the backup file
+      // This password will be required when recovering from guardians
+      const backupPassword =
+        password ||
+        window.prompt(
+          'Enter a password to encrypt your backup file.\n\n' +
+            'IMPORTANT: You will need this password AND guardian shares to recover your wallet.\n' +
+            'Store this password securely - guardians do NOT have access to it.'
+        )
 
-      // Now we need to decrypt it to get the mnemonic
-      // We'll need to use restoreFromBackupFile to decrypt
-      const restored = await w3pk.restoreFromBackupFile(backupJson, '')
-      const mnemonic = restored.mnemonic
-
-      // Split mnemonic using Shamir Secret Sharing
-      const shares = splitSecret(mnemonic, threshold, guardians.length)
-
-      // Create guardian objects with shares
-      const guardianObjects: Guardian[] = guardians.map((g, index) => ({
-        id: crypto.randomUUID(),
-        name: g.name,
-        email: g.email,
-        shareEncrypted: shares[index],
-        status: 'pending' as const,
-        addedAt: new Date().toISOString(),
-      }))
-
-      // Store config in localStorage
-      const config: SocialRecoveryConfig = {
-        threshold,
-        totalGuardians: guardians.length,
-        guardians: guardianObjects,
-        createdAt: new Date().toISOString(),
-        ethereumAddress: user.ethereumAddress,
+      if (!backupPassword) {
+        throw new Error('Password is required for social recovery setup')
       }
 
-      localStorage.setItem('w3pk_social_recovery', JSON.stringify(config))
+      // Create password-encrypted backup file
+      const backupBlob = await w3pk.createBackupFile('password', backupPassword)
+      const backupJson = await backupBlob.blob.text()
+
+      // Use w3pk's SocialRecoveryManager to split the backup file
+      const { SocialRecoveryManager } = await import('w3pk')
+      const socialRecoveryManager = new SocialRecoveryManager()
+
+      const guardianObjects = await socialRecoveryManager.setupSocialRecovery(
+        backupJson,
+        user.ethereumAddress,
+        guardians,
+        threshold
+      )
 
       toaster.create({
         title: 'Social Recovery Configured!',
-        description: `Successfully set up ${threshold}-of-${guardians.length} guardian recovery`,
+        description: `Successfully set up ${threshold}-of-${guardians.length} guardian recovery. Remember your password!`,
         type: 'success',
         duration: 5000,
       })
@@ -850,10 +962,11 @@ export const W3pkProvider: React.FC<W3pkProviderProps> = ({ children }) => {
   }
 
   const getSocialRecoveryConfig = (): SocialRecoveryConfig | null => {
+    // Use w3pk's SocialRecoveryManager to get config
     try {
-      const stored = localStorage.getItem('w3pk_social_recovery')
-      if (!stored) return null
-      return JSON.parse(stored)
+      const { SocialRecoveryManager } = require('w3pk')
+      const socialRecoveryManager = new SocialRecoveryManager()
+      return socialRecoveryManager.getSocialRecoveryConfig()
     } catch {
       return null
     }
@@ -863,55 +976,11 @@ export const W3pkProvider: React.FC<W3pkProviderProps> = ({ children }) => {
     try {
       setIsLoading(true)
 
-      const config = getSocialRecoveryConfig()
-      if (!config) {
-        throw new Error('Social recovery not configured')
-      }
+      // Use w3pk's SocialRecoveryManager to generate invite
+      const { SocialRecoveryManager } = await import('w3pk')
+      const socialRecoveryManager = new SocialRecoveryManager()
 
-      const index = config.guardians.findIndex(g => g.id === guardian.id)
-      if (index === -1) {
-        throw new Error('Guardian not found')
-      }
-
-      // Create guardian data package
-      const guardianData = {
-        version: 1,
-        guardianId: guardian.id,
-        guardianName: guardian.name,
-        guardianIndex: index + 1,
-        totalGuardians: config.totalGuardians,
-        threshold: config.threshold,
-        share: guardian.shareEncrypted,
-        ethereumAddress: config.ethereumAddress,
-        createdAt: config.createdAt,
-      }
-
-      const shareCode = JSON.stringify(guardianData)
-
-      const explainer = `
-🛡️ GUARDIAN RECOVERY SHARE
-
-Dear ${guardian.name},
-
-You have been chosen as Guardian ${index + 1} of ${config.totalGuardians}
-
-YOUR ROLE:
-You hold 1 piece of a ${config.threshold}-piece puzzle. ${config.threshold} guardians are needed to recover the wallet.
-
-HOW IT WORKS:
-If your friend loses access to their wallet, they will contact you to request your share. You provide the share code below, and the system collects shares from ${config.threshold} guardians to reconstruct the wallet.
-
-SECURITY:
-✓ Your share is encrypted
-✓ Cannot be used alone
-✓ ${config.threshold - 1} other guardians needed
-✓ Safe to store digitally
-
-Guardian ${index + 1}/${config.totalGuardians} | Threshold: ${config.threshold}/${config.totalGuardians}
-Created: ${new Date().toISOString()}
-
-Thank you for being a trusted guardian!
-`
+      const invite = await socialRecoveryManager.generateGuardianInvite(guardian)
 
       toaster.create({
         title: 'Guardian Invitation Generated',
@@ -920,11 +989,7 @@ Thank you for being a trusted guardian!
         duration: 3000,
       })
 
-      return {
-        guardianId: guardian.id,
-        shareCode,
-        explainer,
-      }
+      return invite
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Failed to generate guardian invite'
@@ -943,46 +1008,27 @@ Thank you for being a trusted guardian!
 
   const recoverFromGuardians = async (
     shareData: string[]
-  ): Promise<{ mnemonic: string; ethereumAddress: string }> => {
+  ): Promise<{ backupFileJson: string; ethereumAddress: string }> => {
     try {
       setIsLoading(true)
 
-      const config = getSocialRecoveryConfig()
-      if (!config) {
-        throw new Error('Social recovery not configured')
-      }
+      // Use w3pk's SocialRecoveryManager to recover backup file
+      const { SocialRecoveryManager } = await import('w3pk')
+      const socialRecoveryManager = new SocialRecoveryManager()
 
-      if (shareData.length < config.threshold) {
-        throw new Error(`Need at least ${config.threshold} shares, got ${shareData.length}`)
-      }
-
-      // Parse share data to extract the shares
-      const shares = shareData.map(data => {
-        const parsed = JSON.parse(data)
-        return parsed.share
-      })
-
-      // Combine shares to recover mnemonic
-      const mnemonic = combineSecret(shares)
-
-      // Verify by deriving the ethereum address
-      const { Wallet } = await import('ethers')
-      const wallet = Wallet.fromPhrase(mnemonic)
-
-      if (wallet.address.toLowerCase() !== config.ethereumAddress.toLowerCase()) {
-        throw new Error('Recovered address does not match - invalid shares')
-      }
+      const { backupFileJson, ethereumAddress } =
+        await socialRecoveryManager.recoverFromGuardians(shareData)
 
       toaster.create({
-        title: 'Wallet Recovered!',
-        description: `Successfully recovered wallet: ${wallet.address.slice(0, 6)}...${wallet.address.slice(-4)}`,
+        title: 'Backup File Recovered!',
+        description: `Successfully recovered encrypted backup file for ${ethereumAddress.slice(0, 6)}...${ethereumAddress.slice(-4)}. You can now restore your wallet with the password you set during setup.`,
         type: 'success',
-        duration: 5000,
+        duration: 8000,
       })
 
       return {
-        mnemonic,
-        ethereumAddress: wallet.address,
+        backupFileJson,
+        ethereumAddress,
       }
     } catch (error) {
       const errorMessage =
@@ -1002,6 +1048,7 @@ Thank you for being a trusted guardian!
 
   const clearSocialRecoveryConfig = (): void => {
     try {
+      // Clear from localStorage (both old and new format)
       if (typeof window !== 'undefined' && window.localStorage) {
         localStorage.removeItem('w3pk_social_recovery')
 
@@ -1101,6 +1148,7 @@ Thank you for being a trusted guardian!
         register,
         logout,
         signMessage,
+        sendTransaction,
         deriveWallet,
         getAddress,
         getBackupStatus,
