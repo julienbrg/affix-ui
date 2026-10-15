@@ -482,6 +482,7 @@ type TranslationKeys = {
       aiVerification: string
       registryVerified: string
       registryNotVerified: string
+      aiUnavailable: string
     }
     toast: {
       verified: string
@@ -1136,6 +1137,7 @@ export const translations: Translations = {
         aiVerification: 'AI Verification',
         registryVerified: 'Registry address verified on entity website',
         registryNotVerified: 'Could not verify registry address on entity website',
+        aiUnavailable: 'AI verification unavailable',
       },
       toast: {
         verified: 'Document Verified!',
@@ -1772,6 +1774,7 @@ export const translations: Translations = {
         aiVerification: 'AI Verification',
         registryVerified: 'Registry address verified on entity website',
         registryNotVerified: 'Could not verify registry address on entity website',
+        aiUnavailable: 'AI 验证不可用',
       },
       toast: {
         verified: 'Document Verified!',
@@ -2435,6 +2438,7 @@ export const translations: Translations = {
         aiVerification: 'AI Verification',
         registryVerified: 'Registry address verified on entity website',
         registryNotVerified: 'Could not verify registry address on entity website',
+        aiUnavailable: 'AI सत्यापन उपलब्ध नहीं है',
       },
       toast: {
         verified: 'Document Verified!',
@@ -3121,6 +3125,7 @@ export const translations: Translations = {
         registryVerified: "Adresse du registre vérifiée sur le site web de l'entité",
         registryNotVerified:
           "Impossible de vérifier l'adresse du registre sur le site web de l'entité",
+        aiUnavailable: 'Vérification IA indisponible',
       },
       toast: {
         verified: 'Document Vérifié !',
@@ -3803,6 +3808,7 @@ export const translations: Translations = {
         aiVerification: 'AI Verification',
         registryVerified: 'Registry address verified on entity website',
         registryNotVerified: 'Could not verify registry address on entity website',
+        aiUnavailable: 'Verificación con IA no disponible',
       },
       toast: {
         verified: 'Document Verified!',
@@ -4457,6 +4463,7 @@ export const translations: Translations = {
         aiVerification: 'AI Verification',
         registryVerified: 'Registry address verified on entity website',
         registryNotVerified: 'Could not verify registry address on entity website',
+        aiUnavailable: 'التحقق بالذكاء الاصطناعي غير متاح',
       },
       toast: {
         verified: 'Document Verified!',
@@ -5130,6 +5137,7 @@ export const translations: Translations = {
         aiVerification: 'AI Verification',
         registryVerified: 'Registry address verified on entity website',
         registryNotVerified: 'Could not verify registry address on entity website',
+        aiUnavailable: 'AI যাচাইকরণ উপলব্ধ নয়',
       },
       toast: {
         verified: 'Document Verified!',
@@ -5807,6 +5815,7 @@ export const translations: Translations = {
         aiVerification: 'AI Verification',
         registryVerified: 'Registry address verified on entity website',
         registryNotVerified: 'Could not verify registry address on entity website',
+        aiUnavailable: 'Проверка ИИ недоступна',
       },
       toast: {
         verified: 'Document Verified!',
@@ -6486,6 +6495,7 @@ export const translations: Translations = {
         aiVerification: 'AI Verification',
         registryVerified: 'Registry address verified on entity website',
         registryNotVerified: 'Could not verify registry address on entity website',
+        aiUnavailable: 'Verificação por IA indisponível',
       },
       toast: {
         verified: 'Document Verified!',
@@ -7154,6 +7164,7 @@ export const translations: Translations = {
         aiVerification: 'AI Verification',
         registryVerified: 'Registry address verified on entity website',
         registryNotVerified: 'Could not verify registry address on entity website',
+        aiUnavailable: 'AI تصدیق دستیاب نہیں ہے',
       },
       toast: {
         verified: 'Document Verified!',
