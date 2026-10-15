@@ -582,18 +582,6 @@ export default function VerifyPage() {
                                 ? `✓ ${t.verify.results.registryVerified}`
                                 : `✗ ${t.verify.results.registryNotVerified}`}
                           </Text>
-                          {/* Debug info */}
-                          <Box mt={2} p={2} bg="blackAlpha.300" borderRadius="sm">
-                            <Text fontSize="xs" color="yellow.300" fontFamily="mono">
-                              Debug: verified={String(urlVerificationResult.verified)}
-                            </Text>
-                            <Text fontSize="xs" color="yellow.300" fontFamily="mono">
-                              registryUrl: {urlVerificationResult.registryUrl}
-                            </Text>
-                            <Text fontSize="xs" color="yellow.300" fontFamily="mono">
-                              message: {urlVerificationResult.message}
-                            </Text>
-                          </Box>
                         </Box>
                       )}
                     </VStack>
