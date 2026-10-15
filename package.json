@@ -15,38 +15,59 @@
     "fund-registry": "node scripts/fund-registry.mjs"
   },
   "dependencies": {
-    "@chakra-ui/react": "^3.30.0",
+    "@chakra-ui/react": "^3.37.0",
     "@emotion/react": "^11.14.0",
     "@ipld/car": "^5.4.2",
-    "@neondatabase/serverless": "^1.0.2",
+    "@neondatabase/serverless": "^1.2.0",
     "@types/react-syntax-highlighter": "^15.5.13",
     "blockstore-core": "^6.1.1",
-    "ethers": "^6.16.0",
+    "ethers": "^6.17.0",
     "ipfs-unixfs-importer": "^16.0.1",
-    "next": "^16.0.8",
+    "next": "^16.4.0",
     "next-themes": "^0.4.6",
     "qrcode.react": "^4.2.0",
-    "react": "^19.2.1",
-    "react-dom": "^19.2.1",
-    "react-icons": "^5.5.0",
-    "react-syntax-highlighter": "^16.1.0",
-    "secrets.js-34r7h": "^2.0.2",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "react-icons": "^5.7.0",
     "react-markdown": "^10.1.0",
+    "react-syntax-highlighter": "^16.1.2",
+    "rehype-highlight": "^7.0.2",
     "remark-gfm": "^4.0.1",
-    "w3pk": "^0.9.3"
+    "secrets.js-34r7h": "^2.0.2",
+    "w3pk": "^0.10.3"
   },
   "devDependencies": {
-    "@eslint/eslintrc": "^3.3.3",
-    "@types/node": "^25.0.3",
-    "@types/react": "^19.2.7",
-    "@types/react-dom": "^19.2.3",
-    "eslint": "^9.39.1",
-    "eslint-config-next": "^16.0.8",
+    "@eslint/eslintrc": "^3.3.7",
+    "@types/node": "^26.6.5",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "eslint": "^9.39.5",
+    "eslint-config-next": "^16.4.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-jsx-a11y": "^6.10.2",
-    "prettier": "^3.7.4",
+    "prettier": "^3.9.10",
     "tsup": "^8.5.1",
-    "typescript": "^5.9.3"
+    "typescript": "^6.0.3"
+  },
+  "pnpm": {
+    "overrides": {
+      "underscore@<1.13.8": ">=1.13.8",
+      "ws@>=8.0.0 <8.21.0": ">=8.21.0",
+      "brace-expansion@1": ">=1.1.21 <2",
+      "brace-expansion@2": ">=2.1.7 <3",
+      "brace-expansion@5": ">=5.0.12 <6",
+      "js-yaml@4": ">=4.3.2 <5",
+      "source-map-js@1": ">=1.2.2 <2",
+      "sharp@<0.35.5": ">=0.35.5",
+      "baseline-browser-mapping@2": ">=2.11.0 <3",
+      "esbuild@>=0.27.3 <0.28.1": ">=0.28.1"
+    },
+    "onlyBuiltDependencies": [
+      "blake-hash",
+      "esbuild",
+      "sharp",
+      "unrs-resolver"
+    ]
   },
   "packageManager": "pnpm@10.23.0+sha1.b4a44ab0dc2adf2e36371d11d8eb0dc78ffc976c"
 }

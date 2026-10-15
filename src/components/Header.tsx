@@ -22,14 +22,15 @@ import { HiMenu } from 'react-icons/hi'
 import LanguageSelector from './LanguageSelector'
 import Spinner from './Spinner'
 import { useTranslation } from '@/hooks/useTranslation'
-import { useW3PK } from '@/context/W3PK'
+import { useW3PK, isNoPasskeyError } from '@/context/W3PK'
 import { useState, useEffect } from 'react'
 import { FaGithub } from 'react-icons/fa'
 import { toaster } from '@/components/ui/toaster'
 import { brandColors } from '@/theme'
 
 export default function Header() {
-  const { isAuthenticated, user, isLoading, login, register, logout } = useW3PK()
+  const { isAuthenticated, user, isLoading, login, register, logout, hasLocalCredentials } =
+    useW3PK()
   const t = useTranslation()
   const { open: isOpen, onOpen, onClose } = useDisclosure()
   const [username, setUsername] = useState('')
@@ -70,80 +71,34 @@ export default function Header() {
   }
 
   const handleLogin = async () => {
-    // Check if credentials exist in localStorage or IndexedDB
-    const hasCredentials = await checkForExistingCredentials()
-
-    if (hasCredentials) {
-      // User has credentials - perform normal login
-      await login()
-    } else {
-      // No credentials - prompt for registration
-      onOpen()
-    }
-  }
-
-  const checkForExistingCredentials = async (): Promise<boolean> => {
+    /**
+     * Login Workflow:
+     * 1. Existing persistent sessions are restored by the W3PK context on mount
+     * 2. If no passkey was ever registered on this device, open the
+     *    registration modal directly — calling login() with no local
+     *    credential would make the browser show its cross-device
+     *    "scan this QR code" dialog instead of failing
+     * 3. Otherwise login() prompts for the passkey; if it turns out to be
+     *    unavailable after all, fall back to the registration modal
+     */
     try {
-      if (typeof window === 'undefined') {
-        return false
+      if (!(await hasLocalCredentials())) {
+        onOpen()
+        return
       }
-
-      // First check for persistent session in IndexedDB
-      if (window.indexedDB) {
-        const dbName = 'Web3PasskeyPersistentSessions'
-        const storeName = 'sessions'
-
-        const hasPersistentSession = await new Promise<boolean>(resolve => {
-          const request = indexedDB.open(dbName)
-
-          request.onerror = () => {
-            resolve(false)
-          }
-
-          request.onsuccess = event => {
-            const db = (event.target as IDBOpenDBRequest).result
-
-            if (!db.objectStoreNames.contains(storeName)) {
-              db.close()
-              resolve(false)
-              return
-            }
-
-            try {
-              const transaction = db.transaction([storeName], 'readonly')
-              const objectStore = transaction.objectStore(storeName)
-              const countRequest = objectStore.count()
-
-              countRequest.onsuccess = () => {
-                db.close()
-                resolve(countRequest.result > 0)
-              }
-
-              countRequest.onerror = () => {
-                db.close()
-                resolve(false)
-              }
-            } catch {
-              db.close()
-              resolve(false)
-            }
-          }
+      await login()
+    } catch (error) {
+      if (isNoPasskeyError(error)) {
+        toaster.create({
+          title: t.header.noAccountFoundTitle,
+          description: t.header.noAccountFoundDescription,
+          type: 'info',
+          duration: 4000,
         })
-
-        if (hasPersistentSession) {
-          return true
-        }
+        onOpen()
       }
-
-      // Then check for w3pk_credential_index in localStorage
-      const credentialIndex = localStorage.getItem('w3pk_credential_index')
-      if (credentialIndex) {
-        return true
-      }
-
-      return false
-    } catch {
-      return false
+      // Other errors (user cancelled, timeout, etc.) are already handled
+      // by the login() function in the W3PK context
     }
   }
 
