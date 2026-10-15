@@ -22,6 +22,48 @@ jobs:
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
 
+      # Informational only: never fails the build (see continue-on-error).
+      # A project generated from the template carries templateVersion in its
+      # package.json (customize.js writes it, genji-sync updates it); this
+      # compares that against the newest tag upstream. genji itself has no
+      # templateVersion, so it instead catches a tag pushed without bumping
+      # its own version — the field new projects read to write theirs.
+      - name: Check template version
+        continue-on-error: true
+        run: |
+          LATEST=$(git ls-remote --tags --sort=-v:refname \
+            https://github.com/w3hc/genji 'v*' \
+            | grep -v '\^{}' | head -1 | sed 's|.*refs/tags/||')
+
+          if [ -z "$LATEST" ]; then
+            echo "Could not read upstream tags, skipping."
+            exit 0
+          fi
+
+          TPL="$(node -p "require('./package.json').templateVersion || ''")"
+
+          # Legacy: projects generated before templateVersion moved into
+          # package.json still carry a .genji-version file. genji-sync
+          # migrates them on the next sync.
+          if [ -z "$TPL" ] && [ -f .genji-version ]; then
+            TPL="$(cat .genji-version)"
+          fi
+
+          if [ -n "$TPL" ]; then
+            CURRENT="v$TPL"
+            if [ "$CURRENT" != "$LATEST" ]; then
+              echo "::warning::Template update available: $CURRENT → $LATEST. Run /genji-sync to merge it in."
+            else
+              echo "Up to date with genji $LATEST."
+            fi
+          else
+            DECLARED="v$(node -p "require('./package.json').version || ''")"
+            OLDEST=$(printf '%s\n%s\n' "$DECLARED" "$LATEST" | sort -V | head -1)
+            if [ "$DECLARED" != "v" ] && [ "$DECLARED" != "$LATEST" ] && [ "$OLDEST" = "$DECLARED" ]; then
+              echo "::warning::package.json version is $DECLARED but $LATEST is tagged. Bump it — new projects read it to write their templateVersion."
+            fi
+          fi
+
       - name: Get pnpm store directory
         id: pnpm-cache
         shell: bash
