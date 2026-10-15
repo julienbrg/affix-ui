@@ -16,7 +16,10 @@ const ClientOnly = ({
   fallback?: React.ReactNode
 }) => {
   const [mounted, setMounted] = React.useState(false)
-  React.useEffect(() => setMounted(true), [])
+  React.useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setMounted(true)
+  }, [])
   return mounted ? children : fallback || null
 }
 
