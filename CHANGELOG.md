@@ -4,7 +4,8 @@
 
 ### Added
 
-- HTTP security headers on every route in `next.config.ts`: a Content-Security-Policy whose `connect-src` allows the Optimism, Filecoin Calibration and Sepolia RPCs used by the affix contracts, `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy` and `Strict-Transport-Security`
+- BOT Chain (chain ID 677) support: the dashboard, verify page, `verify-url` API and about page use the AffixFactory at `0x217e2225a623412A7e9F43Bc0207c1bD1ed4f9Dc` and the official AffixRegistry at `0x94E5E95128aA2684B0A51b5Ea30C601e6f72aeB7`, through `https://rpc.botchain.ai`, with links to `https://scan.botchain.ai`
+- HTTP security headers on every route in `next.config.ts`: a Content-Security-Policy whose `connect-src` allows the BOT Chain RPC used by the affix contracts and the Optimism RPC used by the build verification, `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy` and `Strict-Transport-Security`
 - Backup step after registration, on Safari only, when the browser can wipe the wallet
 - `pnpm.overrides` forcing patched transitive dependencies, and `pnpm-workspace.yaml` with a 3-day `minimumReleaseAge`
 - Translations for the Settings page, header, backup step and password modal in all 10 languages
@@ -17,6 +18,10 @@
 - Bumped `w3pk` to 0.10.3, which keeps the wallet, sessions and backups in localStorage instead of IndexedDB
 - Updated dependencies: `next` / `eslint-config-next` 16.4.0, `react` / `react-dom` 19.3.0, `@chakra-ui/react` 3.37.0, `typescript` 6.0.3, `prettier` 3.9.10, among others
 - The Settings page, W3PK context and chassis components follow genji 3.2.0
+
+### Removed
+
+- OP Mainnet, Sepolia and Filecoin Calibration network configs for the affix contracts
 
 ### Fixed
 
