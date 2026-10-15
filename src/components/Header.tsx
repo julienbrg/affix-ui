@@ -150,8 +150,8 @@ export default function Header() {
   const handleRegister = async () => {
     if (!username.trim()) {
       toaster.create({
-        title: t.components.header.usernameRequired,
-        description: t.components.header.usernameRequiredDesc,
+        title: t.header.usernameRequiredTitle,
+        description: t.header.usernameRequiredDescription,
         type: 'warning',
         duration: 3000,
       })
@@ -177,44 +177,26 @@ export default function Header() {
 
     try {
       setIsRegistering(true)
-      console.log('[Header] Starting registration for:', username.trim())
-
-      // Add timeout to prevent infinite loading
-      const registrationPromise = register(username.trim())
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Registration timeout after 60 seconds')), 60000)
-      )
-
-      await Promise.race([registrationPromise, timeoutPromise])
-
-      console.log('[Header] Registration completed successfully')
+      // register() handles its own timeout and error/success toasts
+      await register(username.trim())
       setUsername('')
       onClose()
-    } catch (error: any) {
+    } catch (error) {
       console.error('[Header] Registration failed:', error)
-
-      // Show user-friendly error message
-      toaster.create({
-        title: t.components.header.registrationFailed,
-        description: error.message || t.components.header.registrationFailedDesc,
-        type: 'error',
-        duration: 8000,
-      })
     } finally {
-      console.log('[Header] Cleaning up registration state')
       setIsRegistering(false)
     }
   }
 
-  useEffect(() => {
-    const isValid = validateUsername(username)
-    if (isValid) {
+  const handleUsernameChange = (value: string) => {
+    setUsername(value)
+    if (validateUsername(value)) {
       setIsUsernameInvalid(false)
     }
-  }, [username])
+  }
 
-  const handleLogout = () => {
-    logout()
+  const handleLogout = async () => {
+    await logout()
   }
 
   const handleModalClose = () => {
@@ -229,7 +211,7 @@ export default function Header() {
         <Container maxW="100%" px={{ base: 4, md: 6 }} overflow="visible">
           <Flex
             as="nav"
-            aria-label="Main navigation"
+            aria-label={t.header.mainNavAriaLabel}
             justify="space-between"
             align="center"
             overflow="visible"
@@ -294,7 +276,7 @@ export default function Header() {
               )}
               <MenuRoot>
                 <MenuTrigger asChild>
-                  <IconButton aria-label="Options" variant="ghost" size="sm">
+                  <IconButton aria-label={t.header.optionsAriaLabel} variant="ghost" size="sm">
                     <HiMenu />
                   </IconButton>
                 </MenuTrigger>
@@ -346,23 +328,23 @@ export default function Header() {
           <Dialog.Positioner>
             <Dialog.Content p={6}>
               <Dialog.Header>
-                <Dialog.Title>{t.components.header.registerTitle}</Dialog.Title>
+                <Dialog.Title>{t.header.registerTitle}</Dialog.Title>
               </Dialog.Header>
               <Dialog.Body pt={4}>
                 <VStack gap={4}>
                   <Text fontSize="sm" color="gray.400">
-                    {t.components.header.registerDesc}{' '}
+                    {t.header.walletInfoText}{' '}
                     <ChakraLink
                       href={'https://github.com/w3hc/w3pk/blob/main/src/auth/register.ts#L17-L102'}
                       color={brandColors.accent}
                       target="_blank"
                       rel="noopener noreferrer"
                     >
-                      {t.components.header.w3pk}
+                      w3pk
                     </ChakraLink>
                     .
                   </Text>
-                  <Field invalid={isUsernameInvalid} label={t.components.header.username}>
+                  <Field invalid={isUsernameInvalid} label={t.header.usernameLabel}>
                     <Input
                       id="username-input"
                       aria-describedby={
@@ -370,8 +352,9 @@ export default function Header() {
                       }
                       aria-invalid={isUsernameInvalid && username.trim() ? true : undefined}
                       value={username}
-                      onChange={e => setUsername(e.target.value)}
-                      placeholder={t.components.header.usernamePlaceholder}
+                      onChange={e => handleUsernameChange(e.target.value)}
+                      placeholder={t.header.usernamePlaceholder}
+                      pl={3}
                       onKeyDown={e => {
                         if (e.key === 'Enter' && username.trim()) {
                           handleRegister()
@@ -380,10 +363,20 @@ export default function Header() {
                     />
                     {isUsernameInvalid && username.trim() && (
                       <Field.ErrorText id="username-error">
-                        {t.components.header.usernameValidation}
+                        {t.header.usernameError}
                       </Field.ErrorText>
                     )}
-                  </Field>
+                  </Field>{' '}
+                  <ChakraLink
+                    as={Link}
+                    href="/settings#restore-backup"
+                    onClick={handleModalClose}
+                    fontSize="sm"
+                    color={brandColors.accent}
+                    alignSelf="flex-start"
+                  >
+                    {t.header.alreadyRegisteredLink}
+                  </ChakraLink>
                 </VStack>
               </Dialog.Body>
 
@@ -393,7 +386,7 @@ export default function Header() {
                 </Dialog.ActionTrigger>
                 <Button colorPalette="blue" onClick={handleRegister} disabled={!username.trim()}>
                   {isRegistering && <Spinner size="50px" />}
-                  {!isRegistering && t.components.header.createAccount}
+                  {!isRegistering && t.header.createAccount}
                 </Button>
               </Dialog.Footer>
               <Dialog.CloseTrigger asChild>
