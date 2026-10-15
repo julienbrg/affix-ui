@@ -6,10 +6,10 @@ import type { NextConfig } from 'next'
 // available); 'wasm-unsafe-eval' and blob: workers are required by the
 // zero-knowledge tooling bundled with w3pk (snarkjs/circomlibjs).
 // connect-src is limited to the origins the app can actually contact:
-// same-origin (including the /api routes), the public Optimism RPC, the
-// Filecoin Calibration and Sepolia RPCs used by the affix contracts, and the
-// unpkg CDN used by the build verification (it hashes the published w3pk
-// build), and the endpoints referenced by the w3pk library.
+// same-origin (including the /api routes), the BOT Chain RPC used by the
+// affix contracts, the public Optimism RPC and the unpkg CDN used by the
+// build verification (it reads the w3pk version registry and hashes the
+// published w3pk build), and the endpoints referenced by the w3pk library.
 // 'unsafe-eval' is added in development only: React's development build
 // uses eval() for debugging features (it never does in production).
 const isDev = process.env.NODE_ENV === 'development'
@@ -20,7 +20,7 @@ const contentSecurityPolicy = [
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob:",
   "font-src 'self'",
-  "connect-src 'self' https://mainnet.optimism.io https://chainid.network https://rukh.w3hc.org https://unpkg.com https://api.calibration.node.glif.io https://sepolia.infura.io",
+  "connect-src 'self' https://mainnet.optimism.io https://chainid.network https://rukh.w3hc.org https://unpkg.com https://rpc.botchain.ai",
   "worker-src 'self' blob:",
   "object-src 'none'",
   "base-uri 'self'",
