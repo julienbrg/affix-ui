@@ -25,6 +25,8 @@
 
 ### Fixed
 
+- AI verification on `/verify`, which called Rukh's removed `/web-reader` endpoint: `/api/verify-url` now reads the entity URL through `/web-reader/llm` and looks for the registry address in the page text and link URLs
+- The verify page shows "AI verification unavailable" when the check fails instead of hiding the section, and no longer shows a debug panel
 - Transactions from the dashboard rejected as underpriced on BOT Chain: with a base fee of 0, the signer now falls back to the gas price for the EIP-1559 fees instead of signing with a tip of 0
 - Login on a device with no registered passkey opens the registration modal instead of the browser's cross-device QR code dialog
 - "Remember Me" session detection, which looked for sessions in IndexedDB

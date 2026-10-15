@@ -1,24 +1,24 @@
 import { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://w3pk.w3hc.org'),
+  metadataBase: new URL('https://affix.w3hc.org'),
 
-  title: 'Genji',
-  description: 'Next.js Web3 starter with passkey auth',
+  title: 'Affix',
+  description: 'Affix your onchain seal and let the world verify it',
 
-  keywords: ['Genji', 'w3pk', 'WebAuthn', 'Next.js', 'Web3', 'Ethereum'],
+  keywords: ['Affix', 'Genji', 'w3pk', 'WebAuthn', 'Next.js', 'Web3', 'Ethereum'],
   authors: [{ name: 'W3HC', url: 'https://github.com/w3hc' }],
 
   openGraph: {
-    title: 'Genji',
-    description: 'Next.js Web3 starter with passkey auth',
-    siteName: 'Genji',
+    title: 'Affix',
+    description: 'Affix your onchain seal and let the world verify it',
+    siteName: 'Affix',
     images: [
       {
         url: '/huangshan.png',
         width: 1200,
         height: 630,
-        alt: 'Next.js Web3 starter with passkey auth',
+        alt: 'Affix your onchain seal and let the world verify it',
       },
     ],
     locale: 'en_US',
@@ -27,8 +27,8 @@ export const metadata: Metadata = {
 
   twitter: {
     card: 'summary_large_image',
-    title: 'Genji',
-    description: 'Next.js Web3 starter with passkey auth',
+    title: 'Affix',
+    description: 'Affix your onchain seal and let the world verify it',
     images: ['/huangshan.png'],
     creator: '@julienbrg',
   },
