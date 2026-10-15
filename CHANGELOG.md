@@ -25,6 +25,7 @@
 
 ### Fixed
 
+- Transactions from the dashboard rejected as underpriced on BOT Chain: with a base fee of 0, the signer now falls back to the gas price for the EIP-1559 fees instead of signing with a tip of 0
 - Login on a device with no registered passkey opens the registration modal instead of the browser's cross-device QR code dialog
 - "Remember Me" session detection, which looked for sessions in IndexedDB
 - Corrupted tree diagram in `docs/CONTEXT.md`

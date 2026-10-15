@@ -82,8 +82,8 @@ class W3PKSigner extends ethers.AbstractSigner {
       value: tx.value || 0n,
       nonce: tx.nonce as number,
       gasLimit: tx.gasLimit,
-      maxFeePerGas: tx.maxFeePerGas,
-      maxPriorityFeePerGas: tx.maxPriorityFeePerGas,
+      maxFeePerGas: tx.maxFeePerGas ?? tx.gasPrice,
+      maxPriorityFeePerGas: tx.maxPriorityFeePerGas ?? tx.gasPrice,
       chainId: tx.chainId as number,
       type: 2,
     })
