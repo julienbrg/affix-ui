@@ -32,9 +32,12 @@ import {
 } from 'react-icons/fi'
 import { getDocumentCID } from '@/lib/documentHash'
 import { ethers } from 'ethers'
-import { NETWORK_CONFIGS, AFFIX_REGISTRY_ABI, type VerificationResult } from '@/lib/contracts'
-
-const DEFAULT_NETWORK = 10 // OP Mainnet
+import {
+  NETWORK_CONFIGS,
+  DEFAULT_NETWORK,
+  AFFIX_REGISTRY_ABI,
+  type VerificationResult,
+} from '@/lib/contracts'
 
 export default function VerifyPage() {
   const t = useTranslation()
