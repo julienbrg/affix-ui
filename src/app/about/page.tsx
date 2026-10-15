@@ -4,8 +4,10 @@ import { Text, VStack, Box, Heading, Container } from '@chakra-ui/react'
 import { Button } from '@/components/ui/button'
 import { FiCopy, FiExternalLink } from 'react-icons/fi'
 import { toaster } from '@/components/ui/toaster'
+import { NETWORK_CONFIGS, DEFAULT_NETWORK } from '@/lib/contracts'
 
-const AFFIX_OFFICIAL_CONTRACT = '0x69d3EC4632aD974B6755EACF9eC02D8093Bc341a'
+const network = NETWORK_CONFIGS[DEFAULT_NETWORK]
+const AFFIX_OFFICIAL_CONTRACT = network.registryAddress
 
 export default function AboutPage() {
   const copyToClipboard = (text: string) => {
@@ -18,7 +20,7 @@ export default function AboutPage() {
   }
 
   const openInExplorer = () => {
-    window.open(`https://optimistic.etherscan.io/address/${AFFIX_OFFICIAL_CONTRACT}`, '_blank')
+    window.open(`${network.blockExplorer}/address/${AFFIX_OFFICIAL_CONTRACT}`, '_blank')
   }
 
   return (
@@ -46,7 +48,7 @@ export default function AboutPage() {
                   Affix Official Contract Address
                 </Text>
                 <Text fontSize="sm" color="gray.500">
-                  Deployed on OP Mainnet (Chain ID: 10)
+                  Deployed on {network.name} (Chain ID: {DEFAULT_NETWORK})
                 </Text>
               </VStack>
 
