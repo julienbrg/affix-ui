@@ -1,29 +1,16 @@
 // Network configuration
 export const NETWORK_CONFIGS = {
-  314159: {
-    // Filecoin Calibration
-    name: 'Filecoin Calibration',
-    factoryAddress: '0xa0d98DCaDab6e6FF45cd7087F8192d65aa954256', // Your registry address
-    rpcUrl: 'https://api.calibration.node.glif.io/rpc/v1',
-    blockExplorer: 'https://calibration.filscan.io',
-    explorerName: 'Filscan',
-  },
-  11155111: {
-    name: 'Sepolia Testnet',
-    factoryAddress: '0x02b77E551a1779f3f091a1523A08e61cd2620f82',
-    rpcUrl: 'https://sepolia.infura.io/v3/YOUR_INFURA_KEY',
-    blockExplorer: 'https://sepolia.etherscan.io',
-    explorerName: 'Etherscan',
-  },
-  10: {
-    name: 'OP Mainnet',
-    factoryAddress: '0x496E7ba233d66F1bA46D2783029795d46b551AD9',
-    registryAddress: '0x69d3EC4632aD974B6755EACF9eC02D8093Bc341a',
-    rpcUrl: 'https://mainnet.optimism.io',
-    blockExplorer: 'https://optimistic.etherscan.io',
-    explorerName: 'Optimistic Etherscan',
+  677: {
+    name: 'BOT Chain',
+    factoryAddress: '0x217e2225a623412A7e9F43Bc0207c1bD1ed4f9Dc',
+    registryAddress: '0x94E5E95128aA2684B0A51b5Ea30C601e6f72aeB7',
+    rpcUrl: 'https://rpc.botchain.ai',
+    blockExplorer: 'https://scan.botchain.ai',
+    explorerName: 'BOT Chain Explorer',
   },
 }
+
+export const DEFAULT_NETWORK = 677
 
 // Factory contract ABI
 export const AFFIX_FACTORY_ABI = [

@@ -37,9 +37,13 @@ import {
 } from 'react-icons/fi'
 import { getDocumentCID } from '@/lib/documentHash'
 import { ethers } from 'ethers'
-import { NETWORK_CONFIGS, AFFIX_REGISTRY_ABI, AFFIX_FACTORY_ABI } from '@/lib/contracts'
+import {
+  NETWORK_CONFIGS,
+  DEFAULT_NETWORK,
+  AFFIX_REGISTRY_ABI,
+  AFFIX_FACTORY_ABI,
+} from '@/lib/contracts'
 
-const DEFAULT_NETWORK = 10 // OP Mainnet
 const currentNetwork = NETWORK_CONFIGS[DEFAULT_NETWORK]
 const FACTORY_ADDRESS = currentNetwork.factoryAddress
 const RPC_URL = currentNetwork.rpcUrl

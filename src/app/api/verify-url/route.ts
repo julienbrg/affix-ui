@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { ethers } from 'ethers'
+import { NETWORK_CONFIGS, DEFAULT_NETWORK } from '@/lib/contracts'
 
 // Registry ABI to get the URL
 const REGISTRY_ABI = ['function entityUrl() external view returns (string)']
@@ -14,9 +15,9 @@ async function verifyUrl(address: string) {
   }
   console.log('✅ Address format is valid')
 
-  // Connect to OP Mainnet
-  console.log('🌐 Connecting to OP Mainnet...')
-  const provider = new ethers.JsonRpcProvider('https://mainnet.optimism.io')
+  const network = NETWORK_CONFIGS[DEFAULT_NETWORK]
+  console.log(`🌐 Connecting to ${network.name}...`)
+  const provider = new ethers.JsonRpcProvider(network.rpcUrl)
 
   // Create contract instance
   const contract = new ethers.Contract(address, REGISTRY_ABI, provider)
